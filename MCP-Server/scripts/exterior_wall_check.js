@@ -5,8 +5,10 @@
 
 import { RevitSocketClient } from '../build/socket.js';
 
+import path from 'path';
+
 async function testExteriorWallOpeningCheck() {
-    const client = new RevitSocketClient('localhost', 8966);
+    const client = new RevitSocketClient('localhost', 8964);
 
     try {
         console.log('Connecting to Revit MCP Server...');
@@ -14,12 +16,22 @@ async function testExteriorWallOpeningCheck() {
         console.log('Connected!\n');
 
         console.log('Running CheckExteriorWallOpenings...');
+        const reportFile = path.join(process.cwd(), 'exterior_wall_check_report.json');
         const result = await client.sendCommand('check_exterior_wall_openings', {
+            checkArticle41: true,
+            checkArticle42: true,
             checkArticle45: true,
-            checkArticle110: true,
+            checkArticle110: false,
+            siteBoundary: [
+                { x: 0, y: 0 },
+                { x: 50000, y: 0 },
+                { x: 50000, y: 50000 },
+                { x: 0, y: 50000 }
+            ], // Default site boundary (50m x 50m)
             colorizeViolations: true,
+            createDimensions: true,
             exportReport: true,
-            reportPath: 'D:\\Reports\\exterior_wall_check.json'
+            reportPath: reportFile
         });
 
         if (result.success) {

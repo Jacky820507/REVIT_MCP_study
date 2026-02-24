@@ -2,7 +2,7 @@ import { RevitSocketClient } from '../build/socket.js';
 
 async function listLevels() {
     // Correct usage: host, port
-    const client = new RevitSocketClient('localhost', 8966);
+    const client = new RevitSocketClient('localhost', 8964);
 
     try {
         console.log('🔌 Connecting to Revit MCP Server...');

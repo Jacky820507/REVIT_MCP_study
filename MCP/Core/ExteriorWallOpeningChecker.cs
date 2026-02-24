@@ -348,6 +348,8 @@ namespace RevitMCP.Core
                 result.OverallStatus = CheckStatus.Warning;
             else if (result.BoundaryFireStatus == CheckStatus.NotApplicable && result.BuildingFireStatus == CheckStatus.Pass)
                 result.OverallStatus = CheckStatus.Pass;
+            else if (result.BoundaryFireStatus == CheckStatus.Pass && result.BuildingFireStatus == CheckStatus.Pass)
+                result.OverallStatus = CheckStatus.Pass;
             else
                 result.OverallStatus = CheckStatus.NotApplicable;
 

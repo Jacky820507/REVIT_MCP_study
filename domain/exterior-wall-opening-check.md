@@ -329,6 +329,13 @@ using (Transaction trans = new Transaction(doc, "外牆開口檢討"))
 ## 📝 使用範例
 
 ### 執行檢討腳本
+使用 Node.js 執行以下腳本：
+
+```bash
+node MCP-Server/scripts/exterior_wall_check.js
+```
+
+### 參數參考 (JS)
 
 ```javascript
 // Node.js MCP Server 呼叫範例
