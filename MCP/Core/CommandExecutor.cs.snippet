@@ -1,0 +1,80 @@
+
+        /// <summary>
+        /// 根據圖紙名稱的語意 (一、二、三) 優化編號順序
+        /// </summary>
+        private Dictionary<int, string> OptimizeSheetOrder(Document doc, Dictionary<int, string> moves)
+        {
+            // 1. 取得所有參與者的完整資訊
+            var participants = new List<dynamic>();
+            foreach (var kvp in moves)
+            {
+                Element elem = doc.GetElement(new ElementId(kvp.Key));
+                if (elem != null && elem is ViewSheet sheet)
+                {
+                    participants.Add(new { ID = kvp.Key, Name = sheet.Name, TargetNumber = kvp.Value });
+                }
+            }
+
+            // 2. 分組：根據去除括號後的 "Base Name"
+            // Regex: 尋找結尾是 (數字) 或 (中文數字) 的
+            var regex = new System.Text.RegularExpressions.Regex(@"^(.*?)[\(\（]([\d一二三四五六七八九十]+)[\)\）]$");
+            
+            var groups = participants
+                .Select(p => new { Data = p, Match = regex.Match(p.Name) })
+                .Where(x => x.Match.Success)
+                .GroupBy(x => x.Match.Groups[1].Value.Trim()) // Group by Base Name
+                .ToList();
+
+            var newMoves = new Dictionary<int, string>(moves);
+
+            foreach (var grp in groups)
+            {
+                // 如果群組內只有一張，無需排序
+                if (grp.Count() < 2) continue;
+
+                // 3. 取得群組內所有的目標編號，並自然排序
+                var targetNumbers = grp.Select(x => x.Data.TargetNumber).OrderBy(n => n).ToList();
+
+                // 4. 取得群組內的所有圖紙，並根據名稱中的數字排序
+                var sortedSheets = grp
+                    .Select(x => new 
+                    { 
+                        ID = x.Data.ID, 
+                        Index = GetSheetNameIndex(x.Match.Groups[2].Value) 
+                    })
+                    .OrderBy(x => x.Index)
+                    .ToList();
+
+                // 5. 重新配對
+                for (int i = 0; i < sortedSheets.Count; i++)
+                {
+                    // 防止越界 (理論上數量應相等)
+                    if (i < targetNumbers.Count)
+                    {
+                        newMoves[sortedSheets[i].ID] = targetNumbers[i];
+                    }
+                }
+            }
+
+            return newMoves;
+        }
+
+        private int GetSheetNameIndex(string val)
+        {
+            if (int.TryParse(val, out int n)) return n;
+            
+            switch (val)
+            {
+                case "一": return 1;
+                case "二": return 2;
+                case "三": return 3;
+                case "四": return 4;
+                case "五": return 5;
+                case "六": return 6;
+                case "七": return 7;
+                case "八": return 8;
+                case "九": return 9;
+                case "十": return 10;
+                default: return 999;
+            }
+        }

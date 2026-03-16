@@ -2,17 +2,17 @@
 
 此檔案旨在協助 Gemini/AI 快速理解專案結構與資源位置。
 
-## 📁 專案結構地圖
+##  專案結構地圖
 
 | 路徑 | 說明 | 關鍵檔案 |
 | :--- | :--- | :--- |
-| **`MCP/`** | **C# Revit Add-in** 核心代碼 | `CommandExecutor.cs` (核心邏輯)<br>`RevitMCP.2024.csproj` |
+| **`MCP/`** | **C# Revit Add-in** 核心代碼 | `CommandExecutor.cs` (核心邏輯)<br>`RevitMCP.csproj` (統一建構) |
 | **`MCP-Server/`** | **Node.js MCP Server** 與工具腳本 | `src/tools/revit-tools.ts` (工具定義)<br>`index.ts` (伺服器入口)<br>`*.js` (執行腳本) |
 | **`domain/`** | **業務流程與核心知識** (優先閱讀) | `element-coloring-workflow.md` (上色流程)<br>`room-boundary.md` |
 | **`docs/tools/`** | **技術規格與 API 文檔** | `override_element_color_design.md`<br>`override_graphics_examples.md` |
 | **`scripts/`** | **輔助腳本** | `install-addon.ps1` (安裝腳本) |
 
-## 🚀 常用任務索引
+##  常用任務索引
 
 ### 1. 元素上色與視覺化
 *   **流程文件**：`domain/element-coloring-workflow.md`
@@ -26,10 +26,10 @@
 *   **流程文件**：`domain/room-boundary.md`
 
 ### 3. 建置與部署
-*   **C# 建置**：`dotnet build -c Release MCP/RevitMCP.2024.csproj`
-*   **部署 DLL**：使用 `scripts/install-addon.ps1` 或手動複製到 `C:\ProgramData\Autodesk\Revit\Addins\2024\RevitMCP\`
+*   **C# 建置**：`dotnet build -c Release.R24 MCP/RevitMCP.csproj` (以 Revit 2024 為例，請用 R22/R23/R25/R26 對應其他版本)
+*   **部署 DLL**：使用 `scripts/install-addon.ps1` 或手動複製到 `C:\ProgramData\Autodesk\Revit\Addins\{version}\RevitMCP\`
 
-## ⚠️ 開發注意事項
+##  開發注意事項
 
 1.  **修改 C# 後**：必須關閉 Revit -> 編譯 -> 部署 -> 開啟 Revit。
 2.  **腳本路徑**：所有 Node.js 腳本預設在 `MCP-Server/` 目錄下執行。
@@ -38,7 +38,7 @@
     - **C#**：必須處理 Revit API 的 `Transaction` 和 `Exception`，確保操作可逆。
     - **Node.js**：必須處理 WebSocket 的連接錯誤與超時。
 
-## 🧠 AI 協作指令
+##  AI 協作指令
 
 此專案採用「上下文工程 (Context Engineering)」策略，區分 **高階規則 (Rules)** 與 **具體規格 (Specs)**。AI 助手必須遵循以下指令與行為模式：
 
@@ -56,12 +56,12 @@
 - **規格驅動 (SDD)**：重大變更前應先更新 `domain/` 中的 MD 文件（規格），而非直接修改程式碼。
 
 ### 📂 腳本與知識組織規範
-- **`domain/`**: 存放長期業務邏輯、法規分析策略、成功的 AI 協作經驗 (MD 格式)。
+- **`domain/`**: 存放長期業務邏輯、法規分析策略、成功的 AI 協作經驗 (MD 格式)。必須使用 **UTF-8 (without BOM)** 編碼以確保跨平台讀取不產生亂碼。
 - **`MCP-Server/src/tools/`**: 存放穩定的底層核心 MCP 工具 (TS/JS)。
 - **`MCP-Server/scripts/`**: 存放參數化、可重複調用的穩定工作流腳本。
 - **`MCP-Server/scratch/`**: 存放任務導向、一次性或除錯用的雜餘腳本。
 
-### 🔄 工作流程觸發規則
+###  工作流程觸發規則
 
 當用戶提到以下關鍵字時，AI **必須先讀取**對應的工作流程文件，然後按步驟執行：
 
@@ -71,15 +71,17 @@
 | 防火、耐燃、消防、防火時效 | `domain/fire-rating-check.md` | 防火等級檢查 |
 | 走廊、逃生、通道寬度、避難路徑 | `domain/corridor-analysis-protocol.md` | 走廊分析流程 |
 | 牆壁上色、顏色標示、視覺化 | `domain/element-coloring-workflow.md` | 元素上色流程 |
+| 外牆開口、鄰地距離、防火間隔 | `domain/exterior-wall-opening-check.md` | 外牆開口檢討流程 |
+| **網格、裁切視圖、批次視圖建立** | `domain/dependent-view-crop-workflow.md` | **從屬視圖依網格裁剪流程** |
 | **QA、檢查、驗證、一致性** | `domain/qa-checklist.md` | **品質檢查清單** |
 
 ---
 
-## 🤖 AI 助手智能部署指南
+##  AI 助手智能部署指南
 
 **適用於**: Claude Desktop, Gemini CLI, VS Code Copilot, Antigravity 等 AI 助手
 
-### 📋 使用者環境偵測協定
+###  使用者環境偵測協定
 
 當使用者請求協助部署此專案時，**AI 助手應該按照以下流程進行**：
 
@@ -113,25 +115,39 @@
 ```yaml
 Revit 2022:
   csproj: "RevitMCP.csproj"
-  build_command: "dotnet build -c Release RevitMCP.csproj"
+  build_command: "dotnet build -c Release.R22 RevitMCP.csproj"
   dll_output: "MCP\bin\Release\RevitMCP.dll"
   addins_path: "%APPDATA%\Autodesk\Revit\Addins\2022"
-  api_style: "int ElementId (無警告)"
+  api_style: "int ElementId"
   
 Revit 2023:
   csproj: "RevitMCP.csproj" 
-  build_command: "dotnet build -c Release RevitMCP.csproj"
+  build_command: "dotnet build -c Release.R23 RevitMCP.csproj"
   dll_output: "MCP\bin\Release\RevitMCP.dll"
   addins_path: "%APPDATA%\Autodesk\Revit\Addins\2023"
-  api_style: "int ElementId (無警告)"
+  api_style: "int ElementId"
   
 Revit 2024:
-  csproj: "RevitMCP.2024.csproj"
-  build_command: "dotnet build -c Release RevitMCP.2024.csproj"
-  dll_output: "MCP\bin\Release.2024\RevitMCP.dll"
+  csproj: "RevitMCP.csproj"
+  build_command: "dotnet build -c Release.R24 RevitMCP.csproj"
+  dll_output: "MCP\bin\Release\RevitMCP.dll"
   addins_path: "%APPDATA%\Autodesk\Revit\Addins\2024"
-  api_style: "long ElementId (有 56 個警告但功能正常)"
-  note: "警告是因為使用 Revit 2022 相容寫法，不影響功能"
+  api_style: "int ElementId"
+
+Revit 2025:
+  csproj: "RevitMCP.csproj"
+  build_command: "dotnet build -c Release.R25 RevitMCP.csproj"
+  dll_output: "MCP\bin\Release\RevitMCP.dll"
+  addins_path: "%APPDATA%\Autodesk\Revit\Addins\2025"
+  api_style: "long ElementId (via RevitCompatibility.cs)"
+  note: "Revit 2025 將 ElementId 從 int 改為 long，已透過相容層處理"
+
+Revit 2026:
+  csproj: "RevitMCP.csproj"
+  build_command: "dotnet build -c Release.R26 RevitMCP.csproj"
+  dll_output: "MCP\bin\Release\RevitMCP.dll"
+  addins_path: "%APPDATA%\Autodesk\Revit\Addins\2026"
+  api_style: "long ElementId (via RevitCompatibility.cs)"
 ```
 
 ##### B. AI Client 判斷
@@ -177,8 +193,7 @@ VS Code Copilot:
 ```powershell
 # 1. 建置 C# Add-in (Revit 2024)
 cd "專案路徑\MCP"
-dotnet build -c Release RevitMCP.2024.csproj
-# 預期：56 個警告（正常，不影響功能）
+dotnet build -c Release.R24 RevitMCP.csproj
 
 # 2. 執行安裝腳本
 cd ..
@@ -211,7 +226,7 @@ npm run build
 ```powershell
 # 1. 建置 C# Add-in (Revit 2022)
 cd "專案路徑\MCP"
-dotnet build -c Release RevitMCP.csproj
+dotnet build -c Release.R22 RevitMCP.csproj
 # 預期：無警告
 
 # 2. 手動部署 (如果安裝腳本不支援 2022)
@@ -232,16 +247,16 @@ npm run build
 # 5. 重啟 Claude Desktop
 ```
 
-### 🎯 AI 助手行為準則
+### AI 助手行為準則
 
 1. **永遠先偵測環境**：不要假設使用者的版本或 client
-2. **提供版本特定的指令**：根據 Revit 版本調整 .csproj 檔名和路徑
-3. **說明警告原因**：如果是 2024，解釋 56 個警告是正常的（API 相容性）
+2. **提供版本特定的指令**：根據 Revit 版本調整建構組態 (Release.R22 ~ Release.R26)
+3. **所有版本使用統一 .csproj**：RevitMCP.csproj (基於 Nice3point.Revit.Sdk)
 4. **使用絕對路徑**：除了 VS Code 可用 `${workspaceFolder}`，其他都需要絕對路徑
 5. **驗證步驟**：提供明確的驗證命令確認安裝成功
-6. **錯誤處理**：如果使用者版本不在支援列表（2022-2024），提示需要調整 API 參照
+6. **錯誤處理**：如果使用者版本不在支援列表（2022-2026），提示需要調整
 
-### 🔍 常見問題處理邏輯
+###  常見問題處理邏輯
 
 ```yaml
 問題: "建置時出現 56 個警告"
@@ -253,9 +268,9 @@ npm run build
 
 問題: "找不到 RevitMCP.dll"
 判斷:
-  - 檢查使用的建置命令是否匹配版本：
-      2022/2023: RevitMCP.csproj → bin\Release\RevitMCP.dll
-      2024: RevitMCP.2024.csproj → bin\Release.2024\RevitMCP.dll
+  - 檢查是否使用了統一建構命令：
+      所有版本: dotnet build -c Release.RXX RevitMCP.csproj → bin\Release\RevitMCP.dll
+      (舊版 2024 備援: RevitMCP.2024.csproj → bin\Release.2024\RevitMCP.dll)
   
 問題: "MCP Server 連接失敗"
 判斷:
@@ -266,11 +281,15 @@ npm run build
 
 ### 📊 環境設定快速參考
 
-| Revit 版本 | .csproj | DLL 輸出路徑 | Addins 路徑 | 警告數 |
+| Revit 版本 | 建構組態 | DLL 輸出路徑 | Addins 路徑 | 備註 |
 |:----------|:--------|:------------|:-----------|:------|
-| 2022 | `RevitMCP.csproj` | `bin\Release\` | `Addins\2022` | 0 |
-| 2023 | `RevitMCP.csproj` | `bin\Release\` | `Addins\2023` | 0 |
-| 2024 | `RevitMCP.2024.csproj` | `bin\Release.2024\` | `Addins\2024` | 56 (正常) |
+| 2022 | `Release.R22` | `bin\Release\` | `Addins\2022` | .NET 4.8 |
+| 2023 | `Release.R23` | `bin\Release\` | `Addins\2023` | .NET 4.8 |
+| 2024 | `Release.R24` | `bin\Release\` | `Addins\2024` | .NET 4.8 |
+| 2025 | `Release.R25` | `bin\Release\` | `Addins\2025` | .NET 8, ElementId=long |
+| 2026 | `Release.R26` | `bin\Release\` | `Addins\2026` | .NET 8, ElementId=long |
+
+> 所有版本均使用統一的 `RevitMCP.csproj` (基於 Nice3point.Revit.Sdk)。
 
 | AI Client | 設定檔位置 | 路徑格式 | 重啟需求 |
 |:---------|:----------|:---------|:--------|
@@ -280,7 +299,7 @@ npm run build
 
 ---
 
-**最後更新**: 2026-01-02
+**最後更新**: 2026-03-09
 
 ## 🔬 智慧提煉 (Lessons Learned)
 
@@ -295,4 +314,22 @@ npm run build
 - **座標轉換**：
     - 取得元素的 `BoundingBox`。
     - 標註位置線應定義在 `(max + min) / 2` 的中心軌跡上，以確保標註文字不與邊界牆重疊。
-    - **警告**：嚴禁在 3D 視圖中直接建立平面標註，必須先查詢 `ActiveView`。
+### [L-003] 圖紙語意排序與分組陷阱
+- **規則**：圖紙語意排序（如 一/二/三 或 1/3, 2/3）**必須限制在連續編號區間內**。避免將相同名稱但位於不同編號範圍（如 D0258 與 D0274）的圖紙混為一談。
+- **實踐**：
+    - 在 `OptimizeSheetOrder` 中，除依據 Base Name 分組外，應以「目標編號連續性」（如差距 > 3 應切割為子群組）進行二次分組，確保排序只發生在微觀區間內。
+    - 正規表達式應支援 `(X/Y)` 分頁格式：`^(.*?)[\(\（]([\d]+)(?:/[\d]+)?[\)\）]$`。
+
+### [L-004] Revit 多版本 C# 相容性原則
+- **規則**：為了維持 Revit 2020-2024 的通用性，應避免使用 2024 新增的 API 屬性，或使用條件編譯。
+- **實踐**：
+    - **ElementId**: 優先使用 `.Id.IntegerValue` 轉型，而非 2024 的 `.Id.Value` (long)。
+    - **BuiltInCategory**: 使用 `(BuiltInCategory)cat.Id.IntegerValue` 取得列舉值，而非 2024 的 `cat.BuiltInCategory` 屬性。
+    - **Unit/Spec**: 使用 `Definition.UnitType` 比對 `UnitType.UT_Length`，而非 2024 引入的 `SpecTypeId`。
+
+### [L-005] 從屬視圖依網格裁切幾何限制
+- **規則**：從屬視圖 (Dependent View) 的「比例 (Scale)」由母視圖強制驅動，自動化工具不得嘗試單獨修改。
+- **實踐**：
+    - 裁切框 (`CropBox`) 計算必須將網格名稱對應至 `Grid.Curve.GetEndPoint` 取得物理座標。
+    - 若裁切範圍超出模型幾何極限，應具備 `Offset` 容錯機制，確保 `BoundingBoxXYZ` 始終為有效方框。
+    - **多版本相容**：在 2020 版本建立從屬視圖後，應優先使用 `View.Name = newName` 進行賦值，並捕捉可能的重複名稱 Exception 以維持腳本穩定。

@@ -6,6 +6,71 @@
 
 ---
 
+## [1.5.1] - 2026-03-09
+
+### 🐛 Bug 修正（C# — 需重新編譯）
+
+- **`CommandExecutor.cs`**：修正 4 個問題 — null reference 風險、port 8966→8964 統一、catch 範圍過寬、重複初始化
+- **`ExteriorWallOpeningChecker.cs`**：修正外牆開口條件判斷邏輯
+- **`RevitMCP.csproj`**：改用 Nice3point.Revit.Sdk 6.1.0，統一支援 Revit 2022–2026
+
+### 🆕 新增
+
+- **`RevitCompatibility.cs`**：跨版本相容性輔助層（新增檔案）
+- **`CLAUDE.md`**：Claude Code 專用上下文指引
+- **`docs/MIGRATION_GUIDE.md`**：fork 成員升級遷移指南
+- **`教材/`**：完整公開 8 堂課教材、投影片、延伸閱讀資源
+  - 新增 `05-Skill遷移實戰篇.md`（Agent Skill 架構實作教學）
+
+###  文件整理
+
+- **合併後刪除**：ANNOUNCEMENT.md → CHANGELOG.md、MCP_Server_Setup_Guide.md → README.md、ARCHITECTURE.md → README.md
+- **搬移**：QUICK_TEST.md → docs/、4 個學習筆記 → 教材/
+- **刪除**：mission.md、Domain_to_Skill_Migration_Guide.md
+- **更新**：README.md 新增導覽表、README.en.md 支援 Revit 2025/2026、DOCS_STRUCTURE.md 重寫
+
+###  成員需執行的動作
+
+**C# 程式碼有更新，需重新編譯 DLL：**
+
+```powershell
+cd "專案路徑/MCP"
+dotnet build -c Release.R22   # Revit 2022
+dotnet build -c Release.R23   # Revit 2023
+dotnet build -c Release.R24   # Revit 2024
+dotnet build -c Release.R25   # Revit 2025
+dotnet build -c Release.R26   # Revit 2026
+```
+
+複製 DLL → Revit Addins 資料夾 → 重啟 Revit。
+
+**MCP Server 無變動**，不需要 `npm install` 或 `npm run build`。
+
+---
+
+## [1.5.0] - 2026-03-04
+
+### ✨ 新功能
+
+#### 整合 4 個全新 MCP 工具
+- **`unjoin_wall_joins` & `rejoin_wall_joins`**：解決牆體上色時的幾何接合干擾，確保視覺化上色流程準確無誤
+- **`get_room_daylight_info`**：居室採光分析功能（由 DAVIT 貢獻），AI 可直接讀取並分析房間採光比例
+- **`get_view_templates`**：視圖樣版查詢工具（由 Alex Huang 貢獻），支援樣版設置、篩選器與隱藏品類的整併分析
+
+### 🔧 改進
+
+#### 通訊標準統一
+- **Port 統一為 8964**：修正部分配置文件中 port 為 8966 的不一致問題。全專案（C#、TypeScript、config.json）均統一使用 8964
+
+#### 功能映射優化
+- **完整對比驗證**：TypeScript 端工具定義與 C# 端指令處理已完全對應（37 個工具）
+
+###  重要提醒
+
+本次更新涉及 C# 後端邏輯與 TypeScript 工具架構的大幅變動，需重新編譯部署（參考 README.md 的部署步驟）。
+
+---
+
 ## [1.4.1] - 2024-12-18
 
 ### 🐛 Bug 修正
@@ -36,18 +101,18 @@
   - 加入常見問題處理邏輯
   - 協助 AI 助手為使用者生成客製化部署指令
 
-### 📁 修改檔案
+###  修改檔案
 
 | 檔案 | 變更 |
 |------|------|
 | `scripts/install-addon-bom.ps1` | 修正 3 處路徑：DLL、.addin、Newtonsoft.Json |
 | `scripts/verify-installation.ps1` | 新增安裝驗證工具 |
 
-### ⚠️ 重要提醒
+###  重要提醒
 
 **目錄結構已統一為單層 `MCP\` 結構，所有路徑參照請確認正確：**
-- ✅ 正確：`MCP\bin\Release.2024\RevitMCP.dll`
-- ❌ 錯誤：`MCP\MCP\bin\Release.2024\RevitMCP.dll`
+-  正確：`MCP\bin\Release.2024\RevitMCP.dll`
+-  錯誤：`MCP\MCP\bin\Release.2024\RevitMCP.dll`
 
 ---
 
@@ -75,7 +140,7 @@
 - 更新 README.md 工具清單，補齊遺漏的工具說明
 - 新增 `domain/` 資料夾，放置容積檢討開發文件
 
-### 📁 修改檔案
+###  修改檔案
 
 | 檔案 | 變更 |
 |------|------|
@@ -111,7 +176,7 @@
 - **內容**：提醒使用者 git pull 後如有 C# 程式碼變更，需重新編譯並部署 DLL
 - **包含**：更新類型對照表（C#/TypeScript/設定檔各自的處理方式）
 
-### 📁 修改檔案
+###  修改檔案
 
 | 檔案 | 變更 |
 |------|------|
@@ -138,7 +203,7 @@
   - 支援指定柱類型名稱
   - 座標使用公釐，內部自動轉換為 Revit 英尺單位
 
-### 📁 修改檔案
+###  修改檔案
 
 | 檔案 | 變更 |
 |------|------|
@@ -176,7 +241,7 @@
   - `MCP-Server/build/` - 需要執行 `npm run build` 產生
   - `MCP-Server/node_modules/` - 需要執行 `npm install` 產生
   - `MCP/MCP/bin/` - 需要編譯或下載 Release
-- **新增**：在 README 中加入「⚠️ 透過 Git Clone 的首次設定」區塊
+- **新增**：在 README 中加入「 透過 Git Clone 的首次設定」區塊
 
 #### 設定檔硬編碼路徑問題
 - **問題**：`gemini_mcp_config.json` 和 `claude_desktop_config.json` 使用硬編碼的使用者路徑

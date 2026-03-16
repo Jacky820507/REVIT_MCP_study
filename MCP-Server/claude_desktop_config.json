@@ -1,9 +1,10 @@
 {
+  "_comment": "Project path configured for current environment",
   "mcpServers": {
     "revit-mcp": {
       "command": "node",
       "args": [
-        "c:/Users/User/Desktop/REVIT MCP/MCP-Server/build/index.js"
+        "C:/Users/Admin/Desktop/REVIT_MCP/MCP-Server/build/index.js"
       ],
       "env": {
         "REVIT_VERSION": "2024"
