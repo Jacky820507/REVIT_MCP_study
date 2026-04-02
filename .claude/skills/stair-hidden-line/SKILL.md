@@ -46,6 +46,12 @@ description: "剖面隱藏樓梯可視化：在剖面視圖中，自動為被側
 
 使用 `get_line_styles` 確認你的專案中的正確 ID。
 
+## Troubleshooting & Performance
+
+> [!IMPORTANT]
+> **WebSocket Timeout (30s)**: 如果發現 `get_active_view` 或執行指令時卡住 30 秒才報錯，通常是因為多個 AI 用戶端（如 VS Code + Terminal）同時連入。
+> **Fix**: 確保 RevitMCP 增益集已更新至並行連線版本（2026-03-20 更新），這能處理多重請求路由而不造成衝突。
+
 ## Reference
 
-詳見 `domain/stair-hidden-line-workflow.md`。
+詳見 `domain/stair-hidden-line-workflow.md` 與 `GEMINI.md` (2026-03-20)。
