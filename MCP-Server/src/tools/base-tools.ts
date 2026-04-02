@@ -53,6 +53,18 @@ export const baseTools: Tool[] = [
         },
     },
     {
+        name: "rename_element",
+        description: "修改 Revit 元素的名稱。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "元素 ID" },
+                newName: { type: "string", description: "新的名稱" },
+            },
+            required: ["elementId", "newName"],
+        },
+    },
+    {
         name: "get_selected_elements",
         description: "取得使用者目前在 Revit 中選取的所有元素的基本資訊（ID、名稱、品類）。",
         inputSchema: { type: "object", properties: {} },
@@ -201,5 +213,58 @@ export const baseTools: Tool[] = [
             },
             required: ["category"],
         },
+    },
+    // === 圖紙與通用工具 ===
+    {
+        name: "get_viewport_map",
+        description: "取得所有視埠與圖紙的對應關係。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_wall_types",
+        description: "取得專案中所有的牆類型。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "change_element_type",
+        description: "變更元素的類型。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "元素 ID" },
+                typeId: { type: "number", description: "目標類型 ID" },
+            },
+            required: ["elementId", "typeId"],
+        },
+    },
+    {
+        name: "get_titleblocks",
+        description: "取得所有可用的圖框類型。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "get_all_sheets",
+        description: "取得專案中所有的圖紙清單。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "auto_renumber_sheets",
+        description: "自動修復圖紙編號（處理 -1, -2 衝突並重新排序）。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "list_family_symbols",
+        description: "列出指定的族群類型（可依名稱篩選）。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                filter: { type: "string", description: "篩選關鍵字" },
+            },
+        },
+    },
+    {
+        name: "get_line_styles",
+        description: "取得所有的線型樣式。",
+        inputSchema: { type: "object", properties: {} },
     },
 ];

@@ -1,7 +1,7 @@
 using Autodesk.Revit.DB;
 
 // Revit 2025+ 將 ElementId 從 int 改為 long
-// 使用 IdType alias 和 GetIdValue() 擴充方法，讓同一份程式碼同時支援 2022-2026
+// 使用 IdType alias 和 GetIdValue() 擴充方法，同時支援 2020-2026
 #if REVIT2025_OR_GREATER
 using IdType = System.Int64;
 #else
@@ -29,11 +29,32 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
-        /// 從數值建立 ElementId
+        /// 取得品類的 BuiltInCategory（2023 以前不支援直接存取）
         /// </summary>
-        internal static ElementId ToElementId(this IdType value)
+        internal static BuiltInCategory GetBuiltInCategory(this Category cat)
         {
-            return new ElementId(value);
+#if REVIT2023_OR_GREATER
+            return cat.BuiltInCategory;
+#else
+            return (BuiltInCategory)cat.Id.GetIdValue();
+#endif
+        }
+
+        /// <summary>
+        /// 檢查參數定義是否為數值類型
+        /// </summary>
+        internal static bool IsNumeric(this Definition def)
+        {
+#if REVIT2022_OR_GREATER
+            var dataType = def.GetDataType();
+            return dataType == Autodesk.Revit.DB.SpecTypeId.Number || 
+                   dataType == Autodesk.Revit.DB.SpecTypeId.Int.Integer ||
+                   dataType == Autodesk.Revit.DB.SpecTypeId.Length;
+#else
+            return def.ParameterType == ParameterType.Number || 
+                   def.ParameterType == ParameterType.Integer ||
+                   def.ParameterType == ParameterType.Length;
+#endif
         }
     }
 }

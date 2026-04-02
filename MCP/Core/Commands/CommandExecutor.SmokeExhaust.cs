@@ -1245,72 +1245,92 @@ namespace RevitMCP.Core
         private object CreateDetailLines(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
-            IdType viewId = parameters["viewId"].Value<IdType>();
             var linesArray = parameters["lines"] as JArray;
             if (linesArray == null || linesArray.Count == 0)
                 throw new Exception("需要提供 lines 陣列");
 
             const double MM_TO_FEET = 1.0 / 304.8;
 
-            View view = doc.GetElement(new ElementId(viewId)) as View;
-            if (view == null) throw new Exception($"找不到視圖 ID: {viewId}");
+            View view = null;
+            if (parameters.ContainsKey("viewId"))
+            {
+                IdType viewId = parameters["viewId"].Value<IdType>();
+                view = doc.GetElement(new ElementId(viewId)) as View;
+                if (view == null) throw new Exception($"找不到視圖 ID: {viewId}");
+            }
+            else
+            {
+                view = _uiApp.ActiveUIDocument.ActiveView;
+            }
 
             var createdLines = new List<object>();
+            int skipped = 0;
 
             using (Transaction trans = new Transaction(doc, "繪製詳圖線"))
             {
                 trans.Start();
 
+                // 優先取得全域樣式 (由參數傳入的 styleId)
+                GraphicsStyle globalStyle = null;
+                if (parameters.ContainsKey("styleId"))
+                {
+                    try {
+                        IdType sid = parameters["styleId"].Value<IdType>();
+                        globalStyle = doc.GetElement(new ElementId(sid)) as GraphicsStyle;
+                    } catch { }
+                }
+
+                XYZ viewDir = view.ViewDirection;
+                XYZ origin = view.Origin;
+
                 foreach (JObject lineObj in linesArray)
                 {
-                    double startX = lineObj["startX"].Value<double>() * MM_TO_FEET;
-                    double startY = lineObj["startY"].Value<double>() * MM_TO_FEET;
-                    double endX = lineObj["endX"].Value<double>() * MM_TO_FEET;
-                    double endY = lineObj["endY"].Value<double>() * MM_TO_FEET;
-
-                    XYZ startPt = new XYZ(startX, startY, 0);
-                    XYZ endPt = new XYZ(endX, endY, 0);
-
-                    if (startPt.DistanceTo(endPt) < 0.001) continue;
-
-                    Line line = Line.CreateBound(startPt, endPt);
-                    DetailCurve detailLine = doc.Create.NewDetailCurve(view, line);
-
-                    // 設定線條樣式
-                    string lineStyle = lineObj["lineStyle"]?.Value<string>();
-                    if (!string.IsNullOrEmpty(lineStyle))
+                    try
                     {
-                        var lineStyles = detailLine.GetLineStyleIds();
-                        foreach (ElementId styleId in lineStyles)
+                        double startX = lineObj["startX"]?.Value<double>() ?? 0;
+                        double startY = lineObj["startY"]?.Value<double>() ?? 0;
+                        double startZ = lineObj["startZ"]?.Value<double>() ?? 0;
+                        double endX = lineObj["endX"]?.Value<double>() ?? 0;
+                        double endY = lineObj["endY"]?.Value<double>() ?? 0;
+                        double endZ = lineObj["endZ"]?.Value<double>() ?? 0;
+
+                        XYZ p0 = new XYZ(startX / 304.8, startY / 304.8, startZ / 304.8);
+                        XYZ p1 = new XYZ(endX / 304.8, endY / 304.8, endZ / 304.8);
+
+                        // 投影到視圖平面
+                        double d0 = (origin - p0).DotProduct(viewDir);
+                        XYZ startPt = p0 + viewDir * d0;
+
+                        double d1 = (origin - p1).DotProduct(viewDir);
+                        XYZ endPt = p1 + viewDir * d1;
+
+                        if (startPt.DistanceTo(endPt) < 0.005) { skipped++; continue; }
+
+                        Line line = Line.CreateBound(startPt, endPt);
+                        DetailCurve customLine = doc.Create.NewDetailCurve(view, line);
+
+                        // 設定樣式
+                        if (globalStyle != null)
                         {
-                            Element style = doc.GetElement(styleId);
-                            if (style != null && style.Name.Contains(lineStyle))
-                            {
-                                detailLine.LineStyle = style;
-                                break;
-                            }
+                            customLine.LineStyle = globalStyle;
                         }
+
+                        // 設定顏色覆寫 (若有)
+                        if (lineObj["color"] != null)
+                        {
+                            var c = lineObj["color"];
+                            Color color = new Color((byte)c["r"].Value<int>(), (byte)c["g"].Value<int>(), (byte)c["b"].Value<int>());
+                            OverrideGraphicSettings ogs = new OverrideGraphicSettings();
+                            ogs.SetProjectionLineColor(color);
+                            view.SetElementOverrides(customLine.Id, ogs);
+                        }
+
+                        createdLines.Add(new {
+                            ElementId = customLine.Id.GetIdValue(),
+                            Label = lineObj["label"]?.Value<string>()
+                        });
                     }
-
-                    // 設定顏色覆寫
-                    if (lineObj["color"] != null)
-                    {
-                        var colorObj = lineObj["color"];
-                        byte r = (byte)colorObj["r"].Value<int>();
-                        byte g = (byte)colorObj["g"].Value<int>();
-                        byte b = (byte)colorObj["b"].Value<int>();
-                        Color color = new Color(r, g, b);
-
-                        OverrideGraphicSettings ogs = new OverrideGraphicSettings();
-                        ogs.SetProjectionLineColor(color);
-                        view.SetElementOverrides(detailLine.Id, ogs);
-                    }
-
-                    createdLines.Add(new
-                    {
-                        ElementId = detailLine.Id.GetIdValue(),
-                        Label = lineObj["label"]?.Value<string>()
-                    });
+                    catch { skipped++; }
                 }
 
                 trans.Commit();
@@ -1318,11 +1338,13 @@ namespace RevitMCP.Core
 
             return new
             {
-                ViewId = viewId,
-                LinesCreated = createdLines.Count,
+                ViewId = view.Id.GetIdValue(),
+                Count = createdLines.Count,
+                Skipped = skipped,
                 Lines = createdLines
             };
         }
+
 
         /// <summary>
         /// 建立填充區域（有效帶範圍的半透明色塊）

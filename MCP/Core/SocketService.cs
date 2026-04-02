@@ -11,6 +11,7 @@ using Autodesk.Revit.UI;
 using Newtonsoft.Json;
 using RevitMCP.Configuration;
 using RevitMCP.Models;
+using System.Collections.Concurrent;
 
 namespace RevitMCP.Core
 {
@@ -20,14 +21,13 @@ namespace RevitMCP.Core
     public class SocketService
     {
         private HttpListener _httpListener;
-        private WebSocket _webSocket;
+        private ConcurrentDictionary<WebSocket, byte> _activeSockets = new ConcurrentDictionary<WebSocket, byte>();
         private bool _isRunning;
         private readonly ServiceSettings _settings;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public event EventHandler<RevitCommandRequest> CommandReceived;
+        public event EventHandler<CommandReceivedEventArgs> CommandReceived;
         public bool IsRunning => _isRunning;
-        public bool IsConnected => _webSocket != null && _webSocket.State == WebSocketState.Open;
 
         public SocketService(ServiceSettings settings)
         {
@@ -125,12 +125,13 @@ namespace RevitMCP.Core
                     if (context.Request.IsWebSocketRequest)
                     {
                         var wsContext = await context.AcceptWebSocketAsync(null);
-                        _webSocket = wsContext.WebSocket;
+                        var socket = wsContext.WebSocket;
+                        _activeSockets.TryAdd(socket, 0);
 
-                        Logger.Info("[Socket] MCP Server 已連線");
+                        Logger.Info($"[Socket] MCP Server 已連線 (目前連線數: {_activeSockets.Count})");
 
                         // 在獨立任務中處理訊息，不要阻塞接受連線的迴圈
-                        _ = Task.Run(async () => await ReceiveMessagesAsync(wsContext.WebSocket, cancellationToken));
+                        _ = Task.Run(async () => await ReceiveMessagesAsync(socket, cancellationToken));
                     }
                     else
                     {
@@ -153,25 +154,39 @@ namespace RevitMCP.Core
         /// </summary>
         private async Task ReceiveMessagesAsync(WebSocket socket, CancellationToken cancellationToken)
         {
-            var buffer = new byte[4096];
+            // 增大 buffer 以支援大型 JSON payload (如 560 條詳圖線 ≈ 50KB+)
+            var buffer = new byte[65536];
 
             try
             {
                 while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
                 {
-                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+                    // 使用 MemoryStream 累積分片資料，直到收完完整訊息
+                    using (var ms = new System.IO.MemoryStream())
+                    {
+                        WebSocketReceiveResult result;
+                        do
+                        {
+                            result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
 
-                    if (result.MessageType == WebSocketMessageType.Text)
-                    {
-                        string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        Logger.Debug($"[Socket] 接收到訊息: {message}");
-                        HandleMessage(message);
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
-                        Logger.Info("[Socket] MCP Server 已斷線");
-                        break;
+                            if (result.MessageType == WebSocketMessageType.Close)
+                            {
+                                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
+                                Logger.Info("[Socket] MCP Server 已斷線");
+                                _activeSockets.TryRemove(socket, out _);
+                                return;
+                            }
+
+                            ms.Write(buffer, 0, result.Count);
+                        }
+                        while (!result.EndOfMessage);
+
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            string message = Encoding.UTF8.GetString(ms.ToArray());
+                            Logger.Debug($"[Socket] 接收到訊息 ({ms.Length} bytes)");
+                            HandleMessage(socket, message);
+                        }
                     }
                 }
             }
@@ -189,13 +204,13 @@ namespace RevitMCP.Core
         /// <summary>
         /// 處理接收到的訊息
         /// </summary>
-        private void HandleMessage(string message)
+        private void HandleMessage(WebSocket socket, string message)
         {
             try
             {
                 var request = JsonConvert.DeserializeObject<RevitCommandRequest>(message);
                 Logger.Info($"[Socket] 處理命令: {request.CommandName} (RequestId: {request.RequestId})");
-                CommandReceived?.Invoke(this, request);
+                CommandReceived?.Invoke(this, new CommandReceivedEventArgs { Request = request, SourceSocket = socket });
             }
             catch (Exception ex)
             {
@@ -206,18 +221,19 @@ namespace RevitMCP.Core
         /// <summary>
         /// 發送回應
         /// </summary>
-        public async Task SendResponseAsync(RevitCommandResponse response)
+        public async Task SendResponseAsync(WebSocket targetSocket, RevitCommandResponse response)
         {
-            if (!IsConnected)
+            if (targetSocket == null || targetSocket.State != WebSocketState.Open)
             {
-                throw new InvalidOperationException("WebSocket 未連線");
+                Logger.Error($"[Socket] 發送回應用戶端已斷線 (RequestId: {response.RequestId})");
+                return;
             }
 
             try
             {
                 string json = JsonConvert.SerializeObject(response);
                 byte[] bytes = Encoding.UTF8.GetBytes(json);
-                await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                await targetSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
                 Logger.Debug($"[Socket] 已發送回應 (RequestId: {response.RequestId})");
             }
             catch (Exception ex)
@@ -242,12 +258,12 @@ namespace RevitMCP.Core
                 // 先取消所有背景任務
                 _cancellationTokenSource?.Cancel();
 
-                // 處理 WebSocket 關閉 (不阻塞 UI 執行緒)
-                if (_webSocket != null)
-                {
-                    var ws = _webSocket;
-                    _webSocket = null; // 先斷開引用
+                // 處理所有 WebSocket 關閉 (不阻塞 UI 執行緒)
+                var socketsToClose = _activeSockets.Keys.ToList();
+                _activeSockets.Clear();
 
+                foreach (var ws in socketsToClose)
+                {
                     Task.Run(async () =>
                     {
                         try
@@ -268,10 +284,10 @@ namespace RevitMCP.Core
                         finally
                         {
                             ws.Dispose();
-                            Logger.Info("WebSocket 已釋放");
                         }
                     });
                 }
+                Logger.Info($"已釋放 {socketsToClose.Count} 個 WebSocket 連線");
 
                 // 停止 HttpListener
                 if (_httpListener != null && _httpListener.IsListening)

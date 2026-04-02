@@ -18,4 +18,32 @@ export const scheduleTools: Tool[] = [
             required: ["name"],
         },
     },
+    {
+        name: "get_detail_components",
+        description: "取得詳圖元件實例（可依族群名稱篩選）。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                familyName: { type: "string", description: "族群名稱篩選" },
+            },
+        },
+    },
+    {
+        name: "sync_detail_component_numbers",
+        description: "自動同步詳圖元件的編號與名稱至所屬圖紙。",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "create_detail_component_type",
+        description: "建立新的詳圖元件類型（自動帶入圖紙編號與名稱）。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sheetNumber: { type: "string", description: "圖紙編號" },
+                detailName: { type: "string", description: "詳圖名稱" },
+                familyName: { type: "string", description: "族群名稱", default: "AE-圖號" },
+            },
+            required: ["sheetNumber", "detailName"],
+        },
+    },
 ];

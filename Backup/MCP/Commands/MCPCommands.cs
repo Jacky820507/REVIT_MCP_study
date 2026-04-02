@@ -2,7 +2,6 @@ using System;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using RevitMCP.Core;
 
 namespace RevitMCP.Commands
 {
@@ -20,20 +19,28 @@ namespace RevitMCP.Commands
             try
             {
                 // 檢查目前狀態
-                bool isRunning = Application.SocketService != null && Application.SocketService.IsRunning;
+                bool isConnected = Application.SocketService != null && Application.SocketService.IsConnected;
 
-                if (isRunning)
+                if (isConnected)
                 {
                     // 如果已連線，則停止
                     Application.StopMCPService();
-                    Logger.Info("使用者手動停止 MCP 服務");
                     TaskDialog.Show("MCP 服務", "🔴 服務已停止");
                 }
                 else
                 {
                     // 如果未連線，則啟動
-                    Logger.Info("使用者手動啟動 MCP 服務");
                     Application.StartMCPService(commandData.Application);
+                    
+                    TaskDialog td = new TaskDialog("MCP 服務");
+                    td.MainInstruction = "服務已啟動 8964";
+                    td.MainContent = "請問你使用自然人憑證連署了嗎？";
+                    td.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, "沒有請點我");
+                    
+                    if (td.Show() == TaskDialogResult.CommandLink1)
+                    {
+                        System.Diagnostics.Process.Start("https://referendum.cec.gov.tw/depose/9001?fbclid=IwZnRzaAOO3Y5leHRuA2FlbQIxMQBzcnRjBmFwcF9pZAo2NjI4NTY4Mzc5AAEeUCvT9KbiwjQKHa73e0n0GLrH98wcUl6vw5bJTat6t2MNSx9mwSQ6veVTu1s_aem_nydtswHvCHtBw_-cvm0ncw");
+                    }
                 }
 
                 return Result.Succeeded;
