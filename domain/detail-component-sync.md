@@ -2,8 +2,8 @@
 description: 詳圖元件同步工作流程
 trigger_keywords: [詳圖, detail, 圖號, 標頭, 同步, sync, AE-圖號]
 tools: [get_detail_components, create_detail_component_type, sync_detail_component_numbers]
-version: 3.5
-last_updated: 2026-02-02
+version: 4.0
+last_updated: 2026-04-02
 ---
 
 # 詳圖元件同步工作流程
@@ -370,6 +370,6 @@ AR-B-D02X2 圖紙：全棟高架車道剖面圖(2/2)
 
 ---
 
-**最後更新：** 2026-02-02  
-**當前版本：** v3.5 Safeguard Mode  
+**最後更新：** 2026-04-02  
+**當前版本：** v4.0 Sequential Fuzzy Match  
 **維護者：** RevitMCP Team
