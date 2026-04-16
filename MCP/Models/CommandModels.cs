@@ -1,4 +1,5 @@
 using System;
+using Newtonsoft.Json;
 
 namespace RevitMCP.Models
 {
@@ -11,16 +12,19 @@ namespace RevitMCP.Models
         /// <summary>
         /// 命令名稱
         /// </summary>
+        [JsonProperty("method")]
         public string CommandName { get; set; }
 
         /// <summary>
         /// 命令參數（JSON 字串）
         /// </summary>
+        [JsonProperty("params")]
         public object Parameters { get; set; }
 
         /// <summary>
         /// 請求 ID（用於追蹤回應）
         /// </summary>
+        [JsonProperty("id")]
         public string RequestId { get; set; }
     }
 

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\RevitMCP\\MCP\\RevitMCP.csproj": {}
+    "e:\\RevitMCP\\MCP\\RevitMCP.csproj": {}
   },
   "projects": {
-    "E:\\RevitMCP\\MCP\\RevitMCP.csproj": {
+    "e:\\RevitMCP\\MCP\\RevitMCP.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+        "projectUniqueName": "e:\\RevitMCP\\MCP\\RevitMCP.csproj",
         "projectName": "RevitMCP",
-        "projectPath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+        "projectPath": "e:\\RevitMCP\\MCP\\RevitMCP.csproj",
         "packagesPath": "C:\\Users\\09044\\.nuget\\packages\\",
-        "outputPath": "E:\\RevitMCP\\MCP\\obj\\",
+        "outputPath": "e:\\RevitMCP\\MCP\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\09044\\AppData\\Roaming\\NuGet\\NuGet.Config"

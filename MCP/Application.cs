@@ -174,29 +174,38 @@ namespace RevitMCP
         /// <summary>
         /// 處理接收到的命令
         /// </summary>
-        private static async void OnCommandReceived(object sender, Models.RevitCommandRequest request)
+        private static async void OnCommandReceived(object sender, Models.CommandReceivedEventArgs e)
         {
+            var request = e.Request;
+            var socket = e.SourceSocket;
+
+            if (request == null)
+            {
+                Logger.Error("[Socket] 收到空的請求物件，可能反序列化失敗。");
+                return;
+            }
+
             // 使用外部事件在 Revit UI 執行緒執行命令
             ExternalEventManager.Instance.ExecuteCommand((uiApp) =>
             {
                 try
                 {
-                    var executor = new CommandExecutor(uiApp  );
+                    var executor = new CommandExecutor(uiApp);
                     var response = executor.ExecuteCommand(request);
 
                     // 發送回應
-                    _socketService?.SendResponseAsync(response).ConfigureAwait(false);
+                    _socketService?.SendResponseAsync(socket, response).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     var errorResponse = new Models.RevitCommandResponse
                     {
                         Success = false,
-                        Error = ex.Message,
+                        Error = ex.ToString(),
                         RequestId = request.RequestId
                     };
 
-                    _socketService?.SendResponseAsync(errorResponse).ConfigureAwait(false);
+                    _socketService?.SendResponseAsync(socket, errorResponse).ConfigureAwait(false);
                 }
             });
         }

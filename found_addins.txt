@@ -1,0 +1,2 @@
+C:\ProgramData\Autodesk\Revit\Addins\2020\RevitMCP.2020.addin
+C:\Users\09044\AppData\Roaming\Autodesk\Revit\Addins\2020\RevitMCP.addin

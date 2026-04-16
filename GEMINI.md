@@ -126,5 +126,77 @@
 #### 學習心得
 - **範例驅動開發**：在開發前要求使用者提供明確的「輸入(LevelName) -> 輸出(Number)」範例，能大幅減少 Regex 除錯的時間。
 - **分群容差調優**：不同類型的 BIM 物件（停車格 vs 房間）對空間排序的容差容忍度不同，應將其參數化開放給使用者調整。
-- **資料結構陷阱**：在使用 `returnFields` 優化查詢效能時，務必確認回傳值的 JSON 結構是否發生變化，避免在批次處理時讀到 `undefined`。
+---
 
+### 2026-04-08: RC 智慧填滿區域 (Smart Fill) 與 WebSocket 通訊優化經驗
+
+#### 技術要點
+- **幾何指紋比對 (Fingerprinting)**：
+  - 為了實現「僅在模型變動時更新」的智慧更新功能，計算了剖切面 `CurveLoop` 的指紋：`{重心X, 重心Y, 總面積 (Shoelace 法)}`。
+  - 將精度設定為 0.3mm (0.001 ft)，在執行時與現有帶有 `RC_AUTO` 標記的 FilledRegion 比對，成功達成「無變動即 Skip」的效能。
+- **標記保護機制 (Tagging)**：藉由在 `Comments` 參數寫入 `RC_AUTO` 字串，區分「自動產出」與「手動繪製」內容，確保自動化流程不會誤刪使用者的手動標註。
+- **後端解析策略 (Server-side Parsing)**：
+  - 為了處理大規模圖紙批量任務，將「圖紙 -> 視埠 -> 視圖 ID」的解析邏輯移至 C# 端。
+  - **優點**：避免 JS 端透過 WebSocket 傳送龐大的 Viewport 物件集合，降低延遲並解決傳輸封包過大的問題。
+
+#### 執行成效
+- 成功為兩張圖紙的 4 個剖面視圖產出 162 個 RC 貼紙。
+- 第二次重複執行時，系統能在 2 秒內偵測到無幾何變更並自動跳過。
+
+#### 學習心得
+- **型別匹配陷阱 (WebSocket ID Mismatch)**：
+  - **現象**：腳本發送指令後 Revit 已執行完畢，但 JS 端 Promise 永遠不 resolve (Timeout)。
+  - **根因**：JS `Date.now()` 產生的是 `number`，而 C# 端 `RevitCommandRequest.RequestId` 宣告為 `string`。雖然 JSON 傳輸沒問題，但回傳比對時 `(response.id === request.id)` 因 `3 !== "3"` 而失敗。
+  - **解決方案**：JS 端發送前強制轉型為 `String(Date.now())`。
+- **指紋偵測的邊界**：對於極其複雜的幾何（如非常小的碎邊），指紋比對能大幅降低 CPU 負擔與 Transaction 同步時間。
+
+---
+
+### 2026-04-13: 叢屬視圖銜接線 (Matchlines) 自動化與 2020 舊版相容性經驗
+
+#### 技術要點
+- **裁切幾何拓撲 (Matchline Logic)**：
+  - 核心邏輯在於計算兩組 `CropBox` 的重疊區域中心。
+  - 對於水平交界與垂直交界，需動態旋轉文字標註。
+- **Revit 2020 屬性缺失陷阱**：
+  - **現象**：寫入 `Comments` 標記 (`MATCHLINE_AUTO`) 後，第二次執行卻無法偵測到舊物件，導致標註重疊。
+  - **根因**：Revit 2020 的 `TextNote` 與 `DetailCurve` (細部線) 預設不具備 `Comments` (註解) 參數。
+  - **解決方案**：
+    - 文字：改用 `Text` 內容模糊比對關鍵字（如「銜接線」）。
+    - 線條：改用 `GraphicsStyle.Name` (線型名稱) 進行批量篩選清理。
+- **文字視覺對齊 (Visual Centering)**：
+  - 設定 `TextNoteOptions.VerticalAlignment = VerticalTextAlignment.Middle` 與 `HorizontalAlignment.Center`。
+  - 偏移量調整為 `1.2 ft` (約 36cm)，比預設的 1.5ft 更貼合線條且不顯擁擠。
+
+#### 執行成效
+- 成功在 Revit 2020 環境下實作了具備「自我清理」功能的銜接線工具。
+- 一次性清理了 8 組因舊版標記失效而殘留的孤兒文字，並重建乾淨的圖面。
+
+#### 學習心得
+- **API 版本差異預檢**：在開發跨版本工具時，不能假設 `ALL_MODEL_INSTANCE_COMMENTS` 永遠存在。針對標註類物件，應優先建立基於「內容」或「樣式名」的備用清理邏輯。
+- **部署路徑正確性**：若發現修改程式碼後 Revit 表現無變化，優先檢查 `.addin` 指向的 DLL 路徑是否被舊版檔案佔據，或是否漏掉了版本子資料夾 (`\2020\RevitMCP\`)。
+
+---
+
+### 2026-04-13: Socket 衝突與 HTTP.sys PID 4 孤兒連線處理經驗
+
+#### 問題背景
+在執行 B1F 銜接線佈署時，MCP Server 啟動後持續顯示 `Waiting for Revit Plugin...`。手動連線測試顯示 `CONNECTED`，但標準工具指令卻無法與 Revit 通訊。
+
+#### 根本原因
+- **HTTP.sys 核心佔用 (PID 4)**：C# 端使用 `HttpListener`。當 Revit 異常關閉或未正確呼叫 `Stop()` 時，Windows 核心驅動程序 `HTTP.sys` 會代為持有該埠（Port 8964）的監聽權，並在 `netstat` 中顯示由 PID 4 (System) 佔用。
+- **Node.js 綁定失敗**：Node.js 若嘗試啟動一個新的 HTTP Server 在同一個 Port，會因 `EADDRINUSE` 錯誤（或在 Windows 上靜默掛起）而無法正確接收來自插件的請求。
+
+#### 解決方案
+- **清理 URL ACL**：使用管理員權限執行 `netsh http delete urlacl url=http://localhost:8964/` 以清除孤兒綁定。
+- **重啟連線三部曲**： 
+  1. 結束所有 Node 殭屍進程。
+  2. 重啟 Revit MCP 服務。
+  3. 使用具備「連線偵測」功能的專屬腳本（如 `research_d02_sheets.cjs`）進行即時驗證。
+
+#### 學習心得
+- **PID 4 並非真正佔用**：在 Windows 上看到 PID 4 佔用 Port 通常代表這是「核心級標記」，必須透過 `netsh` 或重啟 `http` 服務處理。
+- **工具鏈隔離**：自動化指令若掛起，應優先使用「最小 WebSocket Ping」腳本測試通訊層，排除業務邏輯干擾。
+- **母視圖 ID 驗證**：在大型專案中，母視圖 ID 可能隨模型更新變動。執行腳本前實施「自動化視圖映射查詢」比人工指定 ID 更穩健。
+
+---

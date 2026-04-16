@@ -1,0 +1,142 @@
+{
+  "changed": [
+    {
+      "Id": 12002049,
+      "Name": "防水閘板詳圖",
+      "Current": "ARS-D09011-1",
+      "Target": "ARS-D09012"
+    },
+    {
+      "Id": 10870024,
+      "Name": "防煙捲簾及捲門詳圖",
+      "Current": "ARS-D09012",
+      "Target": "ARS-D09013"
+    },
+    {
+      "Id": 10870029,
+      "Name": "防煙垂壁詳圖",
+      "Current": "ARS-D09013",
+      "Target": "ARS-D09014"
+    },
+    {
+      "Id": 10903171,
+      "Name": "輕隔間詳圖(一)",
+      "Current": "ARS-D09014",
+      "Target": "ARS-D09015"
+    },
+    {
+      "Id": 10870034,
+      "Name": "輕隔間詳圖(二)",
+      "Current": "ARS-D09015",
+      "Target": "ARS-D09016"
+    },
+    {
+      "Id": 10870039,
+      "Name": "輕隔間詳圖(三)",
+      "Current": "ARS-D09016",
+      "Target": "ARS-D09017"
+    },
+    {
+      "Id": 12002067,
+      "Name": "單面濕式灌漿輕隔間牆",
+      "Current": "ARS-D09016-1",
+      "Target": "ARS-D09018"
+    },
+    {
+      "Id": 12002073,
+      "Name": "雙面濕式灌漿輕隔間牆",
+      "Current": "ARS-D09016-2",
+      "Target": "ARS-D09019"
+    },
+    {
+      "Id": 10870044,
+      "Name": "屋頂、隔間、窗框防水詳圖",
+      "Current": "ARS-D09017",
+      "Target": "ARS-D09020"
+    },
+    {
+      "Id": 10870049,
+      "Name": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "Current": "ARS-D09018",
+      "Target": "ARS-D09021"
+    },
+    {
+      "Id": 10870054,
+      "Name": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "Current": "ARS-D09019",
+      "Target": "ARS-D09022"
+    },
+    {
+      "Id": 12002058,
+      "Name": "扶手欄杆詳圖(一)",
+      "Current": "ARS-D09019-1",
+      "Target": "ARS-D09023"
+    },
+    {
+      "Id": 10870059,
+      "Name": "鋁合金高架地板及防颱百葉詳圖",
+      "Current": "ARS-D09020",
+      "Target": "ARS-D09024"
+    },
+    {
+      "Id": 10870064,
+      "Name": "陰井、排水溝、淺溝、水箱人孔詳圖",
+      "Current": "ARS-D09021",
+      "Target": "ARS-D09025"
+    },
+    {
+      "Id": 8094351,
+      "Name": "側排詳圖",
+      "Current": "ARS-D09022",
+      "Target": "ARS-D09026"
+    },
+    {
+      "Id": 10870069,
+      "Name": "防火被覆、門檻詳圖",
+      "Current": "ARS-D09023",
+      "Target": "ARS-D09027"
+    },
+    {
+      "Id": 10870074,
+      "Name": "停車場設施詳圖",
+      "Current": "ARS-D09024",
+      "Target": "ARS-D09028"
+    },
+    {
+      "Id": 10870079,
+      "Name": "指標系統詳圖(一)",
+      "Current": "ARS-D09025",
+      "Target": "ARS-D09029"
+    },
+    {
+      "Id": 10870084,
+      "Name": "指標系統詳圖(二)",
+      "Current": "ARS-D09026",
+      "Target": "ARS-D09030"
+    },
+    {
+      "Id": 10870089,
+      "Name": "指標系統詳圖(三)",
+      "Current": "ARS-D09027",
+      "Target": "ARS-D09031"
+    },
+    {
+      "Id": 10870094,
+      "Name": "指標系統詳圖(四)",
+      "Current": "ARS-D09028",
+      "Target": "ARS-D09032"
+    },
+    {
+      "Id": 10870372,
+      "Name": "鋼浪板屋頂詳圖",
+      "Current": "ARS-D09029",
+      "Target": "ARS-D09033"
+    },
+    {
+      "Id": 10870378,
+      "Name": "排煙蹲座、接水盤詳圖",
+      "Current": "ARS-D09030",
+      "Target": "ARS-D09034"
+    }
+  ]
+}

@@ -67,8 +67,19 @@ namespace RevitMCP.Core
                 var parameters = request.Parameters as JObject ?? new JObject();
                 object result = null;
 
+                if (string.IsNullOrEmpty(request.CommandName))
+                {
+                    throw new ArgumentException("請求中的命令名稱 (CommandName/method) 不可為空或無法辨識。請檢查 JSON 欄位格式。");
+                }
+
+                Logger.Info($"[Executor] 收到指令: {request.CommandName.ToLower()}");
+
                 switch (request.CommandName.ToLower())
                 {
+                    case "ping":
+                        result = Ping(parameters);
+                        break;
+
                     case "create_wall":
                         result = CreateWall(parameters);
                         break;
@@ -138,6 +149,18 @@ namespace RevitMCP.Core
                         result = GetAllViews(parameters);
                         break;
                     
+                    case "get_element_location":
+                        result = GetElementLocation(parameters);
+                        break;
+
+                    case "rename_element":
+                        result = RenameElement(parameters);
+                        break;
+
+                    case "measure_clearance":
+                        result = MeasureClearance(parameters);
+                        break;
+
                     case "get_active_view":
                         result = GetActiveView();
                         break;
@@ -284,6 +307,25 @@ namespace RevitMCP.Core
                     case "export_smoke_review_excel":
                         result = ExportSmokeReviewExcel(parameters);
                         break;
+                    
+                    // === 視覺遮罩網底繪製 ===
+                    case "create_rc_filled_region":
+                        result = CreateRCFilledRegion(parameters);
+                        break;
+                    case "batch_create_rc_filled_region":
+                        result = BatchCreateRCFilledRegions(parameters);
+                        break;
+
+                    // === 切圖界線模組 ===
+                    case "create_dependent_view_matchlines":
+                        result = CreateDependentViewMatchlines(parameters);
+                        break;
+                    case "detect_sheet_matchlines":
+                        result = DetectSheetMatchlines(parameters);
+                        break;
+                    case "get_line_styles":
+                        result = GetLineStyles(parameters);
+                        break;
 
                     default:
                         throw new NotImplementedException($"未實作的命令: {request.CommandName}");
@@ -301,10 +343,21 @@ namespace RevitMCP.Core
                 return new RevitCommandResponse
                 {
                     Success = false,
-                    Error = ex.Message,
+                    Error = ex.ToString(),
                     RequestId = request.RequestId
                 };
             }
+        }
+
+        private object Ping(JObject parameters)
+        {
+            return new
+            {
+                Status = "pong",
+                Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                Assembly = System.Reflection.Assembly.GetExecutingAssembly().Location,
+                Developer = "Antigravity Debugger"
+            };
         }
 
         #region 命令實作
@@ -518,7 +571,8 @@ namespace RevitMCP.Core
                     throw new Exception("找不到樓板類型");
                 }
 
-                // 建立 CurveLoop (Revit 2022+ 使用)
+#if REVIT2022_OR_GREATER
+                // 使用 Floor.Create (適用於 Revit 2022+)
                 CurveLoop curveLoop = new CurveLoop();
                 for (int i = 0; i < points.Count; i++)
                 {
@@ -526,9 +580,18 @@ namespace RevitMCP.Core
                     XYZ end = points[(i + 1) % points.Count];
                     curveLoop.Append(Line.CreateBound(start, end));
                 }
-
-                // 使用 Floor.Create (適用於 Revit 2022+)
                 Floor floor = Floor.Create(doc, new List<CurveLoop> { curveLoop }, floorType.Id, level.Id);
+#else
+                // 使用 NewFloor (適用於 Revit 2020)
+                CurveArray curveArray = new CurveArray();
+                for (int i = 0; i < points.Count; i++)
+                {
+                    XYZ start = points[i];
+                    XYZ end = points[(i + 1) % points.Count];
+                    curveArray.Append(Line.CreateBound(start, points[(i + 1) % points.Count]));
+                }
+                Floor floor = doc.Create.NewFloor(curveArray, floorType, level, false);
+#endif
 
                 trans.Commit();
 
@@ -2411,8 +2474,13 @@ namespace RevitMCP.Core
                         isNumeric = true;
                         double val = (p.StorageType == StorageType.Double) ? p.AsDouble() : p.AsInteger();
                         
-                        // 轉換為 mm (如果適用，Revit 2024 寫法)
+                        // 轉換為 mm (如果適用)
+#if REVIT2024_OR_GREATER
                         if (p.Definition.GetDataType() == SpecTypeId.Length) val *= 304.8;
+#else
+                        // Revit 2020 預設為 Internal Units (feet)，長度類需轉 mm
+                        if (p.Definition.ParameterType == ParameterType.Length) val *= 304.8;
+#endif
                         
                         if (val < min) min = val;
                         if (val > max) max = val;

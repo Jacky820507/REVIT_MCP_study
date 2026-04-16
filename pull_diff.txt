@@ -1,0 +1,3057 @@
+diff --git a/.claude/commands/domain.md b/.claude/commands/domain.md
+index b5d89a1..829f1c2 100644
+--- a/.claude/commands/domain.md
++++ b/.claude/commands/domain.md
+@@ -36,3 +36,34 @@ version: 1.0
+ 
+ - 儲存前先檢查 `domain/` 是否已有類似流程，避免重複
+ - 步驟必須可被其他 AI 直接執行，不得含有模糊描述
++
++## 完成後：這份 Domain 需要變成 Skill 嗎？
++
++**大多數情況下：不需要。**
++
++Domain 和 Skill 是不同角色，不是不同等級：
++
++| | Domain | Skill |
++|---|--------|-------|
++| 角色 | **知識**（法規、SOP、步驟） | **編排**（何時觸發、用什麼順序呼叫哪些工具） |
++| 載入方式 | 被 Skill 引用時才讀取 | metadata 永遠常駐在 system prompt |
++| 比喻 | 食譜內頁的步驟說明 | 食譜目錄的索引標籤 |
++
++**Domain 不是 Skill 的半成品。** 一份好的 Domain 被現有的 Skill 引用就夠了，不需要自己變成 Skill。
++
++例如：`domain/corridor-analysis-protocol.md` 被 `/fire-safety-check` Skill 引用，
++它不需要自己變成一個獨立的 `/corridor-analysis` Skill。
++
++### 什麼時候才需要升級？
++
++只有當這份 Domain **無法被任何現有 Skill 覆蓋**，而且同時滿足以下條件時，才考慮升級：
++
++1. **獨立觸發需求**：使用者會直接用這個主題的關鍵字開啟工作，而不是作為其他流程的子步驟
++2. **特定工具編排**：涉及 3 個以上 MCP Tools 的特定調用順序，且這個順序不在任何現有 Skill 裡
++3. **重複使用**：同樣的流程在不同對話中被重複使用 3 次以上
++
++如果你不確定，**預設答案是「不升級」**。Domain 作為知識被引用就已經在發揮作用了。
++
++### 如果確定要升級
++
++使用 `skill-creator` plugin，並提供 `domain/skill-authoring-standard.md` 作為專案規範參照。
+diff --git a/.claude/skills/build-revit/SKILL.md b/.claude/skills/build-revit/SKILL.md
+index a500213..413ab47 100644
+--- a/.claude/skills/build-revit/SKILL.md
++++ b/.claude/skills/build-revit/SKILL.md
+@@ -28,7 +28,7 @@ Build the RevitMCP Revit add-in using the unified `RevitMCP.csproj` and `Nice3po
+ 1. Locate `MCP/RevitMCP.csproj` by searching from the current directory upward
+ 2. `cd` into the `MCP/` directory
+ 3. Run: `dotnet build -c Release.R{YY} RevitMCP.csproj` where `{YY}` = last 2 digits (e.g. 2024 → R24, 2022 → R22)
+-4. After build, check that `MCP/bin/Release/RevitMCP.dll` was created or updated
++4. After build, check that `MCP/bin/Release.R{YY}/RevitMCP.dll` was created or updated (e.g. `bin/Release.R24/RevitMCP.dll` for Revit 2024)
+ 5. Report: ✅ success with DLL file size and timestamp, then suggest running `/deploy-addon --version {version}` as next step
+ 
+ ## When Using `--all`
+@@ -52,4 +52,4 @@ Show a summary table at the end:
+ | `RevitMCP.csproj` not found | Tell user to run from project root, not a subdirectory |
+ | `dotnet` not installed | Show: "Install .NET SDK: https://dot.net" |
+ | Build failed | Show last 30 lines of build output, highlight the error line |
+-| `bin/Release/RevitMCP.dll` missing after success | Warn user, show full build output |
++| `bin/Release.R{YY}/RevitMCP.dll` missing after success | Warn user, show full build output |
+diff --git a/.claude/skills/deploy-addon/SKILL.md b/.claude/skills/deploy-addon/SKILL.md
+index 58d05c2..a7f16d5 100644
+--- a/.claude/skills/deploy-addon/SKILL.md
++++ b/.claude/skills/deploy-addon/SKILL.md
+@@ -15,7 +15,8 @@ First, detect the OS. If **not Windows**, do not attempt deployment. Instead, sh
+     Run the following command on your Windows machine:
+ 
+     $version = "2024"  # change to your Revit version
+-    Copy-Item "MCP\bin\Release\RevitMCP.dll" `
++    $yy = $version.Substring(2)  # "24"
++    Copy-Item "MCP\bin\Release.R$yy\RevitMCP.dll" `
+       "$env:APPDATA\Autodesk\Revit\Addins\$version\RevitMCP\" -Force
+ ```
+ 
+@@ -38,7 +39,7 @@ Then stop.
+ 
+ ## Steps
+ 
+-1. **Check source DLL**: Verify `MCP/bin/Release/RevitMCP.dll` exists.
++1. **Check source DLL**: Verify `MCP/bin/Release.R{YY}/RevitMCP.dll` exists (where `{YY}` matches the target version, e.g. `Release.R24` for Revit 2024).
+    - If missing → tell user to run `/build-revit --version {version}` first, then stop.
+ 
+ 2. **Warn before copy**: Display:
+@@ -55,7 +56,8 @@ Then stop.
+ 
+ 4. **Copy DLL**:
+    ```powershell
+-   Copy-Item "MCP\bin\Release\RevitMCP.dll" "$env:APPDATA\Autodesk\Revit\Addins\{version}\RevitMCP\" -Force
++   $yy = "{version}".Substring(2)  # e.g. "2024" → "24"
++   Copy-Item "MCP\bin\Release.R$yy\RevitMCP.dll" "$env:APPDATA\Autodesk\Revit\Addins\{version}\RevitMCP\" -Force
+    ```
+ 
+ 5. **Verify**: Confirm the file exists at the target path and show its timestamp.
+diff --git a/.claude/skills/stair-hidden-line/SKILL.md b/.claude/skills/stair-hidden-line/SKILL.md
+index 6ba69c3..9ab8fa1 100644
+--- a/.claude/skills/stair-hidden-line/SKILL.md
++++ b/.claude/skills/stair-hidden-line/SKILL.md
+@@ -46,6 +46,12 @@ description: "剖面隱藏樓梯可視化：在剖面視圖中，自動為被側
+ 
+ 使用 `get_line_styles` 確認你的專案中的正確 ID。
+ 
++## Troubleshooting & Performance
++
++> [!IMPORTANT]
++> **WebSocket Timeout (30s)**: 如果發現 `get_active_view` 或執行指令時卡住 30 秒才報錯，通常是因為多個 AI 用戶端（如 VS Code + Terminal）同時連入。
++> **Fix**: 確保 RevitMCP 增益集已更新至並行連線版本（2026-03-20 更新），這能處理多重請求路由而不造成衝突。
++
+ ## Reference
+ 
+-詳見 `domain/stair-hidden-line-workflow.md`。
++詳見 `domain/stair-hidden-line-workflow.md` 與 `GEMINI.md` (2026-03-20)。
+diff --git a/.github/copilot-instructions.md b/.github/copilot-instructions.md
+index 30e4d26..7dcfb24 100644
+--- a/.github/copilot-instructions.md
++++ b/.github/copilot-instructions.md
+@@ -10,3 +10,5 @@ Key points:
+ - Skills: `.claude/skills/*/SKILL.md` (Agent Skills open standard)
+ - Domain: `domain/*.md` (BIM compliance workflows)
+ - DO NOT create version-specific .csproj or .addin files
++- DO NOT write raw WebSocket scripts to talk to Revit — use the existing MCP tools (`MCP-Server/src/tools/*.ts`)
++- DO NOT bypass the MCP Server tool chain — use Skills (`.claude/skills/`) and Domain (`domain/`) for BIM workflows
+diff --git a/CLAUDE.md b/CLAUDE.md
+index b44f04f..5c8704b 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -49,7 +49,7 @@ dotnet build -c Release.R{YY} RevitMCP.csproj   # YY = 22/23/24/25/26
+ 
+ After building, close Revit, then deploy DLL:
+ ```powershell
+-Copy-Item "bin/Release/RevitMCP.dll" "$env:APPDATA\Autodesk\Revit\Addins\{version}\RevitMCP\" -Force
++Copy-Item "bin/Release.R{YY}/RevitMCP.dll" "$env:APPDATA\Autodesk\Revit\Addins\{version}\RevitMCP\" -Force
+ ```
+ Or use `scripts/install-addon.ps1` for automated install.
+ Or use Skills: `/build-revit` and `/deploy-addon`
+@@ -85,6 +85,37 @@ npm run watch    # tsc --watch (development)
+ - **Config storage**: `%AppData%\RevitMCP\config.json` (default port 8964)
+ - **Logs**: `%AppData%\RevitMCP\Logs\RevitMCP_YYYYMMDD.log`
+ 
++## AI Guard Rails — MCP 工具鏈使用規則
++
++> **本專案已有完整的 Revit 通訊工具鏈，任何 AI 模型都 MUST 遵守以下規則。**
++
++### 禁止事項
++- **DO NOT** 自行撰寫 WebSocket 腳本連接 `ws://localhost:8964`
++- **DO NOT** 自行組裝 JSON 封包（`CommandName`/`Parameters`/`RequestId`）
++- **DO NOT** 繞過 MCP Server 直接與 Revit Add-in 通訊
++- **DO NOT** 用 `node -e` 或臨時腳本複製 MCP Server 已有的功能
++
++### 正確做法
++1. **查詢/操作 Revit** → 使用 MCP Server 已註冊的 tools（定義在 `MCP-Server/src/tools/*.ts`）
++2. **執行 BIM 合規流程** → 使用 Skills（`.claude/skills/*/SKILL.md`），它們會編排正確的 tool 呼叫順序
++3. **查閱法規知識** → 讀取 Domain 文件（`domain/*.md`）
++
++### 為什麼
++MCP Server 已封裝 50+ 個 tools，處理了格式轉換、錯誤處理、重連機制。自寫腳本會：
++- 繞過既有的錯誤處理與格式驗證
++- 產生 process 掛起（如自動重連導致無法退出）
++- 與 Revit API 的 PascalCase 欄位不一致而靜默失敗
++- 重造輪子，浪費使用者時間
++
++## Domain vs Skill 架構原則
++
++本專案的 Domain 和 Skill 是不同角色，不是不同等級：
++- **Domain**（`domain/*.md`）= 知識（法規、SOP、步驟）。被 Skill 引用時才載入。**任何老師都能寫。**
++- **Skill**（`.claude/skills/`）= 編排（何時觸發、什麼順序呼叫哪些工具）。metadata 永遠常駐。
++
++BIM 的知識是共用的——防火法規同時被消防檢查、走廊分析、建築合規引用。Domain 獨立於 Skill 存在，是因為**知識不應該重複在每個 Skill 裡**。這是對 Anthropic 官方模型（references 放在 Skill 內部）的合理特化。
++
++> **不要把每個 Domain 都升級成 Skill。** Domain 被引用就已經在發揮作用了。詳見 `domain/skill-authoring-standard.md`。
+ ## Skills（18 個）
+ 
+ Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`。
+@@ -144,7 +175,7 @@ All AI clients connect to the MCP Server via the same config format. Replace `{a
+ | MCP Server connection failed | Wrong path or not built | Check absolute path in config, re-run `npm run build`, verify port 8964 free |
+ | Commands not responding in Revit | Revit UI thread issue | Ensure `ExternalEventManager` is used; check `%AppData%\RevitMCP\Logs\` |
+ 
+-## Domain Knowledge & Workflow Files（25 個）
++## Domain Knowledge & Workflow Files（26 個）
+ 
+ The `domain/` directory contains BIM compliance workflows that AI must consult before executing related tasks:
+ 
+@@ -185,13 +216,14 @@ These rules ensure unified multi-version deployment. **Any AI assistant or code
+ - **DO NOT** create nested `MCP/MCP/` directories
+ - **DO NOT** hardcode absolute DLL paths in `.addin` files (use relative `RevitMCP.dll` only)
+ - **DO NOT** modify `<AddInId>` in `RevitMCP.addin` — duplicates cause Revit to load twice
++- **DO NOT** set `<DeployAddin>true</DeployAddin>` in csproj — Nice3point SDK 會自動產生 `RevitMCP.{version}.addin`，與手動的 `RevitMCP.addin` 衝突導致「重複 AddInId」錯誤
+ 
+ ### Required Architecture
+ - **ONE** `.csproj`: `MCP/RevitMCP.csproj` (Nice3point.Revit.Sdk, supports 2022-2026)
+ - **ONE** `.addin`: `MCP/RevitMCP.addin` (version-agnostic, relative assembly path)
+ - **ONE** install script: `scripts/install-addon.ps1` (primary, all versions)
+ - Build config format: `Release.R{YY}` where YY = 22/23/24/25/26
+-- `<DeployAddin>true</DeployAddin>` in csproj auto-deploys to correct Addins folder
++- `<DeployAddin>false</DeployAddin>` — 部署由 `setup.ps1` 或 `/deploy-addon` skill 負責
+ 
+ ### Multi-Version Build
+ ```
+@@ -201,7 +233,7 @@ dotnet build -c Release.R24 → Revit 2024 (.NET Framework 4.8)
+ dotnet build -c Release.R25 → Revit 2025 (.NET 8, ElementId=long)
+ dotnet build -c Release.R26 → Revit 2026 (.NET 8, ElementId=long)
+ ```
+-All output to `bin\Release\RevitMCP.dll`. Each build overwrites the previous. Deploy immediately after building for the target version.
++Output to `bin\Release.R{YY}\RevitMCP.dll` (e.g. `bin\Release.R24\RevitMCP.dll`). Each version outputs to its own directory. Deploy using `setup.ps1` or `/deploy-addon` skill（`<DeployAddin>` 已關閉，不會自動部署）。
+ 
+ ### Adding New Tools/Commands Safely
+ When adding new `IExternalCommand` in `Commands/` folder:
+diff --git a/GEMINI.md b/GEMINI.md
+index ceb2b98..d6f5531 100644
+--- a/GEMINI.md
++++ b/GEMINI.md
+@@ -1 +1,130 @@
+-CLAUDE.md
++# Revit MCP 學習經驗錄 (GEMINI.md)
++
++## 🔬 智慧提煉
++
++### 2026-03-20: WebSocket 多重連線並行修復與效能優化
++
++#### 問題背景
++在執行樓梯隱藏線腳本時，發現 `get_active_view` 指令反應極慢（固定等待 30 秒），導致自動化流程卡住。原本以為是 Revit API 運算速度問題，但經測試發現內部執行僅需 0.1 秒。
++
++#### 根本原因
++- **Socket 獨佔問題**：C# 端的 `SocketService.cs` 原始設計僅能保存「最後一個連線」的 WebSocket 物件 (`private WebSocket _webSocket;`)。
++- **路由失效**：當同時開啟多個 AI 用戶端（如 VS Code Copilot 與 Terminal 腳本）時，最新的連線會搶走唯一的回應通道。舊的連線送出請求後，Revit 會誤將結果傳回給「最新的那個 Socket」，導致原請求端進入 30 秒等待超時。
++
++#### 解決方案
++- **引入 ConcurrentDictionary**：在 `SocketService` 中改用 `ConcurrentDictionary<WebSocket, byte>` 管理所有活動中的連線。
++- **精準路由**：建立 `CommandReceivedEventArgs` 包含 `SourceSocket`，讓指令在跨執行緒 (ExternalEvent) 執行完畢後，能依照請求來源精準回傳結果。
++- **異步關閉**：優化服務停止時的 Socket 關閉邏輯，確保每個連線都獲得正確釋放。
++
++#### 學習心得
++- **分散式診斷**：當指令「變慢」時，應先區分是運算慢還是通訊慢（超時）。
++- **多用戶端考量**：開發 WebSocket Server 時必須考慮多重連線並行，避免全域變數鎖死單一通道。
++
++---
++
++### 2026-03-20: 組合式樓梯剖面隱藏線繪製經驗
++
++#### 技術要點
++- **Assembled Stairs 識別**：需偵測 `stringer` (側板) 存在的樓梯。
++- **幾幾何過濾**：
++  - 排除距離剖切面太近 (0.05ft) 的前景。
++  - 僅繪製第一排踏階 (2.5ft 容差)，避免背景樓梯線條堆疊造成視覺混亂。
++- **線條樣式**：使用 `虛線(極密)` (ID: 11911982) 能提供最佳的細部圖解效果。
++---
++
++### 2026-03-20: 大量圖紙批次建立 (CSV to Sheets) 經驗
++
++#### 技術要點
++- **編碼處理**：台灣專案 CSV 常見為 `Big5` (950)，在 Node.js 中需先轉為 `UTF-8` 或使用 `iconv-lite` 讀取，避免中文字元落入 Revit 時變亂碼。
++- **批次傳輸策略**：
++  - 即使 MCP 工具沒限制，建議以 50-100 張為一批次 (Batch) 執行。
++  - 優點：降低 WebSocket 單次傳輸過大 (64KB 限制) 的風險，且在發生錯誤時較容易定位受影響的圖紙範圍。
++- **腳本化控制**：直接使用 Node.js `spawn` MCP Server 並透過 `stdin/stdout` 發送 JSON-RPC 指令，比手動在 AI 對話中分批更穩定且快速。
++
++#### 執行成效
++- 成功一次性匯入 370 張圖紙，耗時約 30 秒，成功率 100%。
++
++#### 學習心得
++- **自動化工具鏈**：當對話窗口的資料截斷 (Truncation) 影響操作時，應果斷改用本地腳本 (Node.js/Python) 驅動 MCP 工具。
++
++---
++
++### 2026-03-20: 詳圖項目批次同步 (v4.0 順序執行與模糊比對) 經驗
++
++#### 技術要點
++- **順序執行策略 (Sequential Async)**：當批次執行大量寫入指令（如 74 條重新命名與參數修改）時，使用 `async/await` 等待每個回應，而非發送後即關閉。這能確保 Revit 處理隊列的穩定性，避免指令在傳輸過程中遺失。
++- **加強型名稱比對 (Fuzzy Matching)**：
++  - **正規化處理**：移除括號 `（）()`, 空格, 及關鍵字 `詳圖`。
++  - **全形轉半形**：確保數字與英文字母在比對前統一格式。
++  - **包含比對**：不僅比對完全相等，也支援 `contains` 比對，增加容錯率。
++- **圖紙號碼格式不一處理**：圖紙編號存在 `ARB-D09001` 與 `AR-B-D0901` 多種格式時，優先使用「名稱比對」回填正式圖號。
++
++#### 執行成效
++- 成功將 37 個 `TEST-D09xxx` 類型轉變為 `ARB-D09xxx` 格式，成功率達 97%。
++
++#### 學習心得
++- **日誌即診斷**：透過記錄 `Normalized Name` 狀態，快速發現括號差異。
++- **數據完整性勝過速度**：對於 BIM 數據，穩定的順序更新優於盲目的批次發送。
++
++---
++
++### 2026-03-24: 停車格自動編號 (座標提取與 SpecTypeId 修復) 經驗
++
++#### 技術要點
++- **自定義 GetElementLocation**：Revit MCP 預設的 `query_elements` 與 `get_element_info` 主要回傳參數字串，缺乏幾何座標。本次在 `CommandExecutor.cs` 中新增 `get_element_location` 指令，能直接提取 `LocationPoint` 或 `BoundingBox.Center`，解決排序所需的座標來源問題。
++- **Revit API SpecTypeId 修正**：在舊版 Compatibility code 中發現 `SpecTypeId.Int` 會導致編譯錯誤（為巢狀類別而非常數），正確用法應為 `SpecTypeId.Int.Integer` (Revit 2022+)。
++- **模糊分類策略**：由於 `query_elements` 回傳的 JSON 結構簡化，需將元素 `Name`（類型名稱）納入分類關鍵字比對範圍，而非僅依賴獨立的 `TypeName` 欄位。
++- **Y 軸容差分群排序**：使用 `Math.abs(y1 - y2) > tolerance` 進行分群，能有效處理大面積停車場「同排」車位的邏輯判定。
++
++#### 執行成效
++- 成功在「物流中心」專案中，一次性為 1011 個（汽車、機車、大客車）停車格完成分類與排序座標提取，模擬測試 (dry-run) 指標 100% 正確。
++
++#### 學習心得
++- **核心工具擴充**：當現有工具無法滿足幾何運算需求時，直接修改 C# 端新增基礎 API (如 Location 提取) 比在 JS 端進行複雜的參數解析更穩定。
++- **編譯鎖定處理**：部署新版 DLL 前務必確認 Revit 已完全關閉，避免檔案鎖定導致更新失敗。
++
++---
++
++### 2026-03-25: 製圖填滿圖案轉模型圖案 (Drafting to Model Pattern) 經驗
++
++#### 技術要點
++- **動態物理縮放精準度**：製圖樣式 (Drafting) 在 Revit 中是以「圖紙毫米」定義間距，而模型樣式 (Model) 是以「真實物理尺寸 (ft/mm)」定義。轉換時必須精準乘上 `ActiveView.Scale`，才能確保視覺效果不變。
++- **FillGrid 深度處理**：單純修改 `FillPattern.Target` 無效，必須提取 `GetFillGrids()` 集合，並對每個 Grid 的 `Offset`, `Shift` 以及 `GetSegments()` 回傳的線段數值進行比例縮放後，重新建立 `FillPatternElement`。
++- **Revit 命名禁忌**：Revit 元素名稱絕對禁止包含冒號 `:`。在自動化命名（如標註比例 `1:50`）時，務必替換為 `_` 或 `-`，否則會觸發 `InternalException`。
++
++#### 執行成效
++- 成功解決圖紙旋轉時，填滿區域（Filled Region）紋理不跟著旋轉的問題。
++- **進階版 (2026-03-25)**：實作全自動視埠掃描，並增加 **群組保護機制**。成功一次性處理了 17 個旋轉視圖（包含 `ARB-D04011` 等採用 `VIEWPORT_ATTR_ORIENTATION_ON_SHEET` 隱藏旋轉的視窗），替換了 209 個物件，並安全略過 27 個群組內物件，確保不破壞使用者群組結構。
++- 新增 `check_viewports_rotation` 診斷工具，可全面排查被 Revit 內部參數隱藏的旋轉屬性。
++- 測試於 Revit 2020 環境，成功將選取的圖面標註轉換並維持視覺尺寸 100% 一致。
++
++
++#### 學習心得
++- **視覺一致性守則**：自動化轉換工具的首要任務是「不改變現有視覺結果」。透過 API 直接讀取視圖比例並回算物理尺寸，是達成此目標的關鍵路徑。
++- **屬性隱藏陷阱**：Revit 中 `Viewport.Rotation` 列舉有時會失效（回報 None），必須額外檢查 `BuiltInParameter.VIEWPORT_ATTR_ORIENTATION_ON_SHEET` 才能確保偵測 100% 準確。
++- **群組完整性高於自動化**：在大型專案中，不應為了方便而強制解除群組。實作 `GroupId` 檢查並給予使用者選擇權（或略過處理）是更專業的 BIM 自動化做法。
++- **異常防禦**：針對命名規範（禁止冒號）進行防禦性程式設計，能大幅減少部署後的除錯時間。
++
++---
++
++---
++
++### 2026-03-26: 房間自動編號 (幾何排序與 Regex 前綴) 經驗
++
++#### 技術要點
++- **多元樓層前綴映射**：使用 `LevelName.match()` 進行 Regex 解析，實現了跨類型樓層的統一編碼：
++  - 地下層：`B1F` -> `B101` (`B` + `\d+` + `seqNum`)
++  - 地上層：`1F` -> `F101` (`F` + `\d+` + `seqNum`)
++  - 屋突層：`R1F` -> `R101` (`R` + `\d+` + `seqNum`)
++- **Y-X 機械排序穩定性**：設定 `TOLERANCE = 3000mm` 作為房間分群標準。相較於停車格 (1500mm)，房間中心點的 Y 軸波動較大，需更大的容差以確保「同一橫排」的判定符合人類閱讀習慣。
++- **參數名動態適配**：Revit 預設參數名在不同語系下可能為 `Number` 或 `編號`。腳本實作了 `get_category_fields` 預檢機制，自動偵測並選用正確的參數 Internal Name 進行寫入。
++- **Batch 模式通訊優化**：在全專案查詢 (`--all`) 時，發現 `returnFields` 回傳的資料會展開在物件根層級而非 `parameters` 子物件中。腳本已實作相容性判斷，確保跨模式執行的穩定性。
++
++#### 執行成效
++- 成功為 B1F 至 R1F 建立了一套一致且可預測的編號腳本，並一次性處理了全專案 239 個房間。
++
++#### 學習心得
++- **範例驅動開發**：在開發前要求使用者提供明確的「輸入(LevelName) -> 輸出(Number)」範例，能大幅減少 Regex 除錯的時間。
++- **分群容差調優**：不同類型的 BIM 物件（停車格 vs 房間）對空間排序的容差容忍度不同，應將其參數化開放給使用者調整。
++- **資料結構陷阱**：在使用 `returnFields` 優化查詢效能時，務必確認回傳值的 JSON 結構是否發生變化，避免在批次處理時讀到 `undefined`。
++
+diff --git a/MCP-Server/src/tools/base-tools.ts b/MCP-Server/src/tools/base-tools.ts
+index 1c764ef..eccb5fd 100644
+--- a/MCP-Server/src/tools/base-tools.ts
++++ b/MCP-Server/src/tools/base-tools.ts
+@@ -52,6 +52,18 @@ export const baseTools: Tool[] = [
+             required: ["elementId", "parameterName", "value"],
+         },
+     },
++    {
++        name: "rename_element",
++        description: "修改 Revit 元素的名稱。",
++        inputSchema: {
++            type: "object",
++            properties: {
++                elementId: { type: "number", description: "元素 ID" },
++                newName: { type: "string", description: "新的名稱" },
++            },
++            required: ["elementId", "newName"],
++        },
++    },
+     {
+         name: "get_selected_elements",
+         description: "取得使用者目前在 Revit 中選取的所有元素的基本資訊（ID、名稱、品類）。",
+diff --git a/MCP-Server/src/tools/visualization-tools.ts b/MCP-Server/src/tools/visualization-tools.ts
+index 5c21a1e..1d536c6 100644
+--- a/MCP-Server/src/tools/visualization-tools.ts
++++ b/MCP-Server/src/tools/visualization-tools.ts
+@@ -169,4 +169,42 @@ export const visualizationTools: Tool[] = [
+         description: "追蹤樓梯幾何，並自動偵測被遮擋的踏步邊緣（用於剖面圖隱藏線視覺化）。",
+         inputSchema: { type: "object", properties: {} },
+     },
++    {
++        name: "convert_drafting_to_model_pattern",
++        description: "將使用者在目前的 Revit 視圖中「選取」的填滿範圍 (Filled Region)，從「製圖樣式」安全地轉換為「模型樣式」。會自動依據視圖比例尺放大/縮小線段間距。",
++        inputSchema: { type: "object", properties: {} },
++    },
++    {
++        name: "auto_convert_rotated_viewport_patterns",
++        description: "自動掃描全專案中「圖紙上有旋轉過」的剖面圖，並將其中的製圖樣式填滿範圍全部轉換為模型樣式。",
++        inputSchema: { type: "object", properties: {} },
++    },
++    {
++        name: "measure_clearance",
++        description: "測量指定起點向特定方向的淨空高度（射線偵測）。可以用於檢查停車位、走道等的淨空高度。",
++        inputSchema: {
++            type: "object",
++            properties: {
++                origin: {
++                    type: "object",
++                    properties: {
++                        x: { type: "number", description: "起點 X (mm)" },
++                        y: { type: "number", description: "起點 Y (mm)" },
++                        z: { type: "number", description: "起點 Z (mm)" },
++                    },
++                    required: ["x", "y", "z"],
++                },
++                direction: {
++                    type: "object",
++                    properties: {
++                        x: { type: "number", description: "方向 X" },
++                        y: { type: "number", description: "方向 Y" },
++                        z: { type: "number", description: "方向 Z" },
++                    },
++                    required: ["x", "y", "z"],
++                },
++            },
++            required: ["origin", "direction"],
++        },
++    },
+ ];
+diff --git a/MCP-Server/src/tools/wall-tools.ts b/MCP-Server/src/tools/wall-tools.ts
+index 344563d..9f8cae9 100644
+--- a/MCP-Server/src/tools/wall-tools.ts
++++ b/MCP-Server/src/tools/wall-tools.ts
+@@ -87,6 +87,18 @@ export const wallTools: Tool[] = [
+             required: ["viewId", "startX", "startY", "endX", "endY"],
+         },
+     },
++    {
++        name: "create_corridor_dimension",
++        description: "走廊寬度標註 — 自動偵測房間邊界的平行牆對，建立精確的牆到牆尺寸標註。回傳每個區段的實測寬度與合規判定。",
++        inputSchema: {
++            type: "object",
++            properties: {
++                roomId: { type: "number", description: "走廊房間的 Element ID" },
++                viewId: { type: "number", description: "要建立標註的平面視圖 ID" },
++            },
++            required: ["roomId", "viewId"],
++        },
++    },
+     {
+         name: "query_walls_by_location",
+         description: "查詢指定座標附近的牆體，回傳牆厚度、位置線與牆面座標。",
+diff --git a/MCP/Application.cs b/MCP/Application.cs
+index baa3ac9..5a1322b 100644
+--- a/MCP/Application.cs
++++ b/MCP/Application.cs
+@@ -154,8 +154,10 @@ namespace RevitMCP
+         /// <summary>
+         /// 處理接收到的命令
+         /// </summary>
+-        private static async void OnCommandReceived(object sender, Models.RevitCommandRequest request)
++        private static async void OnCommandReceived(object sender, Models.CommandReceivedEventArgs e)
+         {
++            var request = e.Request;
++            var socket = e.SourceSocket;
+             // 使用外部事件在 Revit UI 執行緒執行命令
+             ExternalEventManager.Instance.ExecuteCommand((uiApp) =>
+             {
+@@ -164,8 +166,8 @@ namespace RevitMCP
+                     var executor = new CommandExecutor(uiApp  );
+                     var response = executor.ExecuteCommand(request);
+ 
+-                    // 發送回應
+-                    _socketService?.SendResponseAsync(response).ConfigureAwait(false);
++                    // 發送回應給發出請求的 Socket
++                    _socketService?.SendResponseAsync(socket, response).ConfigureAwait(false);
+                 }
+                 catch (Exception ex)
+                 {
+@@ -176,7 +178,7 @@ namespace RevitMCP
+                         RequestId = request.RequestId
+                     };
+ 
+-                    _socketService?.SendResponseAsync(errorResponse).ConfigureAwait(false);
++                    _socketService?.SendResponseAsync(socket, errorResponse).ConfigureAwait(false);
+                 }
+             });
+         }
+diff --git a/MCP/Commands/MCPCommands.cs b/MCP/Commands/MCPCommands.cs
+index 8aa33bd..e2c5ed7 100644
+--- a/MCP/Commands/MCPCommands.cs
++++ b/MCP/Commands/MCPCommands.cs
+@@ -20,9 +20,9 @@ namespace RevitMCP.Commands
+             try
+             {
+                 // 檢查目前狀態
+-                bool isConnected = Application.SocketService != null && Application.SocketService.IsConnected;
++                bool isRunning = Application.SocketService != null && Application.SocketService.IsRunning;
+ 
+-                if (isConnected)
++                if (isRunning)
+                 {
+                     // 如果已連線，則停止
+                     Application.StopMCPService();
+diff --git a/MCP/Core/CommandExecutor.cs b/MCP/Core/CommandExecutor.cs
+index 4a78585..69df1a2 100644
+--- a/MCP/Core/CommandExecutor.cs
++++ b/MCP/Core/CommandExecutor.cs
+@@ -90,6 +90,10 @@ namespace RevitMCP.Core
+                         result = GetElementInfo(parameters);
+                         break;
+                     
++                    case "get_element_location":
++                        result = GetElementLocation(parameters);
++                        break;
++
+                     case "delete_element":
+                         result = DeleteElement(parameters);
+                         break;
+@@ -98,6 +102,10 @@ namespace RevitMCP.Core
+                         result = ModifyElementParameter(parameters);
+                         break;
+                     
++                    case "rename_element":
++                        result = RenameElement(parameters);
++                        break;
++                    
+                     case "create_door":
+                         result = CreateDoor(parameters);
+                         break;
+@@ -201,6 +209,18 @@ namespace RevitMCP.Core
+                     case "clear_element_override":
+                         result = ClearElementOverride(parameters);
+                         break;
++
++                    case "convert_drafting_to_model_pattern":
++                        result = ConvertDraftingToModelPattern();
++                        break;
++                    
++                    case "auto_convert_rotated_viewport_patterns":
++                        result = AutoConvertRotatedViewportPatterns();
++                        break;
++
++                    case "check_viewports_rotation":
++                        result = CheckViewportsRotation();
++                        break;
+                     
+                     case "unjoin_wall_joins":
+                         result = UnjoinWallJoins(parameters);
+@@ -352,6 +372,15 @@ namespace RevitMCP.Core
+                     case "get_solid_fill_pattern_id":
+                         result = GetSolidFillPatternId(_uiApp.ActiveUIDocument.Document).GetIdValue();
+                         break;
++
++                    case "get_group_members":
++                        result = GetGroupMembers(parameters);
++                        break;
++
++                    case "measure_clearance":
++                        result = MeasureClearance(parameters);
++                        break;
++
+                      default:
+                         throw new NotImplementedException($"未實作的命令: {request.CommandName}");
+                 }
+@@ -517,6 +546,169 @@ namespace RevitMCP.Core
+             };
+         }
+ 
++        /// <summary>
++        /// 取得元素位置資訊
++        /// </summary>
++        private object GetElementLocation(JObject parameters)
++        {
++            Document doc = _uiApp.ActiveUIDocument.Document;
++            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
++
++            Element element = doc.GetElement(new ElementId(elementId));
++            if (element == null)
++            {
++                throw new Exception($"找不到元素 ID: {elementId}");
++            }
++
++            object locationData = null;
++            if (element.Location is LocationPoint locPt)
++            {
++                locationData = new
++                {
++                    Type = "Point",
++                    X = Math.Round(locPt.Point.X * 304.8, 2),
++                    Y = Math.Round(locPt.Point.Y * 304.8, 2),
++                    Z = Math.Round(locPt.Point.Z * 304.8, 2)
++                };
++            }
++            else if (element.Location is LocationCurve locCurve)
++            {
++                var pt0 = locCurve.Curve.GetEndPoint(0);
++                var pt1 = locCurve.Curve.GetEndPoint(1);
++                locationData = new
++                {
++                    Type = "Curve",
++                    StartX = Math.Round(pt0.X * 304.8, 2),
++                    StartY = Math.Round(pt0.Y * 304.8, 2),
++                    EndX = Math.Round(pt1.X * 304.8, 2),
++                    EndY = Math.Round(pt1.Y * 304.8, 2)
++                };
++            }
++
++            object boundingBoxData = null;
++            BoundingBoxXYZ bbox = element.get_BoundingBox(null);
++            if (bbox != null)
++            {
++                boundingBoxData = new
++                {
++                    Min = new { X = Math.Round(bbox.Min.X * 304.8, 2), Y = Math.Round(bbox.Min.Y * 304.8, 2), Z = Math.Round(bbox.Min.Z * 304.8, 2) },
++                    Max = new { X = Math.Round(bbox.Max.X * 304.8, 2), Y = Math.Round(bbox.Max.Y * 304.8, 2), Z = Math.Round(bbox.Max.Z * 304.8, 2) },
++                    Center = new { 
++                        X = Math.Round((bbox.Min.X + bbox.Max.X) / 2 * 304.8, 2), 
++                        Y = Math.Round((bbox.Min.Y + bbox.Max.Y) / 2 * 304.8, 2), 
++                        Z = Math.Round((bbox.Min.Z + bbox.Max.Z) / 2 * 304.8, 2) 
++                    }
++                };
++            }
++
++            return new
++            {
++                ElementId = element.Id.GetIdValue(),
++                Name = element.Name,
++                Location = locationData,
++                BoundingBox = boundingBoxData
++            };
++        }
++
++        /// <summary>
++        /// 取得群組成員資訊（ID、類別、位置）
++        /// </summary>
++        private object GetGroupMembers(JObject parameters)
++        {
++            Document doc = _uiApp.ActiveUIDocument.Document;
++            IdType groupId = parameters["groupId"]?.Value<IdType>() ?? 0;
++
++            Element element = doc.GetElement(new ElementId(groupId));
++            if (element == null)
++                throw new Exception($"找不到元素 ID: {groupId}");
++
++            Group group = element as Group;
++            if (group == null)
++                throw new Exception($"元素 ID: {groupId} 不是群組");
++
++            var memberIds = group.GetMemberIds();
++            var members = new List<object>();
++
++            foreach (var memberId in memberIds)
++            {
++                Element member = doc.GetElement(memberId);
++                if (member == null) continue;
++
++                // 提取位置
++                object locationData = null;
++                if (member.Location is LocationPoint locPt)
++                {
++                    locationData = new
++                    {
++                        Type = "Point",
++                        X = Math.Round(locPt.Point.X * 304.8, 2),
++                        Y = Math.Round(locPt.Point.Y * 304.8, 2),
++                        Z = Math.Round(locPt.Point.Z * 304.8, 2)
++                    };
++                }
++                else if (member.Location is LocationCurve locCurve)
++                {
++                    var pt0 = locCurve.Curve.GetEndPoint(0);
++                    var pt1 = locCurve.Curve.GetEndPoint(1);
++                    locationData = new
++                    {
++                        Type = "Curve",
++                        StartX = Math.Round(pt0.X * 304.8, 2),
++                        StartY = Math.Round(pt0.Y * 304.8, 2),
++                        EndX = Math.Round(pt1.X * 304.8, 2),
++                        EndY = Math.Round(pt1.Y * 304.8, 2)
++                    };
++                }
++
++                // BoundingBox
++                object bboxData = null;
++                BoundingBoxXYZ bbox = member.get_BoundingBox(null);
++                if (bbox != null)
++                {
++                    bboxData = new
++                    {
++                        Min = new { X = Math.Round(bbox.Min.X * 304.8, 2), Y = Math.Round(bbox.Min.Y * 304.8, 2) },
++                        Max = new { X = Math.Round(bbox.Max.X * 304.8, 2), Y = Math.Round(bbox.Max.Y * 304.8, 2) },
++                        Center = new
++                        {
++                            X = Math.Round((bbox.Min.X + bbox.Max.X) / 2 * 304.8, 2),
++                            Y = Math.Round((bbox.Min.Y + bbox.Max.Y) / 2 * 304.8, 2)
++                        }
++                    };
++                }
++
++                members.Add(new
++                {
++                    ElementId = member.Id.GetIdValue(),
++                    Category = member.Category?.Name,
++                    Name = member.Name,
++                    Location = locationData,
++                    BoundingBox = bboxData
++                });
++            }
++
++            // 群組本身的 BoundingBox
++            object groupBbox = null;
++            BoundingBoxXYZ gBbox = group.get_BoundingBox(null);
++            if (gBbox != null)
++            {
++                groupBbox = new
++                {
++                    Min = new { X = Math.Round(gBbox.Min.X * 304.8, 2), Y = Math.Round(gBbox.Min.Y * 304.8, 2) },
++                    Max = new { X = Math.Round(gBbox.Max.X * 304.8, 2), Y = Math.Round(gBbox.Max.Y * 304.8, 2) }
++                };
++            }
++
++            return new
++            {
++                GroupId = group.Id.GetIdValue(),
++                GroupName = group.Name,
++                MemberCount = members.Count,
++                Members = members,
++                GroupBoundingBox = groupBbox
++            };
++        }
++
+         /// <summary>
+         /// 刪除元素
+         /// </summary>
+@@ -643,6 +835,10 @@ namespace RevitMCP.Core
+ 
+             using (Transaction trans = new Transaction(doc, "修改參數"))
+             {
++                FailureHandlingOptions options = trans.GetFailureHandlingOptions();
++                options.SetFailuresPreprocessor(new DismissWarningsPreprocessor());
++                trans.SetFailureHandlingOptions(options);
++
+                 trans.Start();
+ 
+                 Parameter param = element.LookupParameter(parameterName);
+@@ -691,6 +887,41 @@ namespace RevitMCP.Core
+             }
+         }
+ 
++        /// <summary>
++        /// 重新命名元素
++        /// </summary>
++        private object RenameElement(JObject parameters)
++        {
++            Document doc = _uiApp.ActiveUIDocument.Document;
++            IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
++            string newName = parameters["newName"]?.Value<string>();
++
++            if (string.IsNullOrEmpty(newName))
++            {
++                throw new Exception("請指定新名稱");
++            }
++
++            Element element = doc.GetElement(new ElementId(elementId));
++            if (element == null)
++            {
++                throw new Exception($"找不到元素 ID: {elementId}");
++            }
++
++            using (Transaction trans = new Transaction(doc, "重新命名元素"))
++            {
++                trans.Start();
++                element.Name = newName;
++                trans.Commit();
++
++                return new
++                {
++                    ElementId = elementId,
++                    NewName = newName,
++                    Message = $"成功重新命名元素"
++                };
++            }
++        }
++
+         /// <summary>
+         /// 建立門
+         /// </summary>
+@@ -4102,8 +4333,68 @@ namespace RevitMCP.Core
+         }
+ 
+         /// <summary>
+-        /// 同步所有詳圖元件的編號與名稱
++        /// 測量淨空高度 (射線偵測)
+         /// </summary>
++        private object MeasureClearance(JObject parameters)
++        {
++            Document doc = _uiApp.ActiveUIDocument.Document;
++            
++            double originX = parameters["origin"]?["x"]?.Value<double>() ?? 0;
++            double originY = parameters["origin"]?["y"]?.Value<double>() ?? 0;
++            double originZ = parameters["origin"]?["z"]?.Value<double>() ?? 0;
++            double dirX = parameters["direction"]?["x"]?.Value<double>() ?? 0;
++            double dirY = parameters["direction"]?["y"]?.Value<double>() ?? 0;
++            double dirZ = parameters["direction"]?["z"]?.Value<double>() ?? 1;
++
++            XYZ origin = new XYZ(originX / 304.8, originY / 304.8, originZ / 304.8);
++            XYZ direction = new XYZ(dirX, dirY, dirZ).Normalize();
++
++            // 尋找一個 3D 視圖用於 ReferenceIntersector
++            View3D view3D = new FilteredElementCollector(doc)
++                .OfClass(typeof(View3D))
++                .Cast<View3D>()
++                .FirstOrDefault(v => !v.IsTemplate);
++
++            if (view3D == null) throw new Exception("專案中必須至少有一個 3D 視圖才能執行射線偵測");
++
++            // 障礙物品類過濾
++            List<BuiltInCategory> categories = new List<BuiltInCategory> { 
++                BuiltInCategory.OST_Walls, 
++                BuiltInCategory.OST_StructuralColumns, 
++                BuiltInCategory.OST_Columns,
++                BuiltInCategory.OST_StructuralFraming,
++                BuiltInCategory.OST_Ceilings,
++                BuiltInCategory.OST_Floors,
++                BuiltInCategory.OST_DuctCurves,
++                BuiltInCategory.OST_PipeCurves,
++                BuiltInCategory.OST_MechanicalEquipment,
++                BuiltInCategory.OST_CableTray,
++                BuiltInCategory.OST_Conduit,
++                BuiltInCategory.OST_GenericModel
++            };
++            
++            ElementFilter filter = new ElementMulticategoryFilter(categories);
++            ReferenceIntersector intersector = new ReferenceIntersector(filter, FindReferenceTarget.Element, view3D);
++            
++            #if !REVIT2020 && !REVIT2021 && !REVIT2022
++            intersector.FindReferencesInRevitLinks = true;
++            #endif
++
++            ReferenceWithContext hit = intersector.FindNearest(origin, direction);
++
++            if (hit == null)
++            {
++                return new { Success = true, Hit = false, Distance = -1.0 };
++            }
++
++            return new {
++                Success = true,
++                Hit = true,
++                Distance = hit.Proximity * 304.8, // 轉回 mm
++                ElementId = hit.GetReference().ElementId.GetIdValue()
++            };
++        }
++
+         private object SyncDetailComponentNumbers()
+         {
+             Document doc = _uiApp.ActiveUIDocument.Document;
+@@ -4154,7 +4445,15 @@ namespace RevitMCP.Core
+ 
+             if (baseSymbol == null) throw new Exception($"找不到基礎族群: {familyName}");
+ 
+-            string newTypeName = $"{sheetNumber}-{detailName}";
++            // 尋找對應的圖紙名稱
++            ViewSheet sheet = new FilteredElementCollector(doc)
++                .OfClass(typeof(ViewSheet))
++                .Cast<ViewSheet>()
++                .FirstOrDefault(s => s.SheetNumber == sheetNumber);
++                
++            string sheetName = sheet != null ? sheet.Name : "未知圖說名稱";
++
++            string newTypeName = $"{sheetNumber}-{sheetName}-{detailName}";
+             
+             using (Transaction trans = new Transaction(doc, "建立詳圖類型"))
+             {
+@@ -4162,10 +4461,13 @@ namespace RevitMCP.Core
+                 FamilySymbol newSymbol = baseSymbol.Duplicate(newTypeName) as FamilySymbol;
+                 
+                 Parameter pNum = newSymbol.LookupParameter("詳圖圖號");
+-                if (pNum != null) pNum.Set(sheetNumber);
++                if (pNum != null && !pNum.IsReadOnly) pNum.Set(sheetNumber);
+                 
+                 Parameter pName = newSymbol.LookupParameter("圖說名稱");
+-                if (pName != null) pName.Set(detailName);
++                if (pName != null && !pName.IsReadOnly) pName.Set(sheetName);
++
++                Parameter pDetail = newSymbol.LookupParameter("詳圖名稱");
++                if (pDetail != null && !pDetail.IsReadOnly) pDetail.Set(detailName);
+ 
+                 trans.Commit();
+                 return new { Id = newSymbol.Id.GetIdValue(), Name = newTypeName };
+@@ -4189,11 +4491,18 @@ namespace RevitMCP.Core
+                 symbols = symbols.Where(s => s.FamilyName.Contains(filter) || s.Name.Contains(filter));
+             }
+ 
+-            return symbols.Select(s => new {
+-                Id = s.Id.GetIdValue(),
+-                FamilyName = s.FamilyName,
+-                Name = s.Name,
+-                Category = s.Category.Name
++            return symbols.Select(s => {
++                string detailName = "";
++                Parameter p = s.LookupParameter("詳圖名稱");
++                if (p != null && p.HasValue) detailName = p.AsString();
++
++                return new {
++                    Id = s.Id.GetIdValue(),
++                    FamilyName = s.FamilyName,
++                    Name = s.Name,
++                    Category = s.Category.Name,
++                    DetailName = detailName
++                };
+             }).ToList();
+         }
+ 
+@@ -4231,6 +4540,25 @@ namespace RevitMCP.Core
+             public string OriginalBase;
+         }
+ 
++        /// <summary>
++        /// 自動關閉警告視窗的處理器 (例如群組變更警告)
++        /// </summary>
++        private class DismissWarningsPreprocessor : Autodesk.Revit.DB.IFailuresPreprocessor
++        {
++            public FailureProcessingResult PreprocessFailures(FailuresAccessor failuresAccessor)
++            {
++                IList<FailureMessageAccessor> failures = failuresAccessor.GetFailureMessages();
++                foreach (FailureMessageAccessor f in failures)
++                {
++                    if (f.GetSeverity() == FailureSeverity.Warning)
++                    {
++                        failuresAccessor.DeleteWarning(f);
++                    }
++                }
++                return FailureProcessingResult.Continue;
++            }
++        }
++
+         #endregion
+ 
+     }
+diff --git a/MCP/Core/Commands/CommandExecutor.CurtainWall.cs b/MCP/Core/Commands/CommandExecutor.CurtainWall.cs
+index 185d367..55a9710 100644
+--- a/MCP/Core/Commands/CommandExecutor.CurtainWall.cs
++++ b/MCP/Core/Commands/CommandExecutor.CurtainWall.cs
+@@ -373,7 +373,7 @@ namespace RevitMCP.Core
+                 throw new Exception("此牆不是帷幕牆");
+ 
+             // 建立類型映射字典
+-            var typeMappingDict = new Dictionary<string, int>();
++            var typeMappingDict = new Dictionary<string, IdType>();
+             if (typeMapping != null)
+             {
+                 foreach (var prop in typeMapping.Properties())
+@@ -465,7 +465,7 @@ namespace RevitMCP.Core
+                         if (!panelGrid.ContainsKey((r, c))) continue;
+ 
+                         // 取得目標類型 ID
+-                        int targetTypeId = 0;
++                        IdType targetTypeId = 0;
+                         var cellValue = rowData[c];
+ 
+                         if (cellValue.Type == JTokenType.String)
+diff --git a/MCP/Core/RevitCompatibility.cs b/MCP/Core/RevitCompatibility.cs
+index 7cc5f26..76d198e 100644
+--- a/MCP/Core/RevitCompatibility.cs
++++ b/MCP/Core/RevitCompatibility.cs
+@@ -48,7 +48,7 @@ namespace RevitMCP.Core
+ #if REVIT2022_OR_GREATER
+             var dataType = def.GetDataType();
+             return dataType == Autodesk.Revit.DB.SpecTypeId.Number || 
+-                   dataType == Autodesk.Revit.DB.SpecTypeId.Int ||
++                   dataType == Autodesk.Revit.DB.SpecTypeId.Int.Integer ||
+                    dataType == Autodesk.Revit.DB.SpecTypeId.Length;
+ #else
+             return def.ParameterType == ParameterType.Number || 
+diff --git a/MCP/Core/SocketService.cs b/MCP/Core/SocketService.cs
+index dd89c70..c7ff59a 100644
+--- a/MCP/Core/SocketService.cs
++++ b/MCP/Core/SocketService.cs
+@@ -11,6 +11,7 @@ using Autodesk.Revit.UI;
+ using Newtonsoft.Json;
+ using RevitMCP.Configuration;
+ using RevitMCP.Models;
++using System.Collections.Concurrent;
+ 
+ namespace RevitMCP.Core
+ {
+@@ -20,14 +21,13 @@ namespace RevitMCP.Core
+     public class SocketService
+     {
+         private HttpListener _httpListener;
+-        private WebSocket _webSocket;
++        private ConcurrentDictionary<WebSocket, byte> _activeSockets = new ConcurrentDictionary<WebSocket, byte>();
+         private bool _isRunning;
+         private readonly ServiceSettings _settings;
+         private CancellationTokenSource _cancellationTokenSource;
+ 
+-        public event EventHandler<RevitCommandRequest> CommandReceived;
++        public event EventHandler<CommandReceivedEventArgs> CommandReceived;
+         public bool IsRunning => _isRunning;
+-        public bool IsConnected => _webSocket != null && _webSocket.State == WebSocketState.Open;
+ 
+         public SocketService(ServiceSettings settings)
+         {
+@@ -106,12 +106,13 @@ namespace RevitMCP.Core
+                     if (context.Request.IsWebSocketRequest)
+                     {
+                         var wsContext = await context.AcceptWebSocketAsync(null);
+-                        _webSocket = wsContext.WebSocket;
++                        var socket = wsContext.WebSocket;
++                        _activeSockets.TryAdd(socket, 0);
+ 
+-                        Logger.Info("[Socket] MCP Server 已連線");
++                        Logger.Info($"[Socket] MCP Server 已連線 (目前連線數: {_activeSockets.Count})");
+ 
+                         // 在獨立任務中處理訊息，不要阻塞接受連線的迴圈
+-                        _ = Task.Run(async () => await ReceiveMessagesAsync(wsContext.WebSocket, cancellationToken));
++                        _ = Task.Run(async () => await ReceiveMessagesAsync(socket, cancellationToken));
+                     }
+                     else
+                     {
+@@ -134,25 +135,39 @@ namespace RevitMCP.Core
+         /// </summary>
+         private async Task ReceiveMessagesAsync(WebSocket socket, CancellationToken cancellationToken)
+         {
+-            var buffer = new byte[4096];
++            // 增大 buffer 以支援大型 JSON payload (如 560 條詳圖線 ≈ 50KB+)
++            var buffer = new byte[65536];
+ 
+             try
+             {
+                 while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+                 {
+-                    var result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+-
+-                    if (result.MessageType == WebSocketMessageType.Text)
+-                    {
+-                        string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+-                        Logger.Debug($"[Socket] 接收到訊息: {message}");
+-                        HandleMessage(message);
+-                    }
+-                    else if (result.MessageType == WebSocketMessageType.Close)
++                    // 使用 MemoryStream 累積分片資料，直到收完完整訊息
++                    using (var ms = new System.IO.MemoryStream())
+                     {
+-                        await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
+-                        Logger.Info("[Socket] MCP Server 已斷線");
+-                        break;
++                        WebSocketReceiveResult result;
++                        do
++                        {
++                            result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
++
++                            if (result.MessageType == WebSocketMessageType.Close)
++                            {
++                                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", cancellationToken);
++                                Logger.Info("[Socket] MCP Server 已斷線");
++                                _activeSockets.TryRemove(socket, out _);
++                                return;
++                            }
++
++                            ms.Write(buffer, 0, result.Count);
++                        }
++                        while (!result.EndOfMessage);
++
++                        if (result.MessageType == WebSocketMessageType.Text)
++                        {
++                            string message = Encoding.UTF8.GetString(ms.ToArray());
++                            Logger.Debug($"[Socket] 接收到訊息 ({ms.Length} bytes)");
++                            HandleMessage(socket, message);
++                        }
+                     }
+                 }
+             }
+@@ -170,13 +185,13 @@ namespace RevitMCP.Core
+         /// <summary>
+         /// 處理接收到的訊息
+         /// </summary>
+-        private void HandleMessage(string message)
++        private void HandleMessage(WebSocket socket, string message)
+         {
+             try
+             {
+                 var request = JsonConvert.DeserializeObject<RevitCommandRequest>(message);
+                 Logger.Info($"[Socket] 處理命令: {request.CommandName} (RequestId: {request.RequestId})");
+-                CommandReceived?.Invoke(this, request);
++                CommandReceived?.Invoke(this, new CommandReceivedEventArgs { Request = request, SourceSocket = socket });
+             }
+             catch (Exception ex)
+             {
+@@ -187,18 +202,19 @@ namespace RevitMCP.Core
+         /// <summary>
+         /// 發送回應
+         /// </summary>
+-        public async Task SendResponseAsync(RevitCommandResponse response)
++        public async Task SendResponseAsync(WebSocket targetSocket, RevitCommandResponse response)
+         {
+-            if (!IsConnected)
++            if (targetSocket == null || targetSocket.State != WebSocketState.Open)
+             {
+-                throw new InvalidOperationException("WebSocket 未連線");
++                Logger.Error($"[Socket] 發送回應用戶端已斷線 (RequestId: {response.RequestId})");
++                return;
+             }
+ 
+             try
+             {
+                 string json = JsonConvert.SerializeObject(response);
+                 byte[] bytes = Encoding.UTF8.GetBytes(json);
+-                await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
++                await targetSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                 Logger.Debug($"[Socket] 已發送回應 (RequestId: {response.RequestId})");
+             }
+             catch (Exception ex)
+@@ -223,12 +239,12 @@ namespace RevitMCP.Core
+                 // 先取消所有背景任務
+                 _cancellationTokenSource?.Cancel();
+ 
+-                // 處理 WebSocket 關閉 (不阻塞 UI 執行緒)
+-                if (_webSocket != null)
+-                {
+-                    var ws = _webSocket;
+-                    _webSocket = null; // 先斷開引用
++                // 處理所有 WebSocket 關閉 (不阻塞 UI 執行緒)
++                var socketsToClose = _activeSockets.Keys.ToList();
++                _activeSockets.Clear();
+ 
++                foreach (var ws in socketsToClose)
++                {
+                     Task.Run(async () =>
+                     {
+                         try
+@@ -249,10 +265,10 @@ namespace RevitMCP.Core
+                         finally
+                         {
+                             ws.Dispose();
+-                            Logger.Info("WebSocket 已釋放");
+                         }
+                     });
+                 }
++                Logger.Info($"已釋放 {socketsToClose.Count} 個 WebSocket 連線");
+ 
+                 // 停止 HttpListener
+                 if (_httpListener != null && _httpListener.IsListening)
+diff --git a/MCP/obj/RevitMCP.csproj.nuget.dgspec.json b/MCP/obj/RevitMCP.csproj.nuget.dgspec.json
+index c2fbe3d..0b197aa 100644
+--- a/MCP/obj/RevitMCP.csproj.nuget.dgspec.json
++++ b/MCP/obj/RevitMCP.csproj.nuget.dgspec.json
+@@ -17,14 +17,14 @@
+           "C:\\Users\\09044\\AppData\\Roaming\\NuGet\\NuGet.Config"
+         ],
+         "originalTargetFrameworks": [
+-          "net48"
++          "net47"
+         ],
+         "sources": {
+           "https://api.nuget.org/v3/index.json": {}
+         },
+         "frameworks": {
+-          "net48": {
+-            "targetAlias": "net48",
++          "net47": {
++            "targetAlias": "net47",
+             "projectReferences": {}
+           }
+         },
+@@ -40,8 +40,8 @@
+         }
+       },
+       "frameworks": {
+-        "net48": {
+-          "targetAlias": "net48",
++        "net47": {
++          "targetAlias": "net47",
+           "dependencies": {
+             "ClosedXML": {
+               "target": "Package",
+@@ -59,11 +59,11 @@
+             },
+             "Nice3point.Revit.Api.RevitAPI": {
+               "target": "Package",
+-              "version": "[2024.*, )"
++              "version": "[2020.*, )"
+             },
+             "Nice3point.Revit.Api.RevitAPIUI": {
+               "target": "Package",
+-              "version": "[2024.*, )"
++              "version": "[2020.*, )"
+             }
+           },
+           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.416\\RuntimeIdentifierGraph.json"
+diff --git a/MCP/obj/RevitMCP.csproj.nuget.g.targets b/MCP/obj/RevitMCP.csproj.nuget.g.targets
+index 8b17a42..f236900 100644
+--- a/MCP/obj/RevitMCP.csproj.nuget.g.targets
++++ b/MCP/obj/RevitMCP.csproj.nuget.g.targets
+@@ -1,6 +1,6 @@
+ ﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+ <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+-    <Import Project="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net48\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net48.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net48\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net48.targets')" />
++    <Import Project="$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net47\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net47.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.net47\1.0.3\build\Microsoft.NETFramework.ReferenceAssemblies.net47.targets')" />
+   </ImportGroup>
+ </Project>
+\ No newline at end of file
+diff --git a/MCP/obj/project.assets.json b/MCP/obj/project.assets.json
+index e59e297..3500dfb 100644
+--- a/MCP/obj/project.assets.json
++++ b/MCP/obj/project.assets.json
+@@ -1,7 +1,7 @@
+ {
+   "version": 3,
+   "targets": {
+-    ".NETFramework,Version=v4.8": {
++    ".NETFramework,Version=v4.7": {
+       "ClosedXML/0.102.3": {
+         "type": "package",
+         "dependencies": {
+@@ -74,13 +74,13 @@
+       "Microsoft.NETFramework.ReferenceAssemblies/1.0.3": {
+         "type": "package",
+         "dependencies": {
+-          "Microsoft.NETFramework.ReferenceAssemblies.net48": "1.0.3"
++          "Microsoft.NETFramework.ReferenceAssemblies.net47": "1.0.3"
+         }
+       },
+-      "Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3": {
++      "Microsoft.NETFramework.ReferenceAssemblies.net47/1.0.3": {
+         "type": "package",
+         "build": {
+-          "build/Microsoft.NETFramework.ReferenceAssemblies.net48.targets": {}
++          "build/Microsoft.NETFramework.ReferenceAssemblies.net47.targets": {}
+         }
+       },
+       "Newtonsoft.Json/13.0.3": {
+@@ -96,6 +96,22 @@
+           }
+         }
+       },
++      "Nice3point.Revit.Api.RevitAPI/2020.2.60": {
++        "type": "package",
++        "compile": {
++          "ref/net47/RevitAPI.dll": {
++            "related": ".xml"
++          }
++        }
++      },
++      "Nice3point.Revit.Api.RevitAPIUI/2020.2.60": {
++        "type": "package",
++        "compile": {
++          "ref/net47/RevitAPIUI.dll": {
++            "related": ".xml"
++          }
++        }
++      },
+       "SixLabors.Fonts/1.0.0": {
+         "type": "package",
+         "dependencies": {
+@@ -459,384 +475,331 @@
+         "microsoft.netframework.referenceassemblies.nuspec"
+       ]
+     },
+-    "Microsoft.NETFramework.ReferenceAssemblies.net48/1.0.3": {
+-      "sha512": "zMk4D+9zyiEWByyQ7oPImPN/Jhpj166Ky0Nlla4eXlNL8hI/BtSJsgR8Inldd4NNpIAH3oh8yym0W2DrhXdSLQ==",
++    "Microsoft.NETFramework.ReferenceAssemblies.net47/1.0.3": {
++      "sha512": "s2ik8oLVJHVcQPVNHq+X5UfpQP6RsvoixtWzuW2qZvYjRickfC70OXpCmEUgTxjWumS4qZfZ3ZGR1yH7ATc4Wg==",
+       "type": "package",
+-      "path": "microsoft.netframework.referenceassemblies.net48/1.0.3",
++      "path": "microsoft.netframework.referenceassemblies.net47/1.0.3",
+       "files": [
+         ".nupkg.metadata",
+         ".signature.p7s",
+-        "build/.NETFramework/v4.8/Accessibility.dll",
+-        "build/.NETFramework/v4.8/Accessibility.xml",
+-        "build/.NETFramework/v4.8/CustomMarshalers.dll",
+-        "build/.NETFramework/v4.8/CustomMarshalers.xml",
+-        "build/.NETFramework/v4.8/Facades/Microsoft.Win32.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.AppContext.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Collections.Concurrent.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Collections.NonGeneric.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Collections.Specialized.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Collections.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ComponentModel.Annotations.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ComponentModel.EventBasedAsync.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ComponentModel.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ComponentModel.TypeConverter.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ComponentModel.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Console.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Data.Common.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.Contracts.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.Debug.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.FileVersionInfo.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.Process.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.StackTrace.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.TextWriterTraceListener.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.Tools.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Diagnostics.TraceSource.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Drawing.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Dynamic.Runtime.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Globalization.Calendars.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Globalization.Extensions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Globalization.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.Compression.ZipFile.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.FileSystem.DriveInfo.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.FileSystem.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.FileSystem.Watcher.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.FileSystem.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.IsolatedStorage.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.MemoryMappedFiles.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.Pipes.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.UnmanagedMemoryStream.dll",
+-        "build/.NETFramework/v4.8/Facades/System.IO.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Linq.Expressions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Linq.Parallel.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Linq.Queryable.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Linq.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Http.Rtc.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.NameResolution.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.NetworkInformation.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Ping.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Requests.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Security.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.Sockets.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.WebHeaderCollection.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.WebSockets.Client.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Net.WebSockets.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ObjectModel.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.Emit.ILGeneration.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.Emit.Lightweight.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.Emit.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.Extensions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Reflection.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Resources.Reader.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Resources.ResourceManager.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Resources.Writer.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.CompilerServices.VisualC.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Extensions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Handles.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.InteropServices.RuntimeInformation.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.InteropServices.WindowsRuntime.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.InteropServices.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Numerics.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Serialization.Formatters.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Serialization.Json.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Serialization.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.Serialization.Xml.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Runtime.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Claims.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Cryptography.Algorithms.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Cryptography.Csp.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Cryptography.Encoding.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Cryptography.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Cryptography.X509Certificates.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.Principal.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Security.SecureString.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ServiceModel.Duplex.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ServiceModel.Http.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ServiceModel.NetTcp.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ServiceModel.Primitives.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ServiceModel.Security.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Text.Encoding.Extensions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Text.Encoding.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Text.RegularExpressions.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.Overlapped.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.Tasks.Parallel.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.Tasks.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.Thread.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.ThreadPool.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.Timer.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Threading.dll",
+-        "build/.NETFramework/v4.8/Facades/System.ValueTuple.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.ReaderWriter.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.XDocument.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.XPath.XDocument.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.XPath.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.XmlDocument.dll",
+-        "build/.NETFramework/v4.8/Facades/System.Xml.XmlSerializer.dll",
+-        "build/.NETFramework/v4.8/Facades/netstandard.dll",
+-        "build/.NETFramework/v4.8/ISymWrapper.dll",
+-        "build/.NETFramework/v4.8/ISymWrapper.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Activities.Build.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Activities.Build.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Conversion.v4.0.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Conversion.v4.0.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Engine.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Engine.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Framework.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Framework.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Tasks.v4.0.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Tasks.v4.0.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Utilities.v4.0.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.Utilities.v4.0.xml",
+-        "build/.NETFramework/v4.8/Microsoft.Build.dll",
+-        "build/.NETFramework/v4.8/Microsoft.Build.xml",
+-        "build/.NETFramework/v4.8/Microsoft.CSharp.dll",
+-        "build/.NETFramework/v4.8/Microsoft.CSharp.xml",
+-        "build/.NETFramework/v4.8/Microsoft.JScript.dll",
+-        "build/.NETFramework/v4.8/Microsoft.JScript.xml",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.Compatibility.Data.dll",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.Compatibility.Data.xml",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.Compatibility.dll",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.Compatibility.xml",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.dll",
+-        "build/.NETFramework/v4.8/Microsoft.VisualBasic.xml",
+-        "build/.NETFramework/v4.8/Microsoft.VisualC.STLCLR.dll",
+-        "build/.NETFramework/v4.8/Microsoft.VisualC.STLCLR.xml",
+-        "build/.NETFramework/v4.8/Microsoft.VisualC.dll",
+-        "build/.NETFramework/v4.8/Microsoft.VisualC.xml",
+-        "build/.NETFramework/v4.8/PermissionSets/FullTrust.xml",
+-        "build/.NETFramework/v4.8/PermissionSets/Internet.xml",
+-        "build/.NETFramework/v4.8/PermissionSets/LocalIntranet.xml",
+-        "build/.NETFramework/v4.8/PresentationBuildTasks.dll",
+-        "build/.NETFramework/v4.8/PresentationBuildTasks.xml",
+-        "build/.NETFramework/v4.8/PresentationCore.dll",
+-        "build/.NETFramework/v4.8/PresentationCore.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.Aero.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.Aero.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.Aero2.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.Aero2.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.AeroLite.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.AeroLite.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.Classic.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.Classic.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.Luna.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.Luna.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.Royale.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.Royale.xml",
+-        "build/.NETFramework/v4.8/PresentationFramework.dll",
+-        "build/.NETFramework/v4.8/PresentationFramework.xml",
+-        "build/.NETFramework/v4.8/ReachFramework.dll",
+-        "build/.NETFramework/v4.8/ReachFramework.xml",
+-        "build/.NETFramework/v4.8/RedistList/FrameworkList.xml",
+-        "build/.NETFramework/v4.8/System.Activities.Core.Presentation.dll",
+-        "build/.NETFramework/v4.8/System.Activities.Core.Presentation.xml",
+-        "build/.NETFramework/v4.8/System.Activities.DurableInstancing.dll",
+-        "build/.NETFramework/v4.8/System.Activities.DurableInstancing.xml",
+-        "build/.NETFramework/v4.8/System.Activities.Presentation.dll",
+-        "build/.NETFramework/v4.8/System.Activities.Presentation.xml",
+-        "build/.NETFramework/v4.8/System.Activities.dll",
+-        "build/.NETFramework/v4.8/System.Activities.xml",
+-        "build/.NETFramework/v4.8/System.AddIn.Contract.dll",
+-        "build/.NETFramework/v4.8/System.AddIn.Contract.xml",
+-        "build/.NETFramework/v4.8/System.AddIn.dll",
+-        "build/.NETFramework/v4.8/System.AddIn.xml",
+-        "build/.NETFramework/v4.8/System.ComponentModel.Composition.Registration.dll",
+-        "build/.NETFramework/v4.8/System.ComponentModel.Composition.Registration.xml",
+-        "build/.NETFramework/v4.8/System.ComponentModel.Composition.dll",
+-        "build/.NETFramework/v4.8/System.ComponentModel.Composition.xml",
+-        "build/.NETFramework/v4.8/System.ComponentModel.DataAnnotations.dll",
+-        "build/.NETFramework/v4.8/System.ComponentModel.DataAnnotations.xml",
+-        "build/.NETFramework/v4.8/System.Configuration.Install.dll",
+-        "build/.NETFramework/v4.8/System.Configuration.Install.xml",
+-        "build/.NETFramework/v4.8/System.Configuration.dll",
+-        "build/.NETFramework/v4.8/System.Configuration.xml",
+-        "build/.NETFramework/v4.8/System.Core.dll",
+-        "build/.NETFramework/v4.8/System.Core.xml",
+-        "build/.NETFramework/v4.8/System.Data.DataSetExtensions.dll",
+-        "build/.NETFramework/v4.8/System.Data.DataSetExtensions.xml",
+-        "build/.NETFramework/v4.8/System.Data.Entity.Design.dll",
+-        "build/.NETFramework/v4.8/System.Data.Entity.Design.xml",
+-        "build/.NETFramework/v4.8/System.Data.Entity.dll",
+-        "build/.NETFramework/v4.8/System.Data.Entity.xml",
+-        "build/.NETFramework/v4.8/System.Data.Linq.dll",
+-        "build/.NETFramework/v4.8/System.Data.Linq.xml",
+-        "build/.NETFramework/v4.8/System.Data.OracleClient.dll",
+-        "build/.NETFramework/v4.8/System.Data.OracleClient.xml",
+-        "build/.NETFramework/v4.8/System.Data.Services.Client.dll",
+-        "build/.NETFramework/v4.8/System.Data.Services.Client.xml",
+-        "build/.NETFramework/v4.8/System.Data.Services.Design.dll",
+-        "build/.NETFramework/v4.8/System.Data.Services.Design.xml",
+-        "build/.NETFramework/v4.8/System.Data.Services.dll",
+-        "build/.NETFramework/v4.8/System.Data.Services.xml",
+-        "build/.NETFramework/v4.8/System.Data.SqlXml.dll",
+-        "build/.NETFramework/v4.8/System.Data.SqlXml.xml",
+-        "build/.NETFramework/v4.8/System.Data.dll",
+-        "build/.NETFramework/v4.8/System.Data.xml",
+-        "build/.NETFramework/v4.8/System.Deployment.dll",
+-        "build/.NETFramework/v4.8/System.Deployment.xml",
+-        "build/.NETFramework/v4.8/System.Design.dll",
+-        "build/.NETFramework/v4.8/System.Design.xml",
+-        "build/.NETFramework/v4.8/System.Device.dll",
+-        "build/.NETFramework/v4.8/System.Device.xml",
+-        "build/.NETFramework/v4.8/System.Diagnostics.Tracing.dll",
+-        "build/.NETFramework/v4.8/System.Diagnostics.Tracing.xml",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.AccountManagement.dll",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.AccountManagement.xml",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.Protocols.dll",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.Protocols.xml",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.dll",
+-        "build/.NETFramework/v4.8/System.DirectoryServices.xml",
+-        "build/.NETFramework/v4.8/System.Drawing.Design.dll",
+-        "build/.NETFramework/v4.8/System.Drawing.Design.xml",
+-        "build/.NETFramework/v4.8/System.Drawing.dll",
+-        "build/.NETFramework/v4.8/System.Drawing.xml",
+-        "build/.NETFramework/v4.8/System.Dynamic.dll",
+-        "build/.NETFramework/v4.8/System.EnterpriseServices.Thunk.dll",
+-        "build/.NETFramework/v4.8/System.EnterpriseServices.Wrapper.dll",
+-        "build/.NETFramework/v4.8/System.EnterpriseServices.dll",
+-        "build/.NETFramework/v4.8/System.EnterpriseServices.xml",
+-        "build/.NETFramework/v4.8/System.IO.Compression.FileSystem.dll",
+-        "build/.NETFramework/v4.8/System.IO.Compression.FileSystem.xml",
+-        "build/.NETFramework/v4.8/System.IO.Compression.dll",
+-        "build/.NETFramework/v4.8/System.IO.Compression.xml",
+-        "build/.NETFramework/v4.8/System.IO.Log.dll",
+-        "build/.NETFramework/v4.8/System.IO.Log.xml",
+-        "build/.NETFramework/v4.8/System.IdentityModel.Selectors.dll",
+-        "build/.NETFramework/v4.8/System.IdentityModel.Selectors.xml",
+-        "build/.NETFramework/v4.8/System.IdentityModel.Services.dll",
+-        "build/.NETFramework/v4.8/System.IdentityModel.Services.xml",
+-        "build/.NETFramework/v4.8/System.IdentityModel.dll",
+-        "build/.NETFramework/v4.8/System.IdentityModel.xml",
+-        "build/.NETFramework/v4.8/System.Linq.xml",
+-        "build/.NETFramework/v4.8/System.Management.Instrumentation.dll",
+-        "build/.NETFramework/v4.8/System.Management.Instrumentation.xml",
+-        "build/.NETFramework/v4.8/System.Management.dll",
+-        "build/.NETFramework/v4.8/System.Management.xml",
+-        "build/.NETFramework/v4.8/System.Messaging.dll",
+-        "build/.NETFramework/v4.8/System.Messaging.xml",
+-        "build/.NETFramework/v4.8/System.Net.Http.WebRequest.dll",
+-        "build/.NETFramework/v4.8/System.Net.Http.WebRequest.xml",
+-        "build/.NETFramework/v4.8/System.Net.Http.dll",
+-        "build/.NETFramework/v4.8/System.Net.Http.xml",
+-        "build/.NETFramework/v4.8/System.Net.dll",
+-        "build/.NETFramework/v4.8/System.Net.xml",
+-        "build/.NETFramework/v4.8/System.Numerics.dll",
+-        "build/.NETFramework/v4.8/System.Numerics.xml",
+-        "build/.NETFramework/v4.8/System.Printing.dll",
+-        "build/.NETFramework/v4.8/System.Printing.xml",
+-        "build/.NETFramework/v4.8/System.Reflection.Context.dll",
+-        "build/.NETFramework/v4.8/System.Reflection.Context.xml",
+-        "build/.NETFramework/v4.8/System.Runtime.Caching.dll",
+-        "build/.NETFramework/v4.8/System.Runtime.Caching.xml",
+-        "build/.NETFramework/v4.8/System.Runtime.DurableInstancing.dll",
+-        "build/.NETFramework/v4.8/System.Runtime.DurableInstancing.xml",
+-        "build/.NETFramework/v4.8/System.Runtime.Remoting.dll",
+-        "build/.NETFramework/v4.8/System.Runtime.Remoting.xml",
+-        "build/.NETFramework/v4.8/System.Runtime.Serialization.Formatters.Soap.dll",
+-        "build/.NETFramework/v4.8/System.Runtime.Serialization.Formatters.Soap.xml",
+-        "build/.NETFramework/v4.8/System.Runtime.Serialization.dll",
+-        "build/.NETFramework/v4.8/System.Runtime.Serialization.xml",
+-        "build/.NETFramework/v4.8/System.Security.dll",
+-        "build/.NETFramework/v4.8/System.Security.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Activation.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Activation.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Activities.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Activities.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Channels.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Channels.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Discovery.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Discovery.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Routing.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Routing.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Web.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.Web.xml",
+-        "build/.NETFramework/v4.8/System.ServiceModel.dll",
+-        "build/.NETFramework/v4.8/System.ServiceModel.xml",
+-        "build/.NETFramework/v4.8/System.ServiceProcess.dll",
+-        "build/.NETFramework/v4.8/System.ServiceProcess.xml",
+-        "build/.NETFramework/v4.8/System.Speech.dll",
+-        "build/.NETFramework/v4.8/System.Speech.xml",
+-        "build/.NETFramework/v4.8/System.Threading.Tasks.Dataflow.xml",
+-        "build/.NETFramework/v4.8/System.Transactions.dll",
+-        "build/.NETFramework/v4.8/System.Transactions.xml",
+-        "build/.NETFramework/v4.8/System.Web.Abstractions.dll",
+-        "build/.NETFramework/v4.8/System.Web.ApplicationServices.dll",
+-        "build/.NETFramework/v4.8/System.Web.ApplicationServices.xml",
+-        "build/.NETFramework/v4.8/System.Web.DataVisualization.Design.dll",
+-        "build/.NETFramework/v4.8/System.Web.DataVisualization.dll",
+-        "build/.NETFramework/v4.8/System.Web.DataVisualization.xml",
+-        "build/.NETFramework/v4.8/System.Web.DynamicData.Design.dll",
+-        "build/.NETFramework/v4.8/System.Web.DynamicData.Design.xml",
+-        "build/.NETFramework/v4.8/System.Web.DynamicData.dll",
+-        "build/.NETFramework/v4.8/System.Web.DynamicData.xml",
+-        "build/.NETFramework/v4.8/System.Web.Entity.Design.dll",
+-        "build/.NETFramework/v4.8/System.Web.Entity.Design.xml",
+-        "build/.NETFramework/v4.8/System.Web.Entity.dll",
+-        "build/.NETFramework/v4.8/System.Web.Entity.xml",
+-        "build/.NETFramework/v4.8/System.Web.Extensions.Design.dll",
+-        "build/.NETFramework/v4.8/System.Web.Extensions.Design.xml",
+-        "build/.NETFramework/v4.8/System.Web.Extensions.dll",
+-        "build/.NETFramework/v4.8/System.Web.Extensions.xml",
+-        "build/.NETFramework/v4.8/System.Web.Mobile.dll",
+-        "build/.NETFramework/v4.8/System.Web.Mobile.xml",
+-        "build/.NETFramework/v4.8/System.Web.RegularExpressions.dll",
+-        "build/.NETFramework/v4.8/System.Web.RegularExpressions.xml",
+-        "build/.NETFramework/v4.8/System.Web.Routing.dll",
+-        "build/.NETFramework/v4.8/System.Web.Services.dll",
+-        "build/.NETFramework/v4.8/System.Web.Services.xml",
+-        "build/.NETFramework/v4.8/System.Web.dll",
+-        "build/.NETFramework/v4.8/System.Web.xml",
+-        "build/.NETFramework/v4.8/System.Windows.Controls.Ribbon.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Controls.Ribbon.xml",
+-        "build/.NETFramework/v4.8/System.Windows.Forms.DataVisualization.Design.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Forms.DataVisualization.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Forms.DataVisualization.xml",
+-        "build/.NETFramework/v4.8/System.Windows.Forms.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Forms.xml",
+-        "build/.NETFramework/v4.8/System.Windows.Input.Manipulations.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Input.Manipulations.xml",
+-        "build/.NETFramework/v4.8/System.Windows.Presentation.dll",
+-        "build/.NETFramework/v4.8/System.Windows.Presentation.xml",
+-        "build/.NETFramework/v4.8/System.Windows.dll",
+-        "build/.NETFramework/v4.8/System.Workflow.Activities.dll",
+-        "build/.NETFramework/v4.8/System.Workflow.Activities.xml",
+-        "build/.NETFramework/v4.8/System.Workflow.ComponentModel.dll",
+-        "build/.NETFramework/v4.8/System.Workflow.ComponentModel.xml",
+-        "build/.NETFramework/v4.8/System.Workflow.Runtime.dll",
+-        "build/.NETFramework/v4.8/System.Workflow.Runtime.xml",
+-        "build/.NETFramework/v4.8/System.WorkflowServices.dll",
+-        "build/.NETFramework/v4.8/System.WorkflowServices.xml",
+-        "build/.NETFramework/v4.8/System.Xaml.dll",
+-        "build/.NETFramework/v4.8/System.Xaml.xml",
+-        "build/.NETFramework/v4.8/System.Xml.Linq.dll",
+-        "build/.NETFramework/v4.8/System.Xml.Linq.xml",
+-        "build/.NETFramework/v4.8/System.Xml.Serialization.dll",
+-        "build/.NETFramework/v4.8/System.Xml.dll",
+-        "build/.NETFramework/v4.8/System.Xml.xml",
+-        "build/.NETFramework/v4.8/System.dll",
+-        "build/.NETFramework/v4.8/System.xml",
+-        "build/.NETFramework/v4.8/UIAutomationClient.dll",
+-        "build/.NETFramework/v4.8/UIAutomationClient.xml",
+-        "build/.NETFramework/v4.8/UIAutomationClientsideProviders.dll",
+-        "build/.NETFramework/v4.8/UIAutomationClientsideProviders.xml",
+-        "build/.NETFramework/v4.8/UIAutomationProvider.dll",
+-        "build/.NETFramework/v4.8/UIAutomationProvider.xml",
+-        "build/.NETFramework/v4.8/UIAutomationTypes.dll",
+-        "build/.NETFramework/v4.8/UIAutomationTypes.xml",
+-        "build/.NETFramework/v4.8/WindowsBase.dll",
+-        "build/.NETFramework/v4.8/WindowsBase.xml",
+-        "build/.NETFramework/v4.8/WindowsFormsIntegration.dll",
+-        "build/.NETFramework/v4.8/WindowsFormsIntegration.xml",
+-        "build/.NETFramework/v4.8/XamlBuildTask.dll",
+-        "build/.NETFramework/v4.8/XamlBuildTask.xml",
+-        "build/.NETFramework/v4.8/mscorlib.dll",
+-        "build/.NETFramework/v4.8/mscorlib.xml",
+-        "build/.NETFramework/v4.8/namespaces.xml",
+-        "build/.NETFramework/v4.8/sysglobl.dll",
+-        "build/.NETFramework/v4.8/sysglobl.xml",
+-        "build/Microsoft.NETFramework.ReferenceAssemblies.net48.targets",
+-        "microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512",
+-        "microsoft.netframework.referenceassemblies.net48.nuspec"
++        "build/.NETFramework/v4.7/Accessibility.dll",
++        "build/.NETFramework/v4.7/Accessibility.xml",
++        "build/.NETFramework/v4.7/CustomMarshalers.dll",
++        "build/.NETFramework/v4.7/CustomMarshalers.xml",
++        "build/.NETFramework/v4.7/Facades/System.Collections.Concurrent.dll",
++        "build/.NETFramework/v4.7/Facades/System.Collections.dll",
++        "build/.NETFramework/v4.7/Facades/System.ComponentModel.Annotations.dll",
++        "build/.NETFramework/v4.7/Facades/System.ComponentModel.EventBasedAsync.dll",
++        "build/.NETFramework/v4.7/Facades/System.ComponentModel.dll",
++        "build/.NETFramework/v4.7/Facades/System.Diagnostics.Contracts.dll",
++        "build/.NETFramework/v4.7/Facades/System.Diagnostics.Debug.dll",
++        "build/.NETFramework/v4.7/Facades/System.Diagnostics.Tools.dll",
++        "build/.NETFramework/v4.7/Facades/System.Diagnostics.Tracing.dll",
++        "build/.NETFramework/v4.7/Facades/System.Dynamic.Runtime.dll",
++        "build/.NETFramework/v4.7/Facades/System.Globalization.dll",
++        "build/.NETFramework/v4.7/Facades/System.IO.dll",
++        "build/.NETFramework/v4.7/Facades/System.Linq.Expressions.dll",
++        "build/.NETFramework/v4.7/Facades/System.Linq.Parallel.dll",
++        "build/.NETFramework/v4.7/Facades/System.Linq.Queryable.dll",
++        "build/.NETFramework/v4.7/Facades/System.Linq.dll",
++        "build/.NETFramework/v4.7/Facades/System.Net.NetworkInformation.dll",
++        "build/.NETFramework/v4.7/Facades/System.Net.Primitives.dll",
++        "build/.NETFramework/v4.7/Facades/System.Net.Requests.dll",
++        "build/.NETFramework/v4.7/Facades/System.Net.WebHeaderCollection.dll",
++        "build/.NETFramework/v4.7/Facades/System.ObjectModel.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.Emit.ILGeneration.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.Emit.Lightweight.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.Emit.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.Extensions.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.Primitives.dll",
++        "build/.NETFramework/v4.7/Facades/System.Reflection.dll",
++        "build/.NETFramework/v4.7/Facades/System.Resources.ResourceManager.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Extensions.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Handles.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.InteropServices.WindowsRuntime.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.InteropServices.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Numerics.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Serialization.Json.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Serialization.Primitives.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.Serialization.Xml.dll",
++        "build/.NETFramework/v4.7/Facades/System.Runtime.dll",
++        "build/.NETFramework/v4.7/Facades/System.Security.Principal.dll",
++        "build/.NETFramework/v4.7/Facades/System.ServiceModel.Duplex.dll",
++        "build/.NETFramework/v4.7/Facades/System.ServiceModel.Http.dll",
++        "build/.NETFramework/v4.7/Facades/System.ServiceModel.NetTcp.dll",
++        "build/.NETFramework/v4.7/Facades/System.ServiceModel.Primitives.dll",
++        "build/.NETFramework/v4.7/Facades/System.ServiceModel.Security.dll",
++        "build/.NETFramework/v4.7/Facades/System.Text.Encoding.Extensions.dll",
++        "build/.NETFramework/v4.7/Facades/System.Text.Encoding.dll",
++        "build/.NETFramework/v4.7/Facades/System.Text.RegularExpressions.dll",
++        "build/.NETFramework/v4.7/Facades/System.Threading.Tasks.Parallel.dll",
++        "build/.NETFramework/v4.7/Facades/System.Threading.Tasks.dll",
++        "build/.NETFramework/v4.7/Facades/System.Threading.Timer.dll",
++        "build/.NETFramework/v4.7/Facades/System.Threading.dll",
++        "build/.NETFramework/v4.7/Facades/System.Xml.ReaderWriter.dll",
++        "build/.NETFramework/v4.7/Facades/System.Xml.XDocument.dll",
++        "build/.NETFramework/v4.7/Facades/System.Xml.XmlSerializer.dll",
++        "build/.NETFramework/v4.7/ISymWrapper.dll",
++        "build/.NETFramework/v4.7/ISymWrapper.xml",
++        "build/.NETFramework/v4.7/Microsoft.Activities.Build.dll",
++        "build/.NETFramework/v4.7/Microsoft.Activities.Build.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.Conversion.v4.0.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.Conversion.v4.0.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.Engine.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.Engine.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.Framework.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.Framework.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.Tasks.v4.0.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.Tasks.v4.0.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.Utilities.v4.0.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.Utilities.v4.0.xml",
++        "build/.NETFramework/v4.7/Microsoft.Build.dll",
++        "build/.NETFramework/v4.7/Microsoft.Build.xml",
++        "build/.NETFramework/v4.7/Microsoft.CSharp.dll",
++        "build/.NETFramework/v4.7/Microsoft.CSharp.xml",
++        "build/.NETFramework/v4.7/Microsoft.JScript.dll",
++        "build/.NETFramework/v4.7/Microsoft.JScript.xml",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.Compatibility.Data.dll",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.Compatibility.Data.xml",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.Compatibility.dll",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.Compatibility.xml",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.dll",
++        "build/.NETFramework/v4.7/Microsoft.VisualBasic.xml",
++        "build/.NETFramework/v4.7/Microsoft.VisualC.STLCLR.dll",
++        "build/.NETFramework/v4.7/Microsoft.VisualC.STLCLR.xml",
++        "build/.NETFramework/v4.7/Microsoft.VisualC.dll",
++        "build/.NETFramework/v4.7/Microsoft.VisualC.xml",
++        "build/.NETFramework/v4.7/PermissionSets/FullTrust.xml",
++        "build/.NETFramework/v4.7/PermissionSets/Internet.xml",
++        "build/.NETFramework/v4.7/PermissionSets/LocalIntranet.xml",
++        "build/.NETFramework/v4.7/PresentationBuildTasks.dll",
++        "build/.NETFramework/v4.7/PresentationBuildTasks.xml",
++        "build/.NETFramework/v4.7/PresentationCore.dll",
++        "build/.NETFramework/v4.7/PresentationCore.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.Aero.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.Aero.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.Aero2.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.Aero2.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.AeroLite.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.AeroLite.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.Classic.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.Classic.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.Luna.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.Luna.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.Royale.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.Royale.xml",
++        "build/.NETFramework/v4.7/PresentationFramework.dll",
++        "build/.NETFramework/v4.7/PresentationFramework.xml",
++        "build/.NETFramework/v4.7/ReachFramework.dll",
++        "build/.NETFramework/v4.7/ReachFramework.xml",
++        "build/.NETFramework/v4.7/RedistList/FrameworkList.xml",
++        "build/.NETFramework/v4.7/System.Activities.Core.Presentation.dll",
++        "build/.NETFramework/v4.7/System.Activities.Core.Presentation.xml",
++        "build/.NETFramework/v4.7/System.Activities.DurableInstancing.dll",
++        "build/.NETFramework/v4.7/System.Activities.DurableInstancing.xml",
++        "build/.NETFramework/v4.7/System.Activities.Presentation.dll",
++        "build/.NETFramework/v4.7/System.Activities.Presentation.xml",
++        "build/.NETFramework/v4.7/System.Activities.dll",
++        "build/.NETFramework/v4.7/System.Activities.xml",
++        "build/.NETFramework/v4.7/System.AddIn.Contract.dll",
++        "build/.NETFramework/v4.7/System.AddIn.Contract.xml",
++        "build/.NETFramework/v4.7/System.AddIn.dll",
++        "build/.NETFramework/v4.7/System.AddIn.xml",
++        "build/.NETFramework/v4.7/System.ComponentModel.Composition.Registration.dll",
++        "build/.NETFramework/v4.7/System.ComponentModel.Composition.Registration.xml",
++        "build/.NETFramework/v4.7/System.ComponentModel.Composition.dll",
++        "build/.NETFramework/v4.7/System.ComponentModel.Composition.xml",
++        "build/.NETFramework/v4.7/System.ComponentModel.DataAnnotations.dll",
++        "build/.NETFramework/v4.7/System.ComponentModel.DataAnnotations.xml",
++        "build/.NETFramework/v4.7/System.Configuration.Install.dll",
++        "build/.NETFramework/v4.7/System.Configuration.Install.xml",
++        "build/.NETFramework/v4.7/System.Configuration.dll",
++        "build/.NETFramework/v4.7/System.Configuration.xml",
++        "build/.NETFramework/v4.7/System.Core.dll",
++        "build/.NETFramework/v4.7/System.Core.xml",
++        "build/.NETFramework/v4.7/System.Data.DataSetExtensions.dll",
++        "build/.NETFramework/v4.7/System.Data.DataSetExtensions.xml",
++        "build/.NETFramework/v4.7/System.Data.Entity.Design.dll",
++        "build/.NETFramework/v4.7/System.Data.Entity.Design.xml",
++        "build/.NETFramework/v4.7/System.Data.Entity.dll",
++        "build/.NETFramework/v4.7/System.Data.Entity.xml",
++        "build/.NETFramework/v4.7/System.Data.Linq.dll",
++        "build/.NETFramework/v4.7/System.Data.Linq.xml",
++        "build/.NETFramework/v4.7/System.Data.OracleClient.dll",
++        "build/.NETFramework/v4.7/System.Data.OracleClient.xml",
++        "build/.NETFramework/v4.7/System.Data.Services.Client.dll",
++        "build/.NETFramework/v4.7/System.Data.Services.Client.xml",
++        "build/.NETFramework/v4.7/System.Data.Services.Design.dll",
++        "build/.NETFramework/v4.7/System.Data.Services.Design.xml",
++        "build/.NETFramework/v4.7/System.Data.Services.dll",
++        "build/.NETFramework/v4.7/System.Data.Services.xml",
++        "build/.NETFramework/v4.7/System.Data.SqlXml.dll",
++        "build/.NETFramework/v4.7/System.Data.SqlXml.xml",
++        "build/.NETFramework/v4.7/System.Data.dll",
++        "build/.NETFramework/v4.7/System.Data.xml",
++        "build/.NETFramework/v4.7/System.Deployment.dll",
++        "build/.NETFramework/v4.7/System.Deployment.xml",
++        "build/.NETFramework/v4.7/System.Design.dll",
++        "build/.NETFramework/v4.7/System.Design.xml",
++        "build/.NETFramework/v4.7/System.Device.dll",
++        "build/.NETFramework/v4.7/System.Device.xml",
++        "build/.NETFramework/v4.7/System.DirectoryServices.AccountManagement.dll",
++        "build/.NETFramework/v4.7/System.DirectoryServices.AccountManagement.xml",
++        "build/.NETFramework/v4.7/System.DirectoryServices.Protocols.dll",
++        "build/.NETFramework/v4.7/System.DirectoryServices.Protocols.xml",
++        "build/.NETFramework/v4.7/System.DirectoryServices.dll",
++        "build/.NETFramework/v4.7/System.DirectoryServices.xml",
++        "build/.NETFramework/v4.7/System.Drawing.Design.dll",
++        "build/.NETFramework/v4.7/System.Drawing.Design.xml",
++        "build/.NETFramework/v4.7/System.Drawing.dll",
++        "build/.NETFramework/v4.7/System.Drawing.xml",
++        "build/.NETFramework/v4.7/System.Dynamic.dll",
++        "build/.NETFramework/v4.7/System.EnterpriseServices.Thunk.dll",
++        "build/.NETFramework/v4.7/System.EnterpriseServices.Wrapper.dll",
++        "build/.NETFramework/v4.7/System.EnterpriseServices.dll",
++        "build/.NETFramework/v4.7/System.EnterpriseServices.xml",
++        "build/.NETFramework/v4.7/System.IO.Compression.FileSystem.dll",
++        "build/.NETFramework/v4.7/System.IO.Compression.FileSystem.xml",
++        "build/.NETFramework/v4.7/System.IO.Compression.dll",
++        "build/.NETFramework/v4.7/System.IO.Compression.xml",
++        "build/.NETFramework/v4.7/System.IO.Log.dll",
++        "build/.NETFramework/v4.7/System.IO.Log.xml",
++        "build/.NETFramework/v4.7/System.IdentityModel.Selectors.dll",
++        "build/.NETFramework/v4.7/System.IdentityModel.Selectors.xml",
++        "build/.NETFramework/v4.7/System.IdentityModel.Services.dll",
++        "build/.NETFramework/v4.7/System.IdentityModel.Services.xml",
++        "build/.NETFramework/v4.7/System.IdentityModel.dll",
++        "build/.NETFramework/v4.7/System.IdentityModel.xml",
++        "build/.NETFramework/v4.7/System.Linq.xml",
++        "build/.NETFramework/v4.7/System.Management.Instrumentation.dll",
++        "build/.NETFramework/v4.7/System.Management.Instrumentation.xml",
++        "build/.NETFramework/v4.7/System.Management.dll",
++        "build/.NETFramework/v4.7/System.Management.xml",
++        "build/.NETFramework/v4.7/System.Messaging.dll",
++        "build/.NETFramework/v4.7/System.Messaging.xml",
++        "build/.NETFramework/v4.7/System.Net.Http.WebRequest.dll",
++        "build/.NETFramework/v4.7/System.Net.Http.WebRequest.xml",
++        "build/.NETFramework/v4.7/System.Net.Http.dll",
++        "build/.NETFramework/v4.7/System.Net.Http.xml",
++        "build/.NETFramework/v4.7/System.Net.dll",
++        "build/.NETFramework/v4.7/System.Net.xml",
++        "build/.NETFramework/v4.7/System.Numerics.dll",
++        "build/.NETFramework/v4.7/System.Numerics.xml",
++        "build/.NETFramework/v4.7/System.Printing.dll",
++        "build/.NETFramework/v4.7/System.Printing.xml",
++        "build/.NETFramework/v4.7/System.Reflection.Context.dll",
++        "build/.NETFramework/v4.7/System.Reflection.Context.xml",
++        "build/.NETFramework/v4.7/System.Runtime.Caching.dll",
++        "build/.NETFramework/v4.7/System.Runtime.Caching.xml",
++        "build/.NETFramework/v4.7/System.Runtime.DurableInstancing.dll",
++        "build/.NETFramework/v4.7/System.Runtime.DurableInstancing.xml",
++        "build/.NETFramework/v4.7/System.Runtime.Remoting.dll",
++        "build/.NETFramework/v4.7/System.Runtime.Remoting.xml",
++        "build/.NETFramework/v4.7/System.Runtime.Serialization.Formatters.Soap.dll",
++        "build/.NETFramework/v4.7/System.Runtime.Serialization.Formatters.Soap.xml",
++        "build/.NETFramework/v4.7/System.Runtime.Serialization.dll",
++        "build/.NETFramework/v4.7/System.Runtime.Serialization.xml",
++        "build/.NETFramework/v4.7/System.Security.dll",
++        "build/.NETFramework/v4.7/System.Security.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Activation.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Activation.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Activities.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Activities.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Channels.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Channels.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Discovery.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Discovery.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Routing.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Routing.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.Web.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.Web.xml",
++        "build/.NETFramework/v4.7/System.ServiceModel.dll",
++        "build/.NETFramework/v4.7/System.ServiceModel.xml",
++        "build/.NETFramework/v4.7/System.ServiceProcess.dll",
++        "build/.NETFramework/v4.7/System.ServiceProcess.xml",
++        "build/.NETFramework/v4.7/System.Speech.dll",
++        "build/.NETFramework/v4.7/System.Speech.xml",
++        "build/.NETFramework/v4.7/System.Threading.Tasks.Dataflow.xml",
++        "build/.NETFramework/v4.7/System.Transactions.dll",
++        "build/.NETFramework/v4.7/System.Transactions.xml",
++        "build/.NETFramework/v4.7/System.Web.Abstractions.dll",
++        "build/.NETFramework/v4.7/System.Web.ApplicationServices.dll",
++        "build/.NETFramework/v4.7/System.Web.ApplicationServices.xml",
++        "build/.NETFramework/v4.7/System.Web.DataVisualization.Design.dll",
++        "build/.NETFramework/v4.7/System.Web.DataVisualization.dll",
++        "build/.NETFramework/v4.7/System.Web.DataVisualization.xml",
++        "build/.NETFramework/v4.7/System.Web.DynamicData.Design.dll",
++        "build/.NETFramework/v4.7/System.Web.DynamicData.Design.xml",
++        "build/.NETFramework/v4.7/System.Web.DynamicData.dll",
++        "build/.NETFramework/v4.7/System.Web.DynamicData.xml",
++        "build/.NETFramework/v4.7/System.Web.Entity.Design.dll",
++        "build/.NETFramework/v4.7/System.Web.Entity.Design.xml",
++        "build/.NETFramework/v4.7/System.Web.Entity.dll",
++        "build/.NETFramework/v4.7/System.Web.Entity.xml",
++        "build/.NETFramework/v4.7/System.Web.Extensions.Design.dll",
++        "build/.NETFramework/v4.7/System.Web.Extensions.Design.xml",
++        "build/.NETFramework/v4.7/System.Web.Extensions.dll",
++        "build/.NETFramework/v4.7/System.Web.Extensions.xml",
++        "build/.NETFramework/v4.7/System.Web.Mobile.dll",
++        "build/.NETFramework/v4.7/System.Web.Mobile.xml",
++        "build/.NETFramework/v4.7/System.Web.RegularExpressions.dll",
++        "build/.NETFramework/v4.7/System.Web.RegularExpressions.xml",
++        "build/.NETFramework/v4.7/System.Web.Routing.dll",
++        "build/.NETFramework/v4.7/System.Web.Services.dll",
++        "build/.NETFramework/v4.7/System.Web.Services.xml",
++        "build/.NETFramework/v4.7/System.Web.dll",
++        "build/.NETFramework/v4.7/System.Web.xml",
++        "build/.NETFramework/v4.7/System.Windows.Controls.Ribbon.dll",
++        "build/.NETFramework/v4.7/System.Windows.Controls.Ribbon.xml",
++        "build/.NETFramework/v4.7/System.Windows.Forms.DataVisualization.Design.dll",
++        "build/.NETFramework/v4.7/System.Windows.Forms.DataVisualization.dll",
++        "build/.NETFramework/v4.7/System.Windows.Forms.DataVisualization.xml",
++        "build/.NETFramework/v4.7/System.Windows.Forms.dll",
++        "build/.NETFramework/v4.7/System.Windows.Forms.xml",
++        "build/.NETFramework/v4.7/System.Windows.Input.Manipulations.dll",
++        "build/.NETFramework/v4.7/System.Windows.Input.Manipulations.xml",
++        "build/.NETFramework/v4.7/System.Windows.Presentation.dll",
++        "build/.NETFramework/v4.7/System.Windows.Presentation.xml",
++        "build/.NETFramework/v4.7/System.Windows.dll",
++        "build/.NETFramework/v4.7/System.Workflow.Activities.dll",
++        "build/.NETFramework/v4.7/System.Workflow.Activities.xml",
++        "build/.NETFramework/v4.7/System.Workflow.ComponentModel.dll",
++        "build/.NETFramework/v4.7/System.Workflow.ComponentModel.xml",
++        "build/.NETFramework/v4.7/System.Workflow.Runtime.dll",
++        "build/.NETFramework/v4.7/System.Workflow.Runtime.xml",
++        "build/.NETFramework/v4.7/System.WorkflowServices.dll",
++        "build/.NETFramework/v4.7/System.WorkflowServices.xml",
++        "build/.NETFramework/v4.7/System.Xaml.dll",
++        "build/.NETFramework/v4.7/System.Xaml.xml",
++        "build/.NETFramework/v4.7/System.Xml.Linq.dll",
++        "build/.NETFramework/v4.7/System.Xml.Linq.xml",
++        "build/.NETFramework/v4.7/System.Xml.Serialization.dll",
++        "build/.NETFramework/v4.7/System.Xml.dll",
++        "build/.NETFramework/v4.7/System.Xml.xml",
++        "build/.NETFramework/v4.7/System.dll",
++        "build/.NETFramework/v4.7/System.xml",
++        "build/.NETFramework/v4.7/UIAutomationClient.dll",
++        "build/.NETFramework/v4.7/UIAutomationClient.xml",
++        "build/.NETFramework/v4.7/UIAutomationClientsideProviders.dll",
++        "build/.NETFramework/v4.7/UIAutomationClientsideProviders.xml",
++        "build/.NETFramework/v4.7/UIAutomationProvider.dll",
++        "build/.NETFramework/v4.7/UIAutomationProvider.xml",
++        "build/.NETFramework/v4.7/UIAutomationTypes.dll",
++        "build/.NETFramework/v4.7/UIAutomationTypes.xml",
++        "build/.NETFramework/v4.7/WindowsBase.dll",
++        "build/.NETFramework/v4.7/WindowsBase.xml",
++        "build/.NETFramework/v4.7/WindowsFormsIntegration.dll",
++        "build/.NETFramework/v4.7/WindowsFormsIntegration.xml",
++        "build/.NETFramework/v4.7/XamlBuildTask.dll",
++        "build/.NETFramework/v4.7/XamlBuildTask.xml",
++        "build/.NETFramework/v4.7/mscorlib.dll",
++        "build/.NETFramework/v4.7/mscorlib.xml",
++        "build/.NETFramework/v4.7/namespaces.xml",
++        "build/.NETFramework/v4.7/sysglobl.dll",
++        "build/.NETFramework/v4.7/sysglobl.xml",
++        "build/Microsoft.NETFramework.ReferenceAssemblies.net47.targets",
++        "microsoft.netframework.referenceassemblies.net47.1.0.3.nupkg.sha512",
++        "microsoft.netframework.referenceassemblies.net47.nuspec"
+       ]
+     },
+     "Newtonsoft.Json/13.0.3": {
+@@ -869,6 +832,36 @@
+         "packageIcon.png"
+       ]
+     },
++    "Nice3point.Revit.Api.RevitAPI/2020.2.60": {
++      "sha512": "UbX7npSEnd13PKjidKkcBr8BOP0TINuxlT4BGVNJOxpD+CiPxcCzBtDlQEdrc6E4ZCuaEEKSXN+yGFJwZzB3fA==",
++      "type": "package",
++      "path": "nice3point.revit.api.revitapi/2020.2.60",
++      "files": [
++        ".nupkg.metadata",
++        ".signature.p7s",
++        "License.md",
++        "images/PackageIcon.png",
++        "nice3point.revit.api.revitapi.2020.2.60.nupkg.sha512",
++        "nice3point.revit.api.revitapi.nuspec",
++        "ref/net47/RevitAPI.dll",
++        "ref/net47/RevitAPI.xml"
++      ]
++    },
++    "Nice3point.Revit.Api.RevitAPIUI/2020.2.60": {
++      "sha512": "JykhItFtfCqAb5anvi8lxnwZfD9kCqLMlYf77JV7Hrb9YYqSlpAJ++gk3/kZdVsJu7xDsTgyUumKC99VmKCl2g==",
++      "type": "package",
++      "path": "nice3point.revit.api.revitapiui/2020.2.60",
++      "files": [
++        ".nupkg.metadata",
++        ".signature.p7s",
++        "License.md",
++        "images/PackageIcon.png",
++        "nice3point.revit.api.revitapiui.2020.2.60.nupkg.sha512",
++        "nice3point.revit.api.revitapiui.nuspec",
++        "ref/net47/RevitAPIUI.dll",
++        "ref/net47/RevitAPIUI.xml"
++      ]
++    },
+     "SixLabors.Fonts/1.0.0": {
+       "sha512": "LFQsCZlV0xlUyXAOMUo5kkSl+8zAQXXbbdwWchtk0B4o7zotZhQsQOcJUELGHdfPfm/xDAsz6hONAuV25bJaAg==",
+       "type": "package",
+@@ -1518,10 +1511,12 @@
+     }
+   },
+   "projectFileDependencyGroups": {
+-    ".NETFramework,Version=v4.8": [
++    ".NETFramework,Version=v4.7": [
+       "ClosedXML >= 0.102.3",
+       "Microsoft.NETFramework.ReferenceAssemblies >= 1.0.3",
+-      "Newtonsoft.Json >= 13.0.3"
++      "Newtonsoft.Json >= 13.0.3",
++      "Nice3point.Revit.Api.RevitAPI >= 2020.*",
++      "Nice3point.Revit.Api.RevitAPIUI >= 2020.*"
+     ]
+   },
+   "packageFolders": {
+@@ -1530,9 +1525,9 @@
+   "project": {
+     "version": "1.0.0",
+     "restore": {
+-      "projectUniqueName": "E:\\RevitMCP\\MCP\\RevitMCP.2020.csproj",
++      "projectUniqueName": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+       "projectName": "RevitMCP",
+-      "projectPath": "E:\\RevitMCP\\MCP\\RevitMCP.2020.csproj",
++      "projectPath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+       "packagesPath": "C:\\Users\\09044\\.nuget\\packages\\",
+       "outputPath": "E:\\RevitMCP\\MCP\\obj\\",
+       "projectStyle": "PackageReference",
+@@ -1540,14 +1535,14 @@
+         "C:\\Users\\09044\\AppData\\Roaming\\NuGet\\NuGet.Config"
+       ],
+       "originalTargetFrameworks": [
+-        "net48"
++        "net47"
+       ],
+       "sources": {
+         "https://api.nuget.org/v3/index.json": {}
+       },
+       "frameworks": {
+-        "net48": {
+-          "targetAlias": "net48",
++        "net47": {
++          "targetAlias": "net47",
+           "projectReferences": {}
+         }
+       },
+@@ -1563,8 +1558,8 @@
+       }
+     },
+     "frameworks": {
+-      "net48": {
+-        "targetAlias": "net48",
++      "net47": {
++        "targetAlias": "net47",
+         "dependencies": {
+           "ClosedXML": {
+             "target": "Package",
+@@ -1579,6 +1574,14 @@
+           "Newtonsoft.Json": {
+             "target": "Package",
+             "version": "[13.0.3, )"
++          },
++          "Nice3point.Revit.Api.RevitAPI": {
++            "target": "Package",
++            "version": "[2020.*, )"
++          },
++          "Nice3point.Revit.Api.RevitAPIUI": {
++            "target": "Package",
++            "version": "[2020.*, )"
+           }
+         },
+         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.416\\RuntimeIdentifierGraph.json"
+diff --git a/MCP/obj/project.nuget.cache b/MCP/obj/project.nuget.cache
+index 888cbc6..0db89f3 100644
+--- a/MCP/obj/project.nuget.cache
++++ b/MCP/obj/project.nuget.cache
+@@ -1,16 +1,18 @@
+ {
+   "version": 2,
+-  "dgSpecHash": "R7dm2Vi6WMA=",
++  "dgSpecHash": "CA7K7lTDL5U=",
+   "success": true,
+-  "projectFilePath": "E:\\RevitMCP\\MCP\\RevitMCP.2020.csproj",
++  "projectFilePath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+   "expectedPackageFiles": [
+     "C:\\Users\\09044\\.nuget\\packages\\closedxml\\0.102.3\\closedxml.0.102.3.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\documentformat.openxml\\2.16.0\\documentformat.openxml.2.16.0.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\excelnumberformat\\1.1.0\\excelnumberformat.1.1.0.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\irony.netcore\\1.0.11\\irony.netcore.1.0.11.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+-    "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512",
++    "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net47\\1.0.3\\microsoft.netframework.referenceassemblies.net47.1.0.3.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
++    "C:\\Users\\09044\\.nuget\\packages\\nice3point.revit.api.revitapi\\2020.2.60\\nice3point.revit.api.revitapi.2020.2.60.nupkg.sha512",
++    "C:\\Users\\09044\\.nuget\\packages\\nice3point.revit.api.revitapiui\\2020.2.60\\nice3point.revit.api.revitapiui.2020.2.60.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\sixlabors.fonts\\1.0.0\\sixlabors.fonts.1.0.0.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
+     "C:\\Users\\09044\\.nuget\\packages\\system.io\\4.3.0\\system.io.4.3.0.nupkg.sha512",
+diff --git a/docs/0328-presentation.html b/docs/0328-presentation.html
+index d09b195..e1692e1 100644
+--- a/docs/0328-presentation.html
++++ b/docs/0328-presentation.html
+@@ -5,7 +5,7 @@
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>0328 Revit MCP 讀書會</title>
+ <meta property="og:title" content="MCP 功能開發三月小聚">
+-<meta property="og:description" content="從工具堆砌到模組化架構 — 8 大專業系統、20 個 Domain、44 個工具已上線驗證。你的專業就是下一個按鈕。">
++<meta property="og:description" content="從工具堆砌到模組化架構 — 8 大專業系統、26 個 Domain、44 個工具已上線驗證。你的專業就是下一個按鈕。">
+ <meta property="og:type" content="website">
+ <meta property="og:url" content="https://shuotao.github.io/REVIT_MCP_study/docs/0328-presentation.html">
+ <meta name="twitter:card" content="summary">
+@@ -734,7 +734,27 @@
+ <!-- ===== COVER ===== -->
+ <section class="cover" id="slide-cover">
+   <div class="cover-eyebrow">Revit MCP Study Group</div>
+-  <h1 class="cover-title">MCP 功能開發<br>三月小聚</h1>
++  <div style="display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;">
++    <h1 class="cover-title" style="margin:0;">MCP 功能開發<br>三月小聚</h1>
++    <div style="display:flex;flex-direction:column;gap:12px;padding-top:8px;">
++      <a href="https://luma.com/claudecommunity" target="_blank" title="Claude Community — Anthropic 官方社群" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:rgba(255,255,255,0.6);font-size:13px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.4)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.6)'">
++        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
++        Claude Community
++      </a>
++      <a href="https://gdg.community.dev/gdg-taipei/" target="_blank" title="GDG Taipei — Google Developer Group" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:rgba(255,255,255,0.6);font-size:13px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.4)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.6)'">
++        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
++        GDG Taipei
++      </a>
++      <a href="https://genaistars.org.tw/" target="_blank" title="GenAI Stars — 生成式 AI 年會" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:rgba(255,255,255,0.6);font-size:13px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.4)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.6)'">
++        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
++        GenAI Stars
++      </a>
++      <a href="https://blindegg.kktix.cc/events/2026gaiconf#tickets" target="_blank" title="2026 GAI Conference — 報名購票" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:rgba(255,255,255,0.6);font-size:13px;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;transition:all 0.3s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.4)';this.style.color='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.6)'">
++        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
++        2026 GAI Conf
++      </a>
++    </div>
++  </div>
+   <p class="cover-subtitle">從工具堆砌到模組化架構<br>Skill / Domain / Tools 三層協作系統</p>
+   <div class="cover-meta">
+     <div class="cover-meta-item">
+@@ -818,7 +838,7 @@
+     </div>
+   </div>
+ 
+-  <div class="why-footer">以上 8 大系統、<strong>20 個 Domain</strong>、<strong>44 個工具</strong>已上線驗證。<br>你的專業領域，就是第 9 個、第 10 個按鈕。</div>
++  <div class="why-footer">以上 8 大系統、<strong>26 個 Domain</strong>、<strong>44 個工具</strong>已上線驗證。<br>你的專業領域，就是第 9 個、第 10 個按鈕。</div>
+ </section>
+ 
+ <!-- ===== SETUP PAGE ===== -->
+@@ -906,8 +926,9 @@
+       <div class="step-number">7</div>
+       <div class="step-body">
+         <h3><span class="step-emoji">📂</span>部署 DLL 到 Revit</h3>
+-        <p>把編譯好的 DLL 複製到 Revit Add-ins 資料夾。</p>
+-        <code class="step-cmd">/deploy-addon --version 2024</code>
++        <p>把編譯好的 DLL 複製到 Revit Add-ins 資料夾。版本號改成你的。</p>
++        <code class="step-cmd">/deploy-addon --version <span style="color:#4ade80">你的版本</span></code>
++        <p style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px;">例如：/deploy-addon --version 2024 或 2025 或 2026</p>
+       </div>
+     </div>
+ 
+@@ -958,7 +979,7 @@
+     <div class="slide-content">
+       <div class="slide-number">1-3</div>
+       <div class="slide-title">三次迭代的演進</div>
+-      <p class="slide-summary">從 25 個工具到 55 個，從零 Skill 到 17 個，從只支援 Revit 2024 到 2022-2026 全版本。</p>
++      <p class="slide-summary">從 25 個工具到 55 個，從零 Skill 到 18 個，從只支援 Revit 2024 到 2022-2026 全版本。</p>
+       <button class="drawer-trigger" onclick="openDrawer('drawer-1-3')">展開演進對照</button>
+     </div>
+   </div>
+@@ -1064,7 +1085,7 @@
+     <div class="slide-content">
+       <div class="slide-number">2-1</div>
+       <div class="slide-title">工具越多，AI 越笨</div>
+-      <p class="slide-summary">55 個工具定義 = 每輪對話 16,500 tokens 的固定成本。工具越多，AI 選錯的機率越高。</p>
++      <p class="slide-summary">55 個工具定義 = 每輪對話都佔用 context 的固定成本。工具越多，AI 選錯的機率越高。</p>
+       <button class="drawer-trigger" onclick="openDrawer('drawer-2-1')">展開數據分析</button>
+     </div>
+   </div>
+@@ -1211,12 +1232,25 @@
+ <!-- 3-5 -->
+ <section class="slide" id="slide-3-5" data-section="3">
+   <div class="slide-inner">
+-    <div class="slide-image"><img src="image/3_5.png" alt="3-5 Profile Filter"></div>
++    <div class="slide-image"><img src="image/3_5.svg" alt="3-5 Shared Knowledge"></div>
+     <div class="slide-content">
+       <div class="slide-number">3-5</div>
++      <div class="slide-title">為什麼 Domain 要獨立存在</div>
++      <p class="slide-summary">Anthropic 假設每個 Skill 的知識是獨立的。但在 BIM 裡，防火法規同時被消防檢查、走廊分析、建築合規三個 Skill 引用。Domain 存在，是因為知識是共用的。你的貢獻就在這裡。</p>
++      <button class="drawer-trigger" onclick="openDrawer('drawer-3-5')">展開共用知識架構</button>
++    </div>
++  </div>
++</section>
++
++<!-- 3-6 -->
++<section class="slide" id="slide-3-6" data-section="3">
++  <div class="slide-inner">
++    <div class="slide-image"><img src="image/3_5.png" alt="3-6 Profile Filter"></div>
++    <div class="slide-content">
++      <div class="slide-number">3-6</div>
+       <div class="slide-title">Profile：角色篩選</div>
+       <p class="slide-summary">設定一行 MCP_PROFILE，結構工程師只看 20 個工具，不再被 55 個不相關的工具淹沒。</p>
+-      <button class="drawer-trigger" onclick="openDrawer('drawer-3-5')">展開 Profile 設定</button>
++      <button class="drawer-trigger" onclick="openDrawer('drawer-3-6')">展開 Profile 設定</button>
+     </div>
+   </div>
+ </section>
+@@ -1643,7 +1677,7 @@ npm run build</code><button class="copy-btn" onclick="copyCode(this)">複製</bu
+   </table>
+   <h3>本次四個關鍵變化</h3>
+   <ol>
+-    <li><strong>Skills 出現</strong> — 17 個 Skill，自動觸發對應 Domain</li>
++    <li><strong>Skills 出現</strong> — 18 個 Skill，自動觸發對應 Domain</li>
+     <li><strong>工具模組化</strong> — 拆成 8 個模組 + Profile 角色篩選</li>
+     <li><strong>跨版本支援</strong> — Revit 2022 到 2026</li>
+     <li><strong>社群貢獻爆發</strong> — 帷幕牆、排煙窗、明細表等新功能</li>
+@@ -1922,7 +1956,7 @@ description: "消防安全檢討：防火時效視覺化、走廊防火分析、
+ │       │   └── SKILL.md
+ │       ├── element-query/
+ │       │   └── SKILL.md
+-│       └── ... 共 17 個</code><button class="copy-btn" onclick="copyCode(this)">複製</button></pre>
++│       └── ... 共 18 個</code><button class="copy-btn" onclick="copyCode(this)">複製</button></pre>
+   <p>路徑：<span class="copyable-path" onclick="copyText('.claude/skills/')">.claude/skills/</span></p>
+ 
+   <h3>重要限制</h3>
+@@ -1998,8 +2032,46 @@ description: "消防安全檢討：防火時效視覺化、走廊防火分析、
+   </div>
+ </div>
+ 
+-<!-- Drawer 3-5 -->
++<!-- Drawer 3-5 (Shared Knowledge) -->
+ <div class="drawer" id="drawer-3-5">
++  <button class="drawer-close" onclick="closeDrawer()">✕</button>
++  <h2>為什麼 Domain 要獨立於 Skill</h2>
++
++  <h3>Anthropic 的模型 vs 我們的模型</h3>
++  <table>
++    <tr><th></th><th>Anthropic 官方</th><th>本專案</th></tr>
++    <tr><td>知識放哪</td><td>Skill 內部的 <code>references/</code></td><td>獨立的 <code>domain/</code></td></tr>
++    <tr><td>知識與 Skill 的關係</td><td>1:1（綁定在 Skill 裡面）</td><td>N:N（多個 Skill 共用同一份知識）</td></tr>
++    <tr><td>適合場景</td><td>每個 Skill 的知識不重疊</td><td>BIM 法規被多個工作流共用</td></tr>
++  </table>
++
++  <h3>真實案例：防火法規被三個 Skill 引用</h3>
++  <pre><code>domain/fire-rating-check.md（一份知識）
++    ├── 被 /fire-safety-check 引用（防火時效視覺化）
++    ├── 被 /building-compliance 引用（法規檢討）
++    └── 被 /element-coloring 引用（依防火等級上色）
++
++如果搬進 Skill 內部：
++    fire-safety-check/references/fire-rating.md   ← 複製一
++    building-compliance/references/fire-rating.md  ← 複製二
++    element-coloring/references/fire-rating.md     ← 複製三
++    → 法規更新時要改三個地方，忘改一個就不一致</code><button class="copy-btn" onclick="copyCode(this)">複製</button></pre>
++
++  <h3>Domain 不是 Skill 的低階版本</h3>
++  <table>
++    <tr><th></th><th>Domain</th><th>Skill</th></tr>
++    <tr><td>角色</td><td><strong>知識</strong>（法規、SOP、步驟）</td><td><strong>編排</strong>（何時觸發、用什麼順序呼叫工具）</td></tr>
++    <tr><td>載入方式</td><td>被 Skill 引用時才讀取</td><td>metadata 永遠在 system prompt</td></tr>
++    <tr><td>誰來寫</td><td><strong>任何老師</strong>（只需要 Markdown）</td><td>Maintainer（需要理解工具編排）</td></tr>
++    <tr><td>需要升級嗎</td><td>大多數不需要</td><td>—</td></tr>
++  </table>
++
++  <h3>對老師的意義</h3>
++  <p style="font-size:1.15em;font-weight:700;">你寫一份 Domain，所有引用它的 Skill 都自動具備你的專業知識。<br>你不需要懂 Skill 怎麼寫、工具怎麼用、程式碼怎麼改。</p>
++</div>
++
++<!-- Drawer 3-6 (was 3-5: Profile) -->
++<div class="drawer" id="drawer-3-6">
+   <button class="drawer-close" onclick="closeDrawer()">✕</button>
+   <h2>Profile 角色篩選</h2>
+   <h3>可用的 Profile</h3>
+@@ -2070,8 +2142,10 @@ dotnet build -c Release.R24 RevitMCP.csproj</code><button class="copy-btn" oncli
+   <p>版本對照：R22=2022, R23=2023, R24=2024, R25=2025, R26=2026</p>
+ 
+   <h3>部署 DLL</h3>
+-  <pre><code># 先關掉 Revit！
+-Copy-Item "bin\Release\RevitMCP.dll" `
++  <p>build 完成後，<code>setup.ps1</code> 或 <code>/deploy-addon</code> 會自動部署到正確路徑。<br>
++  如需手動部署：</p>
++  <pre><code># 先關掉 Revit！版本號改成你的（例如 R24 對應 2024）
++Copy-Item "bin\Release.R24\RevitMCP.dll" `
+   "$env:APPDATA\Autodesk\Revit\Addins\2024\RevitMCP\" -Force</code><button class="copy-btn" onclick="copyCode(this)">複製</button></pre>
+   <p>或用自動腳本：</p>
+   <pre><code>..\scripts\install-addon.ps1</code><button class="copy-btn" onclick="copyCode(this)">複製</button></pre>
+@@ -2249,7 +2323,7 @@ git push origin add/parking-check
+     <tr><th>項目</th><th>負責</th><th>狀態</th></tr>
+     <tr><td>Issue #16：帷幕牆+排煙窗 C# 實作</td><td>Alex</td><td>✅ 已完成</td></tr>
+     <tr><td>Issue #18：lessons.md 觸發機制</td><td>maintainer</td><td>✅ 已完成（/dev-guide）</td></tr>
+-    <tr><td>Domain → Skill 全面升級</td><td>maintainer</td><td>✅ 已完成（17 個 Skill）</td></tr>
++    <tr><td>Domain → Skill 全面升級</td><td>maintainer</td><td>✅ 已完成（18 個 Skill）</td></tr>
+     <tr><td>CONTRIBUTING.md 更新</td><td>maintainer</td><td>規劃中</td></tr>
+   </table>
+   <p>追蹤連結：<a href="https://github.com/shuotao/REVIT_MCP_study/issues" target="_blank" style="color:#60a5fa">GitHub Issues</a></p>
+@@ -2303,13 +2377,10 @@ git push origin add/parking-check
+           2. 點綠色的 <span style="color:#4ade80;font-weight:700">&lt;&gt; Code</span> 按鈕<br>
+           3. 複製 HTTPS 網址<br>
+           4. 開啟終端機（按 <code>Win + X</code> → 選「終端」或「PowerShell」）<br>
+-          5. 先切換到桌面（這樣專案會下載到桌面）：<br>
+-          <code style="margin:4px 0;display:inline-block">cd Desktop</code><br>
+-          6. 貼上以下指令，按 Enter：
+-        </div>
+-        <div class="deploy-oneliner" onclick="navigator.clipboard.writeText('cd Desktop && git clone https://github.com/shuotao/REVIT_MCP_study.git');this.textContent='已複製！';setTimeout(()=>{this.textContent='cd Desktop && git clone https://github.com/shuotao/REVIT_MCP_study.git'},1500)">
+-          cd Desktop && git clone https://github.com/shuotao/REVIT_MCP_study.git
++          5. 逐行貼上以下指令（每行貼完按 Enter）：
+         </div>
++        <div class="deploy-oneliner" onclick="navigator.clipboard.writeText('cd Desktop\ngit clone https://github.com/shuotao/REVIT_MCP_study.git');this.textContent='已複製！';setTimeout(()=>{this.textContent='cd Desktop\ngit clone https://github.com/shuotao/REVIT_MCP_study.git'},1500)" style="white-space:pre-line">cd Desktop
++git clone https://github.com/shuotao/REVIT_MCP_study.git</div>
+         <p class="deploy-note">
+           <strong style="color:rgba(255,255,255,0.5);">沒有 Git？</strong>
+           前往 <a href="https://git-scm.com/download/win" target="_blank" style="color:#60a5fa">git-scm.com</a> 下載安裝，一路按 Next 即可。<br><br>
+@@ -2437,6 +2508,21 @@ git push origin add/parking-check
+         貼上本次參加者名單（每行一位），抽出 3 位
+       </p>
+       <textarea id="lotteryNames" placeholder="王大明&#10;李小華&#10;張三&#10;陳四&#10;..."></textarea>
++      <div style="margin:12px 0;">
++        <label style="font-size:12px;color:rgba(255,255,255,0.4);display:block;margin-bottom:6px;">
++          排除名單（已報告過 / 已提 PR，每行一位）
++        </label>
++        <textarea id="lotteryExclude" style="height:80px;font-size:12px;" placeholder="已排除的人...">Alex（7alexhuang-ux）
++Jacky（Jacky820507）
++David（davidhsu68-dvstudio）
++Kevin（916kevin-gif）
++CyberPotato（CyberPotato0416）
++yihuiiiii
++taiwanbanana
++ChimingLu
++h30190
++lesleyliuke</textarea>
++      </div>
+       <button class="lottery-btn" id="lotteryBtn" onclick="drawLottery()">抽籤</button>
+       <div id="lotteryResult" class="lottery-result"></div>
+     </div>
+@@ -2559,12 +2645,31 @@ function copyText(text) {
+ // === Lottery ===
+ function drawLottery() {
+   const textarea = document.getElementById('lotteryNames');
++  const excludeTextarea = document.getElementById('lotteryExclude');
+   const resultDiv = document.getElementById('lotteryResult');
+   const btn = document.getElementById('lotteryBtn');
+-  const names = textarea.value.trim().split('\n').map(n => n.trim()).filter(n => n.length > 0);
++  const allNames = textarea.value.trim().split('\n').map(n => n.trim()).filter(n => n.length > 0);
++
++  // 建立排除清單（取括號前的名字 + 整行都算，不分大小寫）
++  const excludeRaw = excludeTextarea.value.trim().split('\n').map(n => n.trim()).filter(n => n.length > 0);
++  const excludeSet = new Set();
++  excludeRaw.forEach(line => {
++    excludeSet.add(line.toLowerCase());
++    // 如果有括號，取括號前的名字也加入
++    const match = line.match(/^([^（(]+)/);
++    if (match) excludeSet.add(match[1].trim().toLowerCase());
++  });
++
++  // 過濾排除名單
++  const names = allNames.filter(n => !excludeSet.has(n.toLowerCase()));
++
++  const excludedCount = allNames.length - names.length;
++  if (excludedCount > 0) {
++    console.log(`已排除 ${excludedCount} 位（已報告/已提 PR）`);
++  }
+ 
+   if (names.length < 3) {
+-    resultDiv.innerHTML = '<p style="color:#f87171;text-align:center;font-size:14px;">請至少輸入 3 位參加者</p>';
++    resultDiv.innerHTML = '<p style="color:#f87171;text-align:center;font-size:14px;">過濾後參加者不足 3 位（共 ' + allNames.length + ' 人，排除 ' + excludedCount + ' 人，剩 ' + names.length + ' 人）</p>';
+     return;
+   }
+ 
+diff --git a/docs/image/3_5.svg b/docs/image/3_5.svg
+new file mode 100644
+index 0000000..e6df47e
+--- /dev/null
++++ b/docs/image/3_5.svg
+@@ -0,0 +1,67 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
++  <rect width="800" height="800" fill="#000"/>
++
++  <!-- Title -->
++  <text x="400" y="70" fill="rgba(255,255,255,0.4)" font-family="Helvetica Neue,sans-serif" font-size="14" letter-spacing="4" text-anchor="middle">SHARED KNOWLEDGE</text>
++
++  <!-- Left side: Anthropic model (1:1) -->
++  <text x="200" y="130" fill="rgba(255,255,255,0.35)" font-family="Helvetica Neue,sans-serif" font-size="12" text-anchor="middle">ANTHROPIC MODEL</text>
++
++  <!-- Skill A with internal ref -->
++  <rect x="80" y="160" width="110" height="80" rx="6" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
++  <text x="135" y="185" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">Skill A</text>
++  <rect x="95" y="200" width="80" height="25" rx="3" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
++  <text x="135" y="217" fill="rgba(255,255,255,0.4)" font-family="Helvetica Neue,sans-serif" font-size="9" text-anchor="middle">refs/knowledge</text>
++
++  <!-- Skill B with SAME internal ref (duplicated) -->
++  <rect x="210" y="160" width="110" height="80" rx="6" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
++  <text x="265" y="185" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">Skill B</text>
++  <rect x="225" y="200" width="80" height="25" rx="3" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
++  <text x="265" y="217" fill="rgba(255,255,255,0.4)" font-family="Helvetica Neue,sans-serif" font-size="9" text-anchor="middle">refs/knowledge</text>
++
++  <!-- Duplication indicator -->
++  <text x="200" y="270" fill="rgba(255,255,255,0.3)" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">same knowledge, duplicated</text>
++
++  <!-- Dividing line -->
++  <line x1="400" y1="120" x2="400" y2="700" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
++
++  <!-- Right side: Our model (N:N) -->
++  <text x="600" y="130" fill="rgba(255,255,255,0.35)" font-family="Helvetica Neue,sans-serif" font-size="12" text-anchor="middle">BIM MODEL</text>
++
++  <!-- Skill A -->
++  <rect x="490" y="160" width="100" height="45" rx="6" fill="none" stroke="#fff" stroke-width="1.5"/>
++  <text x="540" y="188" fill="#fff" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">fire-safety</text>
++
++  <!-- Skill B -->
++  <rect x="610" y="160" width="100" height="45" rx="6" fill="none" stroke="#fff" stroke-width="1.5"/>
++  <text x="660" y="188" fill="#fff" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">compliance</text>
++
++  <!-- Skill C -->
++  <rect x="550" y="220" width="100" height="45" rx="6" fill="none" stroke="#fff" stroke-width="1.5"/>
++  <text x="600" y="248" fill="#fff" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">corridor</text>
++
++  <!-- Shared domain (center, prominent) -->
++  <rect x="530" y="310" width="140" height="50" rx="8" fill="rgba(255,255,255,0.1)" stroke="#fff" stroke-width="2"/>
++  <text x="600" y="330" fill="#fff" font-family="Helvetica Neue,sans-serif" font-size="12" font-weight="700" text-anchor="middle">domain/</text>
++  <text x="600" y="348" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="10" text-anchor="middle">fire-rating-check.md</text>
++
++  <!-- Lines from skills to domain -->
++  <line x1="540" y1="205" x2="570" y2="310" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
++  <line x1="660" y1="205" x2="630" y2="310" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
++  <line x1="600" y1="265" x2="600" y2="310" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
++
++  <!-- "shared, not duplicated" -->
++  <text x="600" y="390" fill="rgba(255,255,255,0.3)" font-family="Helvetica Neue,sans-serif" font-size="11" text-anchor="middle">one source, three consumers</text>
++
++  <!-- Bottom: The principle -->
++  <rect x="100" y="440" width="600" height="120" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
++
++  <text x="400" y="475" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="13" text-anchor="middle">Anthropic assumes each Skill's knowledge is independent.</text>
++  <text x="400" y="500" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="13" text-anchor="middle">BIM workflows share regulatory knowledge across Skills.</text>
++  <text x="400" y="535" fill="#fff" font-family="Helvetica Neue,sans-serif" font-size="18" font-weight="700" text-anchor="middle">Domain exists because knowledge is shared.</text>
++
++  <!-- Bottom: contributor message -->
++  <text x="400" y="620" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="14" text-anchor="middle">Your contribution is Domain — shared knowledge.</text>
++  <text x="400" y="650" fill="rgba(255,255,255,0.5)" font-family="Helvetica Neue,sans-serif" font-size="14" text-anchor="middle">You don't need to write Skills or code.</text>
++  <text x="400" y="690" fill="rgba(255,255,255,0.35)" font-family="Helvetica Neue,sans-serif" font-size="12" text-anchor="middle">Write once in domain/ → multiple Skills inherit your expertise.</text>
++</svg>
+diff --git a/docs/troubleshoot-first-install.md b/docs/troubleshoot-first-install.md
+new file mode 100644
+index 0000000..79c4c15
+--- /dev/null
++++ b/docs/troubleshoot-first-install.md
+@@ -0,0 +1,178 @@
++# 第一次安裝遇到問題？照這份走就好
++
++> 這份文件是給第一次安裝、遇到紅字錯誤的同學。
++> 不需要任何程式背景，照著一步一步做就好。
++
++---
++
++## 你遇到的問題是什麼？
++
++### 問題一：貼指令時出現「'&&' 語彙基元不是有效的陳述式分隔符號」
++
++**白話解釋：**
++Windows 有兩種黑色視窗（終端機），它們長得很像但規則不同。
++我們給的指令用了 `&&` 把兩個動作接在一起，但你開的那種黑色視窗不認識 `&&`。
++這就像用日文文法寫了一句話，但對方只看得懂中文——不是你的問題，是我們給的指令格式不對。
++
++**我們已經修正了。** 現在網頁上的指令已經拆成兩行，不會再遇到這個問題。
++
++### 問題二：跑 setup.bat 時出現一整片紅字
++
++**白話解釋：**
++安裝腳本裡面有寫中文說明（例如「正在安裝 Node.js…」）。
++但 Windows 預設的讀取方式看不懂這種中文編碼格式，
++所以它把每個中文字都讀成亂碼，然後因為亂碼不是合法的程式指令，就整個壞掉了。
++這就像你打開一個 Word 檔案，但電腦用記事本開——內容全變亂碼。
++
++**我們已經修正了。** 所有安裝腳本都加上了正確的編碼標記，Windows 現在可以正確讀取中文。
++
++---
++
++## 重新安裝步驟（從頭來）
++
++### 第一步：刪除之前下載的資料夾
++
++因為之前下載的版本有問題，我們要重新下載一份修正後的版本。
++
++1. 打開你的**桌面**
++2. 找到資料夾 **REVIT_MCP_study**（如果有的話）
++3. **右鍵 → 刪除**（或拖到資源回收桶）
++
++> 如果桌面上沒有這個資料夾，可能在其他地方。沒關係，跳過這步。
++
++---
++
++### 第二步：打開終端機
++
++1. 在鍵盤上同時按 **Win 鍵 + X**
++   - Win 鍵就是鍵盤左下角有 Windows 標誌的那個鍵
++2. 會彈出一個選單，請點選：
++   - 如果看到「**終端機**」→ 點它
++   - 如果看到「**Windows PowerShell**」→ 點它
++   - 如果兩個都有 → 點「**終端機**」
++
++> 你會看到一個黑色（或深藍色）的視窗，裡面有一行文字閃著游標。
++> 這就是「終端機」。接下來我們只需要在這裡貼指令就好。
++
++---
++
++### 第三步：切換到桌面
++
++在終端機裡面，**複製以下這一行**，貼上去，然後按 **Enter**：
++
++```
++cd Desktop
++```
++
++> **怎麼貼？** 在黑色視窗裡面，用 **右鍵點一下** 就是貼上（不是 Ctrl+V）。
++> 有些版本可以用 Ctrl+V，試試看哪個有效。
++
++貼完按 Enter 後，你應該會看到畫面上的路徑從類似 `C:\Users\你的名字>` 變成 `C:\Users\你的名字\Desktop>`。
++
++**如果出現紅字「找不到路徑」：**
++你的電腦可能用中文桌面路徑，改貼這一行試試：
++```
++cd 桌面
++```
++
++---
++
++### 第四步：下載專案
++
++在終端機裡面，**複製以下這一行**，貼上去，按 **Enter**：
++
++```
++git clone https://github.com/shuotao/REVIT_MCP_study.git
++```
++
++你會看到畫面開始跑一些數字（下載進度）。等它跑完，出現新的一行 `>` 提示符號，就是下載完成了。
++
++**如果出現「'git' 不是內部或外部命令」：**
++你的電腦還沒裝 Git。請做以下步驟：
++1. 打開瀏覽器，前往 https://git-scm.com/download/win
++2. 它會自動開始下載安裝檔
++3. 打開安裝檔，**一路按 Next**，最後按 Install
++4. 安裝完成後，**關掉黑色視窗**
++5. 重新從「第二步」開始做（重新開終端機）
++
++---
++
++### 第五步：跑安裝程式
++
++1. 打開你的**桌面**
++2. 打開資料夾 **REVIT_MCP_study**
++3. 打開裡面的 **scripts** 資料夾
++4. 找到 **setup.bat**
++5. **雙擊它**
++
++> 會跳出一個黑色視窗，開始自動安裝。
++> 過程中可能會問你問題（例如選擇 Revit 版本），照畫面上的提示回答就好。
++> 整個過程大約 3-5 分鐘。
++
++**如果又出現紅字：**
++請確認你是在「第四步」下載的新版本（不是之前的舊版本）。
++舊版本的安裝檔有中文編碼問題，新版本已經修正。
++最簡單的確認方式：
++1. 回到終端機
++2. 貼上以下指令，按 Enter：
++```
++cd Desktop\REVIT_MCP_study
++```
++3. 再貼上：
++```
++git log --oneline -1
++```
++4. 如果看到的訊息裡有「**UTF-8 BOM**」或「**修復 Windows 中文亂碼**」字樣，就是新版本
++5. 如果不是，貼上以下指令更新：
++```
++git pull
++```
++6. 更新完後，再回去雙擊 setup.bat
++
++---
++
++### 第六步：確認安裝成功
++
++安裝程式跑完後，畫面最後會顯示一個總結：
++- 如果看到綠色的 `[OK]` 訊息 → 安裝成功
++- 如果看到紅色的 `[!!]` 訊息 → 那一步失敗了（看訊息內容判斷）
++
++**安裝成功後，你需要做的最後一件事：**
++1. 打開 Revit
++2. 在上方找到 **Add-in** 或 **增益集** 頁籤
++3. 找到 **RevitMCP** 按鈕
++4. 點一下啟動它
++
++看到 RevitMCP 按鈕亮起來就完成了！
++
++---
++
++## 常見問題
++
++### Q：我的桌面叫「桌面」不是「Desktop」，指令怎麼打？
++用 `cd 桌面` 取代 `cd Desktop`。
++
++### Q：我按 Win+X 沒有看到「終端機」或「PowerShell」？
++試試在桌面空白處 **右鍵** → 看有沒有「在終端機中開啟」或「在這裡開啟 PowerShell」。
++
++### Q：下載到一半斷掉了怎麼辦？
++刪掉桌面上的 REVIT_MCP_study 資料夾，重新從第四步開始。
++
++### Q：setup.bat 問我選 Revit 版本，我不知道選什麼？
++選你電腦上有安裝的 Revit 版本。例如你用的是 Revit 2024，就輸入 `2024`。
++如果不確定，打開 Revit 看一下標題列上寫的版本號。
++
++### Q：我做到最後一步但 Revit 裡面沒有看到 RevitMCP 按鈕？
++可能是 DLL 沒有部署成功。請在終端機裡貼上：
++```
++cd Desktop\REVIT_MCP_study
++powershell -ExecutionPolicy Bypass -File scripts\install-addon.ps1
++```
++然後重新開啟 Revit。
++
++---
++
++> 如果以上都試過了還是不行，請截圖你的錯誤畫面，
++> 傳到讀書會群組或 GitHub Issue，我們會幫你看。
++>
++> 最後更新：2026-03-22
+diff --git a/domain/detail-component-sync.md b/domain/detail-component-sync.md
+index 9d9c561..ec11a56 100644
+--- a/domain/detail-component-sync.md
++++ b/domain/detail-component-sync.md
+@@ -251,11 +251,11 @@ graph TD
+ ### v3.4 - 參數格式調整
+ - **調整：** 確認 `詳圖圖號` 使用完整格式（含 `ARB-` 前綴）
+ 
+-### v3.5 - Safeguard Mode（最終版）⭐⭐⭐
+-- **重大修正：** 移除所有自動更名與符號切換邏輯
+-- **核心防護：** 只有「類型名稱已匹配圖紙編號」的元件才會更新參數
+-- **保護機制：** 標準/共用詳圖（如 `D0921`）被引用到其他圖紙時，自動跳過不更新
+-- **穩定性：** ✅ 已驗證，不會誤改任何類型
++### v4.0 - Sequential Fuzzy Match ⭐⭐⭐⭐
++- **重大變更：** 實作 `async/await` 順序執行機制，解決大規模寫入（>50 條指令）時的穩定性問題。
++- **改進：** 加入強型態名稱正規化（Normalization），支援全半形轉換、自動移除括號與符號、自動排除 placeholder。
++- **策略：** 當資產編號格式不一時（如 `ARB-D09001` vs `AR-B-D0901`），改以「前置 ID 提取」或「正規化名稱包含了」作為次要比對手段。
++- **性能：** ✅ 已驗證，可穩定處理 100+ 個同時同步請求而不遺漏指令。
+ 
+ ---
+ 
+diff --git a/domain/lessons.md b/domain/lessons.md
+index 050f0fa..9f1da50 100644
+--- a/domain/lessons.md
++++ b/domain/lessons.md
+@@ -18,17 +18,77 @@
+   - 標註位置線應定義在 `(max + min) / 2` 的中心軌跡上，以確保標註文字不與邊界牆重疊。
+   - **警告**：嚴禁在 3D 視圖中直接建立平面標註，必須先查詢 `ActiveView`。
+ 
+-## [L-003] 簡報自動化價值提案 (Value Proposition)
+-
+-- **核心策略**：簡報時應強調「痛點 (The Pain)」對比「解決方案 (The Solution)」。
+-- **實踐**：展示如何將數小時的重複勞動（如：圖紙重編號、手繪虛線）縮短為幾秒鐘的自動化流程，這對 BIM 經理最具吸引力。
+-
+-## [L-004] 自動化工具的「防護機制 (Safeguard Mode)」
++## [L-003] 自動化工具的「防護機制 (Safeguard Mode)」
+ 
+ - **規則**：針對會大量變更參數的工具，必須具備防護邏輯，以建立使用者的信任。
+-- **實踐**：在 `detail-component-sync` 工具中，僅在「類型名稱已匹配圖紙編號」時才更新參數，主動跳過標準/共用詳圖，防止誤改核心資產。
++- **實踐**：在 `detail-component-sync` 工具中，僅在「類型名稱已匹配圖紙編號」時才更新參數，主主跳過標準/共用詳圖，防止誤改核心資產。
+ 
+-## [L-005] 圖紙重編號的「暫存更名 (Two-Pass Renaming)」
++## [L-004] 圖紙重編號的「暫存更名 (Two-Pass Renaming)」
+ 
+ - **避坑經驗**：Revit 不允許兩張圖紙同時擁有相同的編號。
+ - **實踐**：在執行 `auto_renumber_sheets` 時，先將受影響的圖紙全部更名為 `_TEMP_FIX_` (第一階段)，釋放編號空間後再套用最終目標編號 (第二階段)，避免 ID 衝突報錯。
++
++## [L-006] Revit 增益集部署與 AddInId 衝突排除
++
++- **問題現象**：Revit 啟動時發生「無法初始化增益集，因為應用程式已存在此 AddInId 節點」錯誤。
++- **原因分析**：
++  - 歷史遺留問題：專案曾使用手動命名的 `.addin` 檔（如 `RevitMCP.2024.addin`），後改用 SDK 自動生成的 `RevitMCP.addin`。
++  - 兩者指向不同的 DLL 路徑但使用相同的 GUID，導致 Revit 衝突。
++- **避坑規則**：
++  - 全版本統一使用 `RevitMCP.addin` 作為入口名稱。
++  - 執行部署腳本或 `dotnet build` 前，應確保環境中無重複的 `.addin`。
++  - **專案結構**：DLL 必須統一放置於 `Addins\{version}\RevitMCP\` 子資料夾內，避免與根目錄的舊版檔混淆。
++  - **版本相容**：Revit 2022-2023 的 `Category` 缺乏 `.BuiltInCategory` 屬性，必須使用 `GetBuiltInCategoryCompat()` 擴充方法。
++  - **DeployAddin 必須關閉**：Nice3point SDK 的 `<DeployAddin>true</DeployAddin>` 會在 build 時自動產生 `RevitMCP.{version}.addin`，與手動的 `RevitMCP.addin` 衝突。csproj 中必須設為 `false`。
++  - **setup.ps1 自動清理**：部署步驟內建 `Get-ChildItem -Filter "RevitMCP.*.addin"` 清理邏輯，防止殘黨累積。
++
++## [L-007] setup.ps1 PowerShell 5.1 相容性
++
++- **問題現象**：`setup.ps1` 在 Windows PowerShell 5.1 下多處報錯。
++- **根因與修復**：
++  - `Join-Path` 只接受 2 個參數（PS 5.1），三段以上路徑需巢狀呼叫 `Join-Path (Join-Path a b) c`。
++  - `-split` 單一值回傳字串非陣列，`Set-StrictMode` 下無 `.Count`，需用 `@()` 包裹。
++  - 空 `PSCustomObject` 的 `.PSObject.Properties.Name` 在 StrictMode 下報錯，改用 `.PSObject.Properties.Match('key').Count`。
++- **避坑規則**：所有 PowerShell 腳本必須在 5.1 下測試，不可假設 7.x 語法可用。
++
++## [L-008] 走廊寬度標註需使用邊界線段而非 BoundingBox
++
++- **問題現象**：用 `create_dimension` 的 BoundingBox 座標標註走廊寬度，得到的是外接矩形尺寸（7.29m），非實際淨寬。
++- **根因**：L 型或不規則走廊的 BoundingBox 包含大量空白區域。
++- **解法**：新增 `create_corridor_dimension` 命令，使用 Room BoundarySegments 的 Segment-First 演算法找平行牆對，在精確的牆面位置建立標註。
++- **實測驗證**：L5 走廊 9 個區段，寬度 516mm–3045mm，兩處不合格（< 1200mm）。
++
++## [L-009] WebSocket 大型數據處理與分片拼接機制
++
++- **避坑經驗**：在 Revit MCP Add-in 中，隨附的 `SocketService.cs` 預設緩衝區（如 4096 bytes）若不具備拼接邏輯，將導致大型 JSON 指令（如 560 條詳圖線 ≈ 50KB+）在傳輸時被截斷，造成 JSON 解析靜默失敗與指令超時。
++- **規則**：
++  - **接收端 (C#)**：必須使用 `MemoryStream` 並循環讀取 `WebSocket.ReceiveAsync` 直到 `result.EndOfMessage` 為真。
++  - **緩衝區優化**：對於 BIM 數據傳輸，建議將接收緩衝區基礎大小提升至 **64KB (65536 bytes)** 以減少 frame 讀取次數。
++  - **驗證**：若發生 Step 1 成功但 Step 2（大型數組）永遠超時的情況，應優先檢查傳送數據量是否超過緩衝區上限。
++
++## [L-010] 批次寫入的「順序執行 (Sequential Async)」原則
++
++- **避坑經驗**：一次性向 WebSocket 送出數十個寫入指令（如 `rename_element`）時，若不等待回應直接關閉或繼續發送，容易發生指令遺失或 Revit 處理衝突。
++- **實踐**：應在腳本中實作 `sendCommand` 包裝函式，利用 `Promise` 等待單一指令的 `RequestId` 回傳後，再執行下一個動作。這對維護數據完整性至關重要。
++
++## [L-011] Revit 名稱正規化 (Normalization) 策略
++
++- **規則**：Revit 中的人為命名（圖紙名稱、類型名稱）常包含不可控的符號與空格。
++- **比對實踐**：
++  - 統一將全形英數轉為半形。
++  - 移除所有括號、減號、空格與常用修飾詞（如「詳圖」）。
++  - 對於具備編號系統的資產，優先提取數位部分進行 ID 比對，若 ID 無法辨識則改用正規化後的名稱進行 `includes` 模糊比對。
++
++## [L-012] Revit 元件空間座標提取策略
++
++- **避坑經驗**：Revit MCP 內建的 `query_elements` 預設僅回傳參數字串，缺乏幾何座標。對於需要「排序」或「對齊」的工具，這將導致邏輯失效。
++- **實踐**：應在 C# 核心端擴充 `get_element_location` 指令，判斷 `Location` 屬性（Point 或 Curve）並 fallback 到 `BoundingBox.Center`。這能在 JS 端提供高精度的 X/Y/Z 數值，實現如「停車位由左至右編號」的空間運算。
++
++## [L-013] 自動化寫入時的「靜默處理 (Silent Failure Handling)」
++
++- **避坑經驗**：修改「群組 (Group)」內元件的參數時，Revit 會強制彈出警告對話框，中斷自動化流程（例如 1000 個車位就會跳 1000 次視窗）。
++- **實踐**：在 `Transaction` 中套用 `IFailuresPreprocessor` (如 `DismissWarningsPreprocessor`)。
++- **規則**：
++  - 偵測 `FailureSeverity.Warning` 等級。
++  - 使用 `DeleteWarning(f)` 自動關閉警告。
++  - 確保腳本能在「不干擾使用者」的前提下，穩定完成大量批次變更。
+diff --git a/domain/skill-authoring-standard.md b/domain/skill-authoring-standard.md
+new file mode 100644
+index 0000000..f0d26ae
+--- /dev/null
++++ b/domain/skill-authoring-standard.md
+@@ -0,0 +1,158 @@
++---
++name: skill-authoring-standard
++description: Revit MCP 專案的 Skill 編寫規範。供 skill-creator plugin 執行時參照。
++tags: [skill, 規範, 品質, description, 觸發]
++version: 1.0
++---
++
++# Skill 編寫規範（Revit MCP 專案）
++
++本文件定義本專案 Skill 的編寫規則，作為官方 `skill-creator` plugin 的**補充參照**。
++官方 skill-creator 處理通用品質（格式、觸發率、eval），本文件處理專案特有的約束。
++
++## 規範來源
++
++每次建立或修改 Skill 前，先確認官方規格是否有更新：
++- Spec：https://agentskills.io/specification
++- Best practices：https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
++- 官方範例：https://github.com/anthropics/skills
++- 五大設計模式：https://smartscope.blog/en/generative-ai/claude/claude-skills-design-patterns-official-guide/
++
++## 1. Description 規則
++
++### 格式
++
++```yaml
++description: "動詞開頭描述功能。說明何時使用。觸發條件：中文關鍵字、english keywords。"
++```
++
++### 必須
++
++- 第三人稱動詞開頭（「在平面視圖中自動建立…」而非「自動標註尺寸：」）
++- 包含「做什麼」+「什麼時候用」
++- 包含中英文觸發關鍵字
++- < 1024 字元
++
++### 禁止
++
++- **不要在 description 裡列工具名稱**（移到 SKILL.md body 的「工具」段落）
++- 不要用第一人稱或第二人稱
++- 不要使用模糊語（「處理資料」「幫助使用者」）
++
++### 原因
++
++description 被注入 system prompt，18 個 Skill × 每個列 3-7 個工具名 = ~100 個工具名永遠佔 context。
++工具名稱改了但 description 沒同步 → 數字劣化。工具名稱放在 body 裡，觸發時才載入。
++
++## 2. SKILL.md Body 結構
++
++```markdown
++---
++name: kebab-case-name
++description: "..."
++---
++
++# 標題
++
++## Lessons Reference（如有相關 lesson）
++- **L-XXX**：描述。詳見 `domain/lessons.md`。
++
++## Sub-Workflows（或 Workflow / Steps）
++
++### 1. 子流程名稱
++步驟描述...
++
++### 2. 子流程名稱
++步驟描述...
++
++## 工具
++| 工具名稱 | 用途 |
++|---------|------|
++| `tool_name` | 做什麼 |
++
++## Reference
++詳見 `domain/xxx.md`。
++```
++
++### 規則
++
++- Body < 500 行
++- 必須有 `## Reference` 段落連結到對應的 domain 文件
++- 每個 Skill 至少對應一個 `domain/*.md`（知識在 domain，編排在 Skill）
++- 工具名稱只出現在 body 的「工具」表格，不出現在 description
++
++## 3. 與 Domain 的關係
++
++```
++domain/*.md = 知識（法規、SOP、步驟、注意事項）
++SKILL.md    = 編排（何時觸發、什麼順序、呼叫哪些工具）
++```
++
++- 一個 Skill 可以引用多個 domain（例如 fire-safety-check 引用 3 個 domain）
++- 一個 domain 可以被多個 Skill 引用
++- Skill 不應複製 domain 的內容，而是引用它
++
++## 4. 設計模式分類
++
++每個 Skill 應屬於以下之一：
++
++| 模式 | 適用場景 | 本專案範例 |
++|------|---------|-----------|
++| Sequential Workflow | 有依賴順序的步驟鏈 | element-query（三階段協議） |
++| Iterative Refinement | 品質改善迴圈 | claude-md-sync（雙向驗證） |
++| Context-aware Tool Selection | 條件分支 | building-compliance（依法規類型選工具） |
++| Domain-specific Intelligence | 內嵌領域規則 | element-coloring、wall-orientation-check |
++| Utility | 純工具操作，不涉及 MCP Tools | build-revit、deploy-addon |
++
++## 5. 升級流程：Domain → Skill
++
++使用 `/domain` 產出 SOP 後，判斷是否需要升級為 Skill：
++
++### 升級條件（滿足任一即可）
++
++- 該 domain 被重複使用 3 次以上
++- 流程涉及 3 個以上 MCP Tools 的特定順序
++- 有明確的觸發關鍵字可以做語意匹配
++- 流程有條件分支或驗證迴圈
++
++### 升級步驟
++
++1. 使用 `skill-creator` plugin 建立 Skill
++2. 將本文件（`domain/skill-authoring-standard.md`）提供給 skill-creator 作為專案規則參照
++3. skill-creator 會處理：SKILL.md 撰寫、description 觸發率優化、eval 測試
++4. 完成後 `claude-md-sync` hook 自動觸發，驗證 CLAUDE.md 一致性
++
++### 升級時的 prompt 範例
++
++```
++我要把 domain/smoke-exhaust-review.md 升級為 Skill。
++請先讀 domain/skill-authoring-standard.md 了解本專案的 Skill 規範，
++然後用 skill-creator 建立 Skill。
++```
++
++## 6. 現有 Skill 的待修正項目
++
++以下是基於本規範審計後發現的問題，供後續逐一修正時參照：
++
++| 問題 | 影響的 Skill | 修正方式 |
++|------|-------------|---------|
++| description 含工具名稱 | 全部 16 個 BIM Skill | 工具名移到 body 的「工具」表格 |
++| description 非第三人稱動詞開頭 | 全部 16 個 BIM Skill | 改為動詞開頭 |
++| 缺少 `## Reference` 連結 | 部分 Skill | 加入對應 domain 連結 |
++| 缺少 `## 工具` 表格 | 部分 Skill | 從 description 移入 |
++| 無 feedback loop | 法規檢查類（fire-safety, smoke-exhaust, building-compliance） | 考慮加入驗證迴圈 |
++
++**不要一次全改。每次用 `/domain` 升級或 skill-creator 改善時，順便修正該 Skill 的上述問題。**
++
++## 7. 檢查清單
++
++在 Skill 建立或修改完成時，對照以下清單：
++
++- [ ] description < 1024 chars，第三人稱動詞開頭
++- [ ] description 不含工具名稱
++- [ ] description 包含中英文觸發關鍵字
++- [ ] body < 500 行
++- [ ] 有 `## Reference` 連結到 domain
++- [ ] 工具名稱在 body 的表格中，不在 description
++- [ ] name 為 kebab-case，與資料夾名稱一致
++- [ ] 已確認對應的 domain 文件存在
+diff --git a/scripts/check-structure.ps1 b/scripts/check-structure.ps1
+index 1514e46..fa00ee6 100644
+--- a/scripts/check-structure.ps1
++++ b/scripts/check-structure.ps1
+@@ -1,4 +1,4 @@
+-# Deprecated: Use verify-qaqc.ps1 instead
++﻿# Deprecated: Use verify-qaqc.ps1 instead
+ # This script has been replaced by the comprehensive QA/QC verification script.
+ #
+ # Usage:
+diff --git a/scripts/install-ascii.ps1 b/scripts/install-ascii.ps1
+index 314e288..359fc04 100644
+--- a/scripts/install-ascii.ps1
++++ b/scripts/install-ascii.ps1
+@@ -1,4 +1,4 @@
+-# ============================================================================
++﻿# ============================================================================
+ # Revit MCP Add-in Auto Installer (Safe ASCII Version)
+ # ============================================================================
+ 
+diff --git a/scripts/preflight-check.ps1 b/scripts/preflight-check.ps1
+index 59edbeb..6c5fd21 100644
+--- a/scripts/preflight-check.ps1
++++ b/scripts/preflight-check.ps1
+@@ -1,4 +1,4 @@
+-<#
++﻿<#
+ .SYNOPSIS
+     Revit MCP 部署前環境檢查腳本
+ .DESCRIPTION
+diff --git a/scripts/setup.ps1 b/scripts/setup.ps1
+index 539d8fc..4a2441f 100644
+--- a/scripts/setup.ps1
++++ b/scripts/setup.ps1
+@@ -1,4 +1,4 @@
+-# ============================================================================
++﻿# ============================================================================
+ # Revit MCP 一鍵安裝程式（完整版）
+ # ============================================================================
+ # 此腳本會自動完成以下所有步驟：
+@@ -434,10 +434,10 @@ else {
+ if ($NonInteractive) {
+     # 非互動模式
+     if (-not [string]::IsNullOrWhiteSpace($RevitVersions)) {
+-        $selectedVersions = $RevitVersions -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -in $supportedVersions }
++        $selectedVersions = @($RevitVersions -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -in $supportedVersions })
+     }
+     else {
+-        $selectedVersions = $detectedVersions
++        $selectedVersions = @($detectedVersions)
+     }
+     if ($selectedVersions.Count -eq 0) {
+         Write-Fail "未指定有效的 Revit 版本，且未偵測到已安裝版本"
+@@ -585,7 +585,7 @@ elseif (-not (Test-CommandAvailable "node") -or -not (Test-CommandAvailable "npm
+ else {
+     $mcpServerDir = Join-Path $script:projectRoot "MCP-Server"
+     $nodeModulesPath = Join-Path $mcpServerDir "node_modules"
+-    $buildIndexPath = Join-Path $mcpServerDir "build" "index.js"
++    $buildIndexPath = Join-Path (Join-Path $mcpServerDir "build") "index.js"
+ 
+     $mcpServerOk = $true
+     Push-Location $mcpServerDir
+@@ -713,7 +713,7 @@ else {
+ 
+             # --- Deploy ---
+             if (-not $skipDeployFlag) {
+-                $dllSource = Join-Path $mcpDir "bin" "Release" "RevitMCP.dll"
++                $dllSource = Join-Path (Join-Path (Join-Path $mcpDir "bin") $config) "RevitMCP.dll"
+ 
+                 if (-not (Test-Path $dllSource)) {
+                     Write-Fail "Revit $ver：找不到 RevitMCP.dll（編譯可能失敗）"
+@@ -733,20 +733,27 @@ else {
+                         New-Item -ItemType Directory -Path $targetDllDir -Force | Out-Null
+                     }
+ 
++                    # 清理殘黨：刪除舊版 .addin 檔案（如 RevitMCP.2024.addin）
++                    $legacyAddins = Get-ChildItem -Path $targetBase -Filter "RevitMCP.*.addin" -ErrorAction SilentlyContinue
++                    foreach ($legacy in $legacyAddins) {
++                        Remove-Item -Path $legacy.FullName -Force -ErrorAction SilentlyContinue
++                        Write-Info "已清理殘留 .addin：$($legacy.Name)"
++                    }
++
+                     # 複製 DLL
+                     Copy-Item -Path $dllSource -Destination (Join-Path $targetDllDir "RevitMCP.dll") -Force -ErrorAction Stop
+ 
+-                    # 複製 .addin
++                    # 複製 .addin（唯一正規檔案）
+                     Copy-Item -Path $addinSource -Destination (Join-Path $targetBase "RevitMCP.addin") -Force -ErrorAction Stop
+ 
+                     # 複製 Newtonsoft.Json.dll（如果存在）
+-                    $jsonDll = Join-Path $mcpDir "bin" "Release" "Newtonsoft.Json.dll"
++                    $jsonDll = Join-Path (Join-Path (Join-Path $mcpDir "bin") $config) "Newtonsoft.Json.dll"
+                     if (Test-Path $jsonDll) {
+                         Copy-Item -Path $jsonDll -Destination (Join-Path $targetDllDir "Newtonsoft.Json.dll") -Force -ErrorAction SilentlyContinue
+                     }
+ 
+                     # 複製 ClosedXML.dll（如果存在）
+-                    $closedXmlDll = Join-Path $mcpDir "bin" "Release" "ClosedXML.dll"
++                    $closedXmlDll = Join-Path (Join-Path (Join-Path $mcpDir "bin") $config) "ClosedXML.dll"
+                     if (Test-Path $closedXmlDll) {
+                         Copy-Item -Path $closedXmlDll -Destination (Join-Path $targetDllDir "ClosedXML.dll") -Force -ErrorAction SilentlyContinue
+                     }
+@@ -781,7 +788,7 @@ if ($SkipAIConfig) {
+     Add-Result "AI 設定" "SKIP" "使用者跳過"
+ }
+ else {
+-    $mcpServerIndexJs = Join-Path $script:projectRoot "MCP-Server" "build" "index.js"
++    $mcpServerIndexJs = Join-Path (Join-Path (Join-Path $script:projectRoot "MCP-Server") "build") "index.js"
+     # 將路徑轉換為正斜線（JSON 相容）
+     $indexJsPath = $mcpServerIndexJs -replace '\\', '/'
+ 
+@@ -819,7 +826,7 @@ else {
+             }
+ 
+             # 確保 mcpServers 屬性存在
+-            if (-not ($claudeConfig.PSObject.Properties.Name -contains 'mcpServers')) {
++            if (-not ($claudeConfig.PSObject.Properties.Match('mcpServers').Count -gt 0)) {
+                 $claudeConfig | Add-Member -MemberType NoteProperty -Name 'mcpServers' -Value ([PSCustomObject]@{})
+             }
+ 
+@@ -829,7 +836,7 @@ else {
+                 args    = @($indexJsPath)
+             }
+ 
+-            if ($claudeConfig.mcpServers.PSObject.Properties.Name -contains 'revit-mcp') {
++            if ($claudeConfig.mcpServers.PSObject.Properties.Match('revit-mcp').Count -gt 0) {
+                 $claudeConfig.mcpServers.'revit-mcp' = $revitMcpEntry
+             }
+             else {
+@@ -884,7 +891,7 @@ else {
+             }
+         }
+ 
+-        if (-not ($geminiConfig.PSObject.Properties.Name -contains 'mcpServers')) {
++        if (-not ($geminiConfig.PSObject.Properties.Match('mcpServers').Count -gt 0)) {
+             $geminiConfig | Add-Member -MemberType NoteProperty -Name 'mcpServers' -Value ([PSCustomObject]@{})
+         }
+ 
+@@ -893,7 +900,7 @@ else {
+             args    = @($indexJsPath)
+         }
+ 
+-        if ($geminiConfig.mcpServers.PSObject.Properties.Name -contains 'revit-mcp') {
++        if ($geminiConfig.mcpServers.PSObject.Properties.Match('revit-mcp').Count -gt 0) {
+             $geminiConfig.mcpServers.'revit-mcp' = $revitMcpEntry
+         }
+         else {
+@@ -911,7 +918,7 @@ else {
+     }
+ 
+     # --- VS Code ---
+-    $vscodeConfigFile = Join-Path $script:projectRoot ".vscode" "mcp.json"
++    $vscodeConfigFile = Join-Path (Join-Path $script:projectRoot ".vscode") "mcp.json"
+     if (Test-Path $vscodeConfigFile) {
+         Write-OK "VS Code 設定已存在（.vscode/mcp.json）"
+         Add-Result "VS Code" "OK" "Already configured"
+diff --git a/scripts/verify-installation.ps1 b/scripts/verify-installation.ps1
+index ed6ef9c..bf86b3d 100644
+--- a/scripts/verify-installation.ps1
++++ b/scripts/verify-installation.ps1
+@@ -1,4 +1,4 @@
+-# Revit MCP Installation Verification Script
++﻿# Revit MCP Installation Verification Script
+ # Simple version without complex hashtable
+ 
+ $ErrorActionPreference = "Continue"
+diff --git a/scripts/verify-qaqc.ps1 b/scripts/verify-qaqc.ps1
+index ca6aea2..4a26f98 100644
+--- a/scripts/verify-qaqc.ps1
++++ b/scripts/verify-qaqc.ps1
+@@ -1,4 +1,4 @@
+-# Revit MCP QA/QC Verification Script
++﻿# Revit MCP QA/QC Verification Script
+ # Usage: .\scripts\verify-qaqc.ps1 [-SkipBuild] [-SkipDeploy] [-Version 2024]
+ #
+ # Phases:

@@ -122,9 +122,9 @@ export class RevitSocketClient {
 
         const requestId = this.generateRequestId();
         const command = {
-            CommandName: commandName,
-            Parameters: parameters,
-            RequestId: requestId,
+            method: commandName,
+            params: parameters,
+            id: requestId,
         };
 
         console.error(`[Socket] Sending command: ${commandName}`, parameters);

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "CA7K7lTDL5U=",
+  "dgSpecHash": "KGg3oxeRb6w=",
   "success": true,
-  "projectFilePath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
+  "projectFilePath": "e:\\RevitMCP\\MCP\\RevitMCP.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\09044\\.nuget\\packages\\closedxml\\0.102.3\\closedxml.0.102.3.nupkg.sha512",
     "C:\\Users\\09044\\.nuget\\packages\\documentformat.openxml\\2.16.0\\documentformat.openxml.2.16.0.nupkg.sha512",

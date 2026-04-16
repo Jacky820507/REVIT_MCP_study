@@ -47,3 +47,12 @@
 - **根因**：L 型或不規則走廊的 BoundingBox 包含大量空白區域。
 - **解法**：新增 `create_corridor_dimension` 命令，使用 Room BoundarySegments 的 Segment-First 演算法找平行牆對，在精確的牆面位置建立標註。
 - **實測驗證**：L5 走廊 9 個區段，寬度 516mm–3045mm，兩處不合格（< 1200mm）。
+
+## [L-006] WebSocket 埠衝突 (PID 4) 與 HTTP.sys 殘留處理
+
+- **現象**：MCP Server 啟動後掛死在 `Waiting for Revit Plugin...`，但 `netstat` 顯示 Port 8964 已由 PID 4 (System) 監聽。
+- **根因**：Windows 的 `HTTP.sys` 核心驅動程序代為持有 Revit `HttpListener` 崩潰後遺留的監聽權限。
+- **專案避坑規則**：
+  - 遇到通訊掛起時，優先嘗試 `netsh http delete urlacl url=http://localhost:8964/`。
+  - 若失效，應重啟 Windows `http` 服務或直接重啟作業系統。
+  - **診斷工具**：研發過程中應隨手備份 `research_ws_direct.cjs` 這類不依賴 MCP Framework 的原始 WebSocket 測試指令，用於快速定位是通訊層還是應用層故障。

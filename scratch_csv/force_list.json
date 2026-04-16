@@ -1,0 +1,37 @@
+[
+  {
+    "Id": 8094075,
+    "RevitName": "物流中心 長向剖面圖(1/3)",
+    "TargetNumber": "ARB-D04002"
+  },
+  {
+    "Id": 8094081,
+    "RevitName": "物流中心 長向剖面圖(2/3)",
+    "TargetNumber": "ARB-D04003"
+  },
+  {
+    "Id": 8094087,
+    "RevitName": "物流中心 長向剖面圖(3/3)",
+    "TargetNumber": "ARB-D04004"
+  },
+  {
+    "Id": 10870372,
+    "RevitName": "物流中心 鋼浪板屋頂詳圖",
+    "TargetNumber": "ARB-D08015"
+  },
+  {
+    "Id": 10870378,
+    "RevitName": "物流中心 排煙蹲座、接水盤詳圖",
+    "TargetNumber": "ARB-D08016"
+  },
+  {
+    "Id": 11542411,
+    "RevitName": "物流中心 二層輕隔間平面圖(2/8)",
+    "TargetNumber": "ARB-D07021"
+  },
+  {
+    "Id": 11542417,
+    "RevitName": "物流中心 二層輕隔間平面圖(3/8)",
+    "TargetNumber": "ARB-D07022"
+  }
+]

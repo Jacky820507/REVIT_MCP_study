@@ -65,6 +65,45 @@ export const baseTools: Tool[] = [
         },
     },
     {
+        name: "get_element_location",
+        description: "取得 Revit 元素的座標中心點 (XYZ)。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "元素 ID" },
+            },
+            required: ["elementId"],
+        },
+    },
+    {
+        name: "measure_clearance",
+        description: "在指定起點與方向進行射線碰撞檢測，回傳淨高距離。常用於停車位上方樑柱避讓檢測。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                origin: {
+                    type: "object",
+                    properties: {
+                        x: { type: "number", description: "起點 X (mm)" },
+                        y: { type: "number", description: "起點 Y (mm)" },
+                        z: { type: "number", description: "起點 Z (mm)" },
+                    },
+                    required: ["x", "y", "z"],
+                },
+                direction: {
+                    type: "object",
+                    properties: {
+                        x: { type: "number", description: "方向 X" },
+                        y: { type: "number", description: "方向 Y" },
+                        z: { type: "number", description: "方向 Z" },
+                    },
+                    required: ["x", "y", "z"],
+                },
+            },
+            required: ["origin", "direction"],
+        },
+    },
+    {
         name: "get_selected_elements",
         description: "取得使用者目前在 Revit 中選取的所有元素的基本資訊（ID、名稱、品類）。",
         inputSchema: { type: "object", properties: {} },

@@ -207,4 +207,66 @@ export const visualizationTools: Tool[] = [
             required: ["origin", "direction"],
         },
     },
+    {
+        name: "create_rc_filled_region",
+        description: "在指定的 2D 視圖中，自動找尋被剖斷或投影的 RC(系統牆、結構柱、樓板)，產生對應的 Filled Region 貼紙以作為單一視覺塗黑/塗灰表現。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                filledRegionTypeName: { 
+                    type: "string", 
+                    description: "欲套用的 FilledRegionType 名稱", 
+                    default: "深灰色" 
+                },
+            },
+        },
+    },
+    {
+        name: "create_dependent_view_matchlines",
+        description: "在母視圖上自動根據其從屬視圖的裁切邊界繪製分模界線（Matchlines）並標註相鄰圖紙號碼。具備 MATCHLINE_AUTO 標記自動更新/清除舊線功能。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                primaryViewId: { 
+                    type: "number", 
+                    description: "母視圖的 Element ID。若不填則預設為目前 Active View。" 
+                },
+                lineStyleName: { 
+                    type: "string", 
+                    description: "欲套用的線型名稱", 
+                    default: "粗虛線" 
+                },
+                textStyleName: { 
+                    type: "string", 
+                    description: "標記使用的文字樣式名稱", 
+                    default: "微軟正黑體 3.5 mm" 
+                },
+            },
+        },
+    },
+    {
+        name: "detect_sheet_matchlines",
+        description: "偵測指定圖紙上已存在的銜接線與銜接文字，並回傳該圖紙上放置視圖與檢測到的元素清單。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                sheetNumbers: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "要偵測的圖紙號碼列表。"
+                },
+                lineStyleName: { 
+                    type: "string", 
+                    description: "偵測銜接線使用的線型名稱", 
+                    default: "粗虛線" 
+                },
+                textStyleName: { 
+                    type: "string", 
+                    description: "偵測銜接文字使用的文字樣式名稱", 
+                    default: "微軟正黑體 3.5 mm" 
+                },
+            },
+            required: ["sheetNumbers"],
+        },
+    },
 ];
