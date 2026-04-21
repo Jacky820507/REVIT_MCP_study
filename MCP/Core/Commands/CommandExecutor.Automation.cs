@@ -4,7 +4,7 @@ using System.Linq;
 using Autodesk.Revit.DB;
 using Newtonsoft.Json.Linq;
 
-#if REVIT2024_OR_GREATER
+#if REVIT2025_OR_GREATER
 using IdType = System.Int64;
 #else
 using IdType = System.Int32;
@@ -18,7 +18,7 @@ namespace RevitMCP.Core
         {
             IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
             Document doc = _uiApp.ActiveUIDocument.Document;
-            Element element = doc.GetElement(new ElementId(elementId));
+            Element element = doc.GetElement(elementId.ToElementId());
 
             if (element == null) return new { error = "Element not found." };
 
@@ -55,7 +55,7 @@ namespace RevitMCP.Core
 
             if (string.IsNullOrEmpty(newName)) throw new Exception("New name is required.");
 
-            Element element = doc.GetElement(new ElementId(elementId));
+            Element element = doc.GetElement(elementId.ToElementId());
             if (element == null) throw new Exception("Element not found.");
 
             using (Transaction trans = new Transaction(doc, "Rename Element"))

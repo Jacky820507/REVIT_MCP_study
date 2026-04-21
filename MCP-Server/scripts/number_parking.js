@@ -59,7 +59,7 @@ const CATEGORY_KEYWORDS = [
 function sendCommand(ws, name, params) {
     return new Promise((resolve, reject) => {
         const reqId = 'req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        const cmd = { CommandName: name, Parameters: params, RequestId: reqId };
+        const cmd = { method: name, params: params, id: reqId };
 
         const listener = (data) => {
             try {

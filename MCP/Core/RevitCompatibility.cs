@@ -29,6 +29,18 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
+        /// 從數值建立 ElementId（相容 2020-2026）
+        /// </summary>
+        internal static ElementId ToElementId(this IdType value)
+        {
+#if REVIT2024_OR_GREATER
+            return new ElementId(value);
+#else
+            return new ElementId((int)value);
+#endif
+        }
+
+        /// <summary>
         /// 取得品類的 BuiltInCategory（2023 以前不支援直接存取）
         /// </summary>
         internal static BuiltInCategory GetBuiltInCategory(this Category cat)

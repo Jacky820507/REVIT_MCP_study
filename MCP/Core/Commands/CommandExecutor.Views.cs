@@ -94,7 +94,7 @@ namespace RevitMCP.Core
                 TextNoteType textType = new FilteredElementCollector(doc)
                     .OfClass(typeof(TextNoteType))
                     .Cast<TextNoteType>()
-                    .FirstOrDefault(t => t.Name.Contains(textStyleName)) 
+                    .FirstOrDefault(st => st.Name.Contains(textStyleName)) 
                     ?? new FilteredElementCollector(doc).OfClass(typeof(TextNoteType)).Cast<TextNoteType>().FirstOrDefault();
 
                 var viewData = new List<DependentViewData>();
@@ -107,7 +107,7 @@ namespace RevitMCP.Core
                     viewData.Add(new DependentViewData { View = dv, Bbox = bbox, SheetLabel = label });
                 }
 
-                Transform t = primaryView.CropBox.Transform;
+                Transform transform = primaryView.CropBox.Transform;
                 List<MatchlineResult> results = new List<MatchlineResult>();
 
                 for (int i = 0; i < viewData.Count; i++)
@@ -143,13 +143,13 @@ namespace RevitMCP.Core
                             {
                                 // 水平銜接線
                                 double midY = (minY + maxY) / 2;
-                                XYZ p1 = t.OfPoint(new XYZ(minX, midY, 0));
-                                XYZ p2 = t.OfPoint(new XYZ(maxX, midY, 0));
+                                XYZ p1 = transform.OfPoint(new XYZ(minX, midY, 0));
+                                XYZ p2 = transform.OfPoint(new XYZ(maxX, midY, 0));
 
                                 if (p1.DistanceTo(p2) > 1.0)
                                 {
                                     matchLine = Line.CreateBound(p1, p2);
-                                    lineNormal = t.BasisY;
+                                    lineNormal = transform.BasisY;
 
                                     double v1cY = (v1.Bbox.Min.Y + v1.Bbox.Max.Y) / 2;
                                     double v2cY = (v2.Bbox.Min.Y + v2.Bbox.Max.Y) / 2;
@@ -172,13 +172,13 @@ namespace RevitMCP.Core
                                 // 垂直銜接線
                                 isVertical = true;
                                 double midX = (minX + maxX) / 2;
-                                XYZ p1 = t.OfPoint(new XYZ(midX, minY, 0));
-                                XYZ p2 = t.OfPoint(new XYZ(midX, maxY, 0));
+                                XYZ p1 = transform.OfPoint(new XYZ(midX, minY, 0));
+                                XYZ p2 = transform.OfPoint(new XYZ(midX, maxY, 0));
 
                                 if (p1.DistanceTo(p2) > 1.0)
                                 {
                                     matchLine = Line.CreateBound(p1, p2);
-                                    lineNormal = t.BasisX;
+                                    lineNormal = transform.BasisX;
 
                                     double v1cX = (v1.Bbox.Min.X + v1.Bbox.Max.X) / 2;
                                     double v2cX = (v2.Bbox.Min.X + v2.Bbox.Max.X) / 2;

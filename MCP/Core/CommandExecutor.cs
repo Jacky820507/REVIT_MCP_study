@@ -472,7 +472,7 @@ namespace RevitMCP.Core
             Document doc = _uiApp.ActiveUIDocument.Document;
             IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
 
-            Element element = doc.GetElement(new ElementId(elementId));
+            Element element = doc.GetElement(elementId.ToElementId());
             if (element == null)
             {
                 throw new Exception($"找不到元素 ID: {elementId}");
@@ -515,13 +515,13 @@ namespace RevitMCP.Core
             {
                 trans.Start();
 
-                Element element = doc.GetElement(new ElementId(elementId));
+                Element element = doc.GetElement(elementId.ToElementId());
                 if (element == null)
                 {
                     throw new Exception($"找不到元素 ID: {elementId}");
                 }
 
-                doc.Delete(new ElementId(elementId));
+                doc.Delete(elementId.ToElementId());
                 trans.Commit();
 
                 return new
@@ -620,7 +620,7 @@ namespace RevitMCP.Core
                 throw new Exception("請指定參數名稱");
             }
 
-            Element element = doc.GetElement(new ElementId(elementId));
+            Element element = doc.GetElement(elementId.ToElementId());
             if (element == null)
             {
                 throw new Exception($"找不到元素 ID: {elementId}");
@@ -1103,7 +1103,7 @@ namespace RevitMCP.Core
 
             if (roomId.HasValue)
             {
-                room = doc.GetElement(new ElementId(roomId.Value)) as Room;
+                room = doc.GetElement(roomId.Value.ToElementId()) as Room;
             }
             else if (!string.IsNullOrEmpty(roomName))
             {
@@ -1561,7 +1561,7 @@ namespace RevitMCP.Core
             IdType viewId = parameters["viewId"]?.Value<IdType>() ?? 0;
             Document doc = _uiApp.ActiveUIDocument.Document;
 
-            View view = doc.GetElement(new ElementId(viewId)) as View;
+            View view = doc.GetElement(viewId.ToElementId()) as View;
             if (view == null)
             {
                 throw new Exception($"找不到視圖 ID: {viewId}");
@@ -1589,16 +1589,16 @@ namespace RevitMCP.Core
             if (parameters.ContainsKey("elementId"))
             {
                 IdType id = parameters["elementId"].Value<IdType>();
-                if (id > 0) elementIds.Add(new ElementId(id));
+                if (id > 0) elementIds.Add(id.ToElementId());
             }
 
             // 支援多個 ID
             if (parameters.ContainsKey("elementIds"))
             {
-                var ids = parameters["elementIds"].Values<int>();
+                var ids = parameters["elementIds"].Values<IdType>();
                 foreach (var id in ids)
                 {
-                    if (id > 0) elementIds.Add(new ElementId(id));
+                    if (id > 0) elementIds.Add(id.ToElementId());
                 }
             }
 
@@ -1628,14 +1628,14 @@ namespace RevitMCP.Core
             IdType elementId = parameters["elementId"]?.Value<IdType>() ?? 0;
             Document doc = _uiApp.ActiveUIDocument.Document;
 
-            Element element = doc.GetElement(new ElementId(elementId));
+            Element element = doc.GetElement(elementId.ToElementId());
             if (element == null)
             {
                 throw new Exception($"找不到元素 ID: {elementId}");
             }
 
             // 顯示元素（會自動縮放）
-            var elementIds = new List<ElementId> { new ElementId(elementId) };
+            var elementIds = new List<ElementId> { elementId.ToElementId() };
             _uiApp.ActiveUIDocument.ShowElements(elementIds);
 
             return new
