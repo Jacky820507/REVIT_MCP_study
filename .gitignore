@@ -38,8 +38,19 @@ npm-debug.log*
 # Agent/workflow files
 .agent/
 
+# AI client 本機設定
+.claude/settings.local.json
+.gemini/
+
+# 開發暫存腳本（非穩定，不該共享）
+MCP-Server/scratch/
+
 # Private User Guide (Excluded from Push)
 PRIVATE_INSTRUCTIONS.md
+
+# 私人內容（電子郵件 / 內部文件，不公開閱覽）
+thank.md
+docs/newsletters/
 
 # 教材（已開放，供學生練習使用）
 # 教材/
@@ -74,3 +85,8 @@ MCP-Server/scripts/rooms_output.txt
 MCP-Server/scripts/exterior_wall_check_report.json
 MCP-Server/far_report.txt
 Recent_Update_Review.md
+
+# 個人 IDE / Obsidian workspace（不入庫）
+REVIT_MCP.code-workspace
+domain/MCP knowledge/
+
