@@ -37,7 +37,7 @@ const targetSheetNumbers = ['ARA-D04002', 'ARA-D04003'];
 
 ### 步驟 3：執行腳本
 ```bash
-node e:\RevitMCP\MCP-Server\scratch\batch_rc_filled.cjs
+node MCP-Server/scratch/batch_rc_filled.cjs
 ```
 
 ### 步驟 4：讀取報告
@@ -72,6 +72,6 @@ node e:\RevitMCP\MCP-Server\scratch\batch_rc_filled.cjs
 ---
 
 ## 📂 相關檔案
-- **C# 核心**：`e:\RevitMCP\MCP\Core\Commands\CommandExecutor.FillPatterns.cs`
-- **入口腳本**：`e:\RevitMCP\MCP-Server\scratch\batch_rc_filled.cjs`
+- **C# 核心**：`MCP/Core/Commands/CommandExecutor.FillPatterns.cs`
+- **入口腳本**：`MCP-Server/scratch/batch_rc_filled.cjs`
 - **Skill**：`.agent/skills/revit-rc-filled-region/SKILL.md`

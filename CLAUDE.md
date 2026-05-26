@@ -29,7 +29,7 @@ A 5th "embedded" option bypasses the MCP Server entirely — a WPF chat window i
 | 行為指引 | CLAUDE.md | GEMINI.md → CLAUDE.md | .github/copilot-instructions.md |
 | Skills | `.claude/skills/SKILL.md` | `.gemini/skills/SKILL.md`（[官方文件](https://geminicli.com/docs/cli/skills/)） | instructions 引導 |
 | Domain 文件 | 共用 `domain/` | 共用 `domain/` | 共用 `domain/` |
-| MCP Tools | 共用 89 個工具 | 共用 89 個工具 | 共用 89 個工具 |
+| MCP Tools | 共用 127 個工具 | 共用 127 個工具 | 共用 127 個工具 |
 | Event Log | 共用 `log/` | 共用 `log/` | 共用 `log/` |
 
 SKILL.md 格式遵循 [Agent Skills 開放標準](https://agentskills.io)（YAML frontmatter + Markdown body），Claude Code 與 Gemini CLI 皆原生支援。
@@ -121,13 +121,13 @@ npm run watch    # tsc --watch (development)
 | File | Role |
 |------|------|
 | `MCP/Application.cs` | Revit IExternalApplication entry point, creates ribbon panel |
-| `MCP/Core/CommandExecutor.cs` | Central command dispatcher (89+ commands), largest file |
+| `MCP/Core/CommandExecutor.cs` | Central command dispatcher (127+ commands), largest file |
 | `MCP/Core/SocketService.cs` | HttpListener-based WebSocket server in Revit |
 | `MCP/Core/RevitCompatibility.cs` | Cross-version compatibility layer (ElementId int→long for 2025+) |
 | `MCP/Core/ExternalEventManager.cs` | Ensures commands execute on Revit UI thread |
 | `MCP-Server/src/index.ts` | MCP Server entry (StdioServerTransport) |
 | `MCP-Server/src/socket.ts` | RevitSocketClient — WebSocket client to Revit |
-| `MCP-Server/src/tools/` | Tool definitions (89 tools, 分 16 個模組) |
+| `MCP-Server/src/tools/` | Tool definitions (127 tools, 分 16 個模組) |
 | `scripts/setup.ps1` | One-click setup for new users (prereqs, build, deploy, AI config) |
 
 ## Code Conventions
@@ -155,7 +155,7 @@ npm run watch    # tsc --watch (development)
 3. **查閱法規知識** → 讀取 Domain 文件（`domain/*.md`）
 
 ### 為什麼
-MCP Server 已封裝 89 個 tools，處理了格式轉換、錯誤處理、重連機制。自寫腳本會：
+MCP Server 已封裝 127 個 tools，處理了格式轉換、錯誤處理、重連機制。自寫腳本會：
 - 繞過既有的錯誤處理與格式驗證
 - 產生 process 掛起（如自動重連導致無法退出）
 - 與 Revit API 的 PascalCase 欄位不一致而靜默失敗
@@ -282,7 +282,7 @@ BIM 的知識是共用的——防火法規同時被消防檢查、走廊分析�
 
 > **不要把每個 Domain 都升級成 Skill。** Domain 被引用就已經在發揮作用了。詳見 `domain/skill-authoring-standard.md`。
 
-## Skills（19 個）
+## Skills（20 個）
 
 Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`。
 
@@ -307,6 +307,7 @@ Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`�
 | `/stair-hidden-line` | 剖面隱藏樓梯可視化（虛線詳圖線） |
 | `/detect-clashes` | MEP vs CSA 碰撞偵測（Curve-to-Solid 干涉分析 + 視覺化 + 報告匯出） |
 | `/claude-md-sync` | CLAUDE.md 雙向同步驗證（合併/Skill異動/Tools異動後觸發） |
+| `/hj-pr-proposal` | 將自訂內容轉譯為 HJPLUS 台灣建築師知識庫 PR 草案 |
 
 > **Cross-version compatibility:** `MCP/Core/RevitCompatibility.cs` provides `GetIdValue()` and `ToElementId()` extension methods.
 > Revit 2025+ uses `ElementId` as `long`; 2022-2024 uses `int`. Use `REVIT2025_OR_GREATER` preprocessor symbol for conditional compilation.
@@ -345,7 +346,7 @@ All AI clients connect to the MCP Server via the same config format. Replace `{a
 | Port 8964 被 System (PID: 4) 佔用 | Revit 異常關閉後 HTTP.sys 孤兒 Request Queue | 執行 `scripts\release-port.ps1`，或手動：`net stop http /y && net start http` |
 | Commands not responding in Revit | Revit UI thread issue | Ensure `ExternalEventManager` is used; check `%AppData%\RevitMCP\Logs\` |
 
-## Domain Knowledge & Workflow Files（40 個）
+## Domain Knowledge & Workflow Files（43 個）
 
 The `domain/` directory contains BIM compliance workflows that AI must consult before executing related tasks:
 
@@ -391,6 +392,9 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 | 輕隔間, partition, 隔間牆算量, takeoff, 數量統計 | `domain/revit-partition-takeoff.md` |
 | 粉刷, 油漆, finish legend, 圖例, FilledRegion, 飾面圖例 | `domain/finish-legend-creation.md` |
 | 門表, 窗表, door schedule, window schedule, 圖例表, seed Legend | `domain/door-window-legend-workflow.md` |
+| 銜接線, matchline, 叢屬視圖, CropBox, 圖紙號碼 | `domain/matchline-automation.md` |
+| RC 貼紙, FilledRegion, 指紋, 智慧更新, smart fill | `domain/rc-filled-region-workflow.md` |
+| C-1 廠房, 衛浴設備數量, 大便器, 小便器, 洗面盆, factory, bathroom | `domain/sanitary-fixture-review.md` |
 
 ## Deployment Rules (DO NOT VIOLATE)
 

@@ -295,7 +295,7 @@ else {
         $buildSuccess = $LASTEXITCODE -eq 0
 
         if ($buildSuccess) {
-            $dll = Get-Item "$projectRoot\MCP\bin\Release\RevitMCP.dll" -ErrorAction SilentlyContinue
+            $dll = Get-Item "$projectRoot\MCP\bin\Release.R$shortVer\RevitMCP.dll" -ErrorAction SilentlyContinue
             if ($dll) {
                 Write-Host "" # newline after -NoNewline
                 Write-Check "R$shortVer build ($($dll.Length) bytes)" $true
