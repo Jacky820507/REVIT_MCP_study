@@ -308,26 +308,26 @@ export const baseTools: Tool[] = [
     },
     {
         name: "move_element",
-        description: "Move a Revit element by dx, dy, dz offsets in millimeters.",
+        description: "移動指定的 Revit 元素（依 dx, dy, dz 指定位移量）。",
         inputSchema: {
             type: "object",
             properties: {
-                elementId: { type: "number", description: "Target ElementId." },
-                dx: { type: "number", description: "X offset in millimeters.", default: 0 },
-                dy: { type: "number", description: "Y offset in millimeters.", default: 0 },
-                dz: { type: "number", description: "Z offset in millimeters.", default: 0 },
+                elementId: { type: "number", description: "要移動的元素 ID" },
+                dx: { type: "number", description: "X 軸移動距離 (mm)", default: 0 },
+                dy: { type: "number", description: "Y 軸移動距離 (mm)", default: 0 },
+                dz: { type: "number", description: "Z 軸移動距離 (mm)", default: 0 },
             },
             required: ["elementId"],
         },
     },
     {
         name: "flip_element",
-        description: "Flip a family instance such as a door or window by facing or hand direction.",
+        description: "翻轉指定的 Revit 建築元素（例如門或窗）。可以選擇翻轉面向(facing)或開向(hand)。",
         inputSchema: {
             type: "object",
             properties: {
-                elementId: { type: "number", description: "Target ElementId." },
-                flipType: { type: "string", description: "'facing' or 'hand'.", default: "facing" },
+                elementId: { type: "number", description: "要翻轉的元素 ID" },
+                flipType: { type: "string", description: "翻轉類型: 'facing' (預設，依牆為軸翻轉) 或是 'hand' (左右翻轉)", default: "facing" },
             },
             required: ["elementId"],
         },

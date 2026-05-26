@@ -1,5 +1,6 @@
 using System;
 using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
 using Newtonsoft.Json.Linq;
 
 #if REVIT2025_OR_GREATER
@@ -12,6 +13,12 @@ namespace RevitMCP.Core
 {
     public partial class CommandExecutor
     {
+        #region 元素操作（移動、翻轉）
+
+        /// <summary>
+        /// 移動元素（依 dx, dy, dz 公釐位移）
+        /// 來源 fork: poisonsam/main:MCP/Core/Commands/CommandExecutor.Base.cs:718-751
+        /// </summary>
         private object MoveElement(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
@@ -23,13 +30,14 @@ namespace RevitMCP.Core
             Element element = doc.GetElement(elementId.ToElementId());
             if (element == null)
             {
-                throw new Exception($"Element not found: {elementId}");
+                throw new Exception($"找不到元素 ID: {elementId}");
             }
 
-            using (Transaction trans = new Transaction(doc, $"Move element: {elementId}"))
+            using (Transaction trans = new Transaction(doc, $"移動元素: {elementId}"))
             {
                 trans.Start();
 
+                // 單位原本為公釐，需要轉換成 Revit 專案的內部單位英尺
                 XYZ translation = new XYZ(dx / 304.8, dy / 304.8, dz / 304.8);
                 ElementTransformUtils.MoveElement(doc, elementId.ToElementId(), translation);
 
@@ -41,11 +49,15 @@ namespace RevitMCP.Core
                     Dx = dx,
                     Dy = dy,
                     Dz = dz,
-                    Message = "Element moved successfully"
+                    Message = "成功移動元素"
                 };
             }
         }
 
+        /// <summary>
+        /// 翻轉元素 facing 或 hand（門/窗）
+        /// 來源 fork: poisonsam/main:MCP/Core/Commands/CommandExecutor.Base.cs:754-806
+        /// </summary>
         private object FlipElement(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
@@ -55,36 +67,36 @@ namespace RevitMCP.Core
             Element element = doc.GetElement(elementId.ToElementId());
             if (element == null)
             {
-                throw new Exception($"Element not found: {elementId}");
+                throw new Exception($"找不到元素 ID: {elementId}");
             }
 
             if (!(element is FamilyInstance familyInstance))
             {
-                throw new Exception($"Element {elementId} is not a family instance and cannot be flipped");
+                throw new Exception($"元素 ID: {elementId} 不是有效的家庭實體，無法翻轉");
             }
 
-            using (Transaction trans = new Transaction(doc, $"Flip element: {elementId}"))
+            using (Transaction trans = new Transaction(doc, $"翻轉元素: {elementId}"))
             {
                 trans.Start();
 
                 string normalizedFlipType = flipType.ToLowerInvariant();
                 if (normalizedFlipType == "facing")
                 {
-                    if (!familyInstance.CanFlipFacing)
-                        throw new Exception("This element does not support facing flip");
-
-                    familyInstance.flipFacing();
+                    if (familyInstance.CanFlipFacing)
+                        familyInstance.flipFacing();
+                    else
+                        throw new Exception("此元素不支援翻轉面向 (Facing)");
                 }
                 else if (normalizedFlipType == "hand")
                 {
-                    if (!familyInstance.CanFlipHand)
-                        throw new Exception("This element does not support hand flip");
-
-                    familyInstance.flipHand();
+                    if (familyInstance.CanFlipHand)
+                        familyInstance.flipHand();
+                    else
+                        throw new Exception("此元素不支援翻轉開向 (Hand)");
                 }
                 else
                 {
-                    throw new Exception("Invalid flipType. Use 'facing' or 'hand'");
+                    throw new Exception("無效的翻轉類型，請使用 'facing' 或 'hand'");
                 }
 
                 trans.Commit();
@@ -93,11 +105,21 @@ namespace RevitMCP.Core
                 {
                     ElementId = elementId,
                     FlipType = normalizedFlipType,
-                    Message = "Element flipped successfully"
+                    Message = "成功翻轉元素"
                 };
             }
         }
 
+        #endregion
+
+        #region 元素參數複製（CreateDoor / CreateWindow 之 sourceElementId 支援用）
+
+        /// <summary>
+        /// 複製來源 Element 的 instance parameters 到 target Element
+        /// 排除：唯讀、樓層 / 主體 / ID 類別、標記欄位（由建立時決定，不應複製）
+        /// 來源 fork: poisonsam/main:MCP/Core/Commands/CommandExecutor.Architecture.cs:171-213
+        /// 改動：移除原檔重複的 IsReadOnly check（line 178）
+        /// </summary>
         private void CopyInstanceParameters(Element source, Element target)
         {
             foreach (Parameter sourceParam in source.Parameters)
@@ -105,41 +127,38 @@ namespace RevitMCP.Core
                 if (sourceParam.IsReadOnly || !sourceParam.HasValue) continue;
 
                 string paramName = sourceParam.Definition.Name;
-                if (paramName.Contains("Level") ||
-                    paramName.Contains("Host") ||
+                if (paramName.Contains("樓層") || paramName.Contains("Level") ||
+                    paramName.Contains("主體") || paramName.Contains("Host") ||
                     paramName.Contains("ID") ||
-                    paramName.Contains("樓層") ||
-                    paramName.Contains("主體") ||
-                    paramName == "Mark" ||
-                    paramName == "標記")
+                    paramName == "標記" || paramName == "Mark")
                     continue;
 
-                Parameter targetParam = target.LookupParameter(paramName);
-                if (targetParam == null || targetParam.IsReadOnly) continue;
-
-                try
+                Parameter targetParam = target.LookupParameter(sourceParam.Definition.Name);
+                if (targetParam != null && !targetParam.IsReadOnly)
                 {
-                    switch (sourceParam.StorageType)
+                    try
                     {
-                        case StorageType.String:
-                            targetParam.Set(sourceParam.AsString());
-                            break;
-                        case StorageType.Double:
-                            targetParam.Set(sourceParam.AsDouble());
-                            break;
-                        case StorageType.Integer:
-                            targetParam.Set(sourceParam.AsInteger());
-                            break;
-                        case StorageType.ElementId:
-                            targetParam.Set(sourceParam.AsElementId());
-                            break;
+                        switch (sourceParam.StorageType)
+                        {
+                            case StorageType.String:
+                                targetParam.Set(sourceParam.AsString());
+                                break;
+                            case StorageType.Double:
+                                targetParam.Set(sourceParam.AsDouble());
+                                break;
+                            case StorageType.Integer:
+                                targetParam.Set(sourceParam.AsInteger());
+                                break;
+                            case StorageType.ElementId:
+                                targetParam.Set(sourceParam.AsElementId());
+                                break;
+                        }
                     }
-                }
-                catch
-                {
-                    // Some family parameters reject copied values; keep the created element valid.
+                    catch { /* 忽略個別參數設定失敗 */ }
                 }
             }
         }
+
+        #endregion
     }
 }
