@@ -1,0 +1,309 @@
+{
+  "sheetNumbers": [
+    "ARA-D07014",
+    "ARA-D07015",
+    "ARA-D07016",
+    "ARA-D07017",
+    "ARA-D07018",
+    "ARB-D03022",
+    "ARB-D09001",
+    "ARB-D09002",
+    "ARB-D09003",
+    "ARB-D09004",
+    "ARB-D09005",
+    "ARB-D09006",
+    "ARB-D09007",
+    "ARB-D09008",
+    "ARB-D09009",
+    "ARB-D09011",
+    "ARB-D09012",
+    "ARB-D09013",
+    "ARB-D09014",
+    "ARB-D09016",
+    "ARB-D09018",
+    "ARB-D09019",
+    "ARB-D09020",
+    "ARB-D09021",
+    "ARB-D09022",
+    "ARB-D09024",
+    "ARB-D09025",
+    "ARB-D09026",
+    "ARB-D09027",
+    "ARB-D09028",
+    "ARB-D09029",
+    "ARB-D09030",
+    "ARB-D09031",
+    "ARB-D09032"
+  ],
+  "desiredCount": 176,
+  "existingCount": 123,
+  "obsoleteCount": 14,
+  "obsoleteBySheet": {
+    "ARB-D09002": [
+      {
+        "Id": 259727,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09002-施工大樣詳圖(二)-3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖",
+        "SheetNumber": "ARB-D09002",
+        "SheetName": "施工大樣詳圖(二)",
+        "DetailNumber": "5",
+        "DetailName": "3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖"
+      }
+    ],
+    "ARB-D09003": [
+      {
+        "Id": 259729,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-排水溝蓋板詳圖",
+        "SheetNumber": "ARB-D09003",
+        "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+        "DetailNumber": "1",
+        "DetailName": "排水溝蓋板詳圖"
+      },
+      {
+        "Id": 259921,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井溝蓋詳圖",
+        "SheetNumber": "ARB-D09003",
+        "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+        "DetailNumber": "2",
+        "DetailName": "陰井溝蓋詳圖"
+      },
+      {
+        "Id": 259923,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井詳圖",
+        "SheetNumber": "ARB-D09003",
+        "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+        "DetailNumber": "3",
+        "DetailName": "陰井詳圖"
+      }
+    ],
+    "ARB-D09004": [
+      {
+        "Id": 259759,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-窗框防水詳圖",
+        "SheetNumber": "ARB-D09004",
+        "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+        "DetailNumber": "10",
+        "DetailName": "窗框防水詳圖"
+      }
+    ],
+    "ARB-D09007": [
+      {
+        "Id": 259769,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖",
+        "SheetNumber": "ARB-D09007",
+        "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+        "DetailNumber": "2",
+        "DetailName": "樓梯扶手詳圖"
+      }
+    ],
+    "ARB-D09022": [
+      {
+        "Id": 259837,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09022-廁所隔間詳圖-廁所隔間標準詳圖",
+        "SheetNumber": "ARB-D09022",
+        "SheetName": "廁所隔間詳圖",
+        "DetailNumber": "1",
+        "DetailName": "廁所隔間標準詳圖"
+      }
+    ],
+    "ARB-D09030": [
+      {
+        "Id": 259871,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門背立面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "1",
+        "DetailName": "防水閘門背立面圖"
+      },
+      {
+        "Id": 259873,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門開平面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "2",
+        "DetailName": "防水閘門開平面圖"
+      },
+      {
+        "Id": 259875,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉平面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "3",
+        "DetailName": "防水閘門關閉平面圖"
+      },
+      {
+        "Id": 259877,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門正立面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "4",
+        "DetailName": "防水閘門正立面圖"
+      },
+      {
+        "Id": 259879,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門蓋版剖面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "5",
+        "DetailName": "防水閘門蓋版剖面圖"
+      },
+      {
+        "Id": 259883,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉剖面圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "7",
+        "DetailName": "防水閘門關閉剖面圖"
+      },
+      {
+        "Id": 259885,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門鏈側詳圖",
+        "SheetNumber": "ARB-D09030",
+        "SheetName": "防水閘門詳圖",
+        "DetailNumber": "8",
+        "DetailName": "防水閘門鏈側詳圖"
+      }
+    ]
+  },
+  "obsolete": [
+    {
+      "Id": 259727,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09002-施工大樣詳圖(二)-3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖",
+      "SheetNumber": "ARB-D09002",
+      "SheetName": "施工大樣詳圖(二)",
+      "DetailNumber": "5",
+      "DetailName": "3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖"
+    },
+    {
+      "Id": 259729,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-排水溝蓋板詳圖",
+      "SheetNumber": "ARB-D09003",
+      "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "DetailNumber": "1",
+      "DetailName": "排水溝蓋板詳圖"
+    },
+    {
+      "Id": 259921,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井溝蓋詳圖",
+      "SheetNumber": "ARB-D09003",
+      "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "DetailNumber": "2",
+      "DetailName": "陰井溝蓋詳圖"
+    },
+    {
+      "Id": 259923,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井詳圖",
+      "SheetNumber": "ARB-D09003",
+      "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "DetailNumber": "3",
+      "DetailName": "陰井詳圖"
+    },
+    {
+      "Id": 259759,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-窗框防水詳圖",
+      "SheetNumber": "ARB-D09004",
+      "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "DetailNumber": "10",
+      "DetailName": "窗框防水詳圖"
+    },
+    {
+      "Id": 259769,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖",
+      "SheetNumber": "ARB-D09007",
+      "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "DetailNumber": "2",
+      "DetailName": "樓梯扶手詳圖"
+    },
+    {
+      "Id": 259837,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09022-廁所隔間詳圖-廁所隔間標準詳圖",
+      "SheetNumber": "ARB-D09022",
+      "SheetName": "廁所隔間詳圖",
+      "DetailNumber": "1",
+      "DetailName": "廁所隔間標準詳圖"
+    },
+    {
+      "Id": 259871,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門背立面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "1",
+      "DetailName": "防水閘門背立面圖"
+    },
+    {
+      "Id": 259873,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門開平面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "2",
+      "DetailName": "防水閘門開平面圖"
+    },
+    {
+      "Id": 259875,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉平面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "3",
+      "DetailName": "防水閘門關閉平面圖"
+    },
+    {
+      "Id": 259877,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門正立面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "4",
+      "DetailName": "防水閘門正立面圖"
+    },
+    {
+      "Id": 259879,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門蓋版剖面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "5",
+      "DetailName": "防水閘門蓋版剖面圖"
+    },
+    {
+      "Id": 259883,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉剖面圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "7",
+      "DetailName": "防水閘門關閉剖面圖"
+    },
+    {
+      "Id": 259885,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09030-防水閘門詳圖-防水閘門鏈側詳圖",
+      "SheetNumber": "ARB-D09030",
+      "SheetName": "防水閘門詳圖",
+      "DetailNumber": "8",
+      "DetailName": "防水閘門鏈側詳圖"
+    }
+  ]
+}

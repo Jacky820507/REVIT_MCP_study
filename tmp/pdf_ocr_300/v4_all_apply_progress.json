@@ -1,0 +1,13 @@
+{
+  "familyName": "AE-圖號詳圖編號標頭-3.5mm",
+  "totalInput": 174,
+  "batchSize": 20,
+  "totalBatches": 9,
+  "completedBatches": 9,
+  "counts": {
+    "created": 174
+  },
+  "updatedAt": "2026-05-20T01:11:37.391Z",
+  "status": "completed",
+  "outputPath": "E:\\GitHub Library\\RevitMCP\\tmp\\pdf_ocr_300\\v4_all_apply_result.json"
+}

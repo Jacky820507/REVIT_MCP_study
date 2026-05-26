@@ -165,6 +165,34 @@ namespace RevitMCP.Core
             return results;
         }
 
+        private object CreateGridCroppedViewsBatch(JObject parameters)
+        {
+            var boundsParams = new JObject
+            {
+                ["xGrids"] = parameters["x_grid_names"] ?? parameters["xGrids"] ?? new JArray(),
+                ["yGrids"] = parameters["y_grid_names"] ?? parameters["yGrids"] ?? new JArray(),
+                ["offset_mm"] = parameters["offset_mm"] ?? parameters["offsetMm"] ?? 1000
+            };
+
+            JObject bounds = JObject.FromObject(CalculateGridBounds(boundsParams));
+
+            var createParams = new JObject
+            {
+                ["parentViewIds"] = parameters["parentViewIds"] ?? new JArray(),
+                ["suffixName"] = parameters["suffixName"],
+                ["min"] = bounds["min"],
+                ["max"] = bounds["max"]
+            };
+
+            object createdViews = CreateDependentViews(createParams);
+
+            return new
+            {
+                Bounds = bounds,
+                CreatedViews = createdViews
+            };
+        }
+
         #endregion
     }
 }

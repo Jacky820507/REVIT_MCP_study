@@ -306,4 +306,30 @@ export const baseTools: Tool[] = [
         description: "取得所有的線型樣式。",
         inputSchema: { type: "object", properties: {} },
     },
+    {
+        name: "move_element",
+        description: "Move a Revit element by dx, dy, dz offsets in millimeters.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "Target ElementId." },
+                dx: { type: "number", description: "X offset in millimeters.", default: 0 },
+                dy: { type: "number", description: "Y offset in millimeters.", default: 0 },
+                dz: { type: "number", description: "Z offset in millimeters.", default: 0 },
+            },
+            required: ["elementId"],
+        },
+    },
+    {
+        name: "flip_element",
+        description: "Flip a family instance such as a door or window by facing or hand direction.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "Target ElementId." },
+                flipType: { type: "string", description: "'facing' or 'hand'.", default: "facing" },
+            },
+            required: ["elementId"],
+        },
+    },
 ];

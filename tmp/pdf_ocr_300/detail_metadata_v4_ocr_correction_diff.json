@@ -1,0 +1,21 @@
+{
+  "beforeCounts": {
+    "v2InputItems": 176,
+    "v3CurrentInputItems": 66,
+    "v4GroupedItems": 175,
+    "currentGroups": 66,
+    "missingOrCorrection": 115,
+    "recommendedForImport": 89,
+    "reviewOnly": 26
+  },
+  "afterCounts": {
+    "v2InputItems": 176,
+    "v3CurrentInputItems": 66,
+    "v4GroupedItems": 174,
+    "currentGroups": 66,
+    "missingOrCorrection": 114,
+    "recommendedForImport": 88,
+    "reviewOnly": 26
+  },
+  "changed": []
+}

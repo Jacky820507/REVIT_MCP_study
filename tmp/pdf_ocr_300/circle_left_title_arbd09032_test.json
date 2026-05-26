@@ -1,0 +1,240 @@
+{
+  "sheetNumber": "ARB-D09032",
+  "sheetName": "防煙捲簾及捲門詳圖",
+  "page": 38,
+  "detectedCount": 6,
+  "items": [
+    {
+      "detailNumber": "1",
+      "numberMethod": "circle_ocr",
+      "detailName": "防煙捲幕(簾)立面詳圖",
+      "detailNameRaw": "防煙捲幕(簾)立面詳圖",
+      "review": false,
+      "circle": {
+        "cx": 863,
+        "cy": 3196,
+        "r": 36,
+        "score": 0.38,
+        "run": [
+          446,
+          3204,
+          831,
+          3204
+        ]
+      },
+      "numberLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "1",
+        "x": 862,
+        "y": 3168,
+        "w": 7,
+        "h": 26
+      },
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "防 煙 捲 幕 ( 簾 ) 立 面 詳 圖",
+        "x": 490,
+        "y": 3147,
+        "w": 316,
+        "h": 35
+      },
+      "titleScore": 35.78
+    },
+    {
+      "detailNumber": "2",
+      "numberMethod": "circle_ocr",
+      "detailName": "防煙捲幕(簾)平面詳圖",
+      "detailNameRaw": "防煙捲幕(簾)平面詳圖",
+      "review": false,
+      "circle": {
+        "cx": 2034,
+        "cy": 768,
+        "r": 36,
+        "score": 0.43,
+        "run": [
+          1616,
+          776,
+          2002,
+          776
+        ]
+      },
+      "numberLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "2",
+        "x": 2028,
+        "y": 740,
+        "w": 15,
+        "h": 26
+      },
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "防 煙 捲 幕 ( 簾 ) 平 面 詳 圖",
+        "x": 1660,
+        "y": 722,
+        "w": 317,
+        "h": 36
+      },
+      "titleScore": 27.95
+    },
+    {
+      "detailNumber": "3",
+      "numberMethod": "sequence_fallback",
+      "detailName": "不鏽鋼捲門立面圖",
+      "detailNameRaw": "不鏽鋼捲門立面圖",
+      "review": true,
+      "circle": {
+        "cx": 2033,
+        "cy": 2104,
+        "r": 36,
+        "score": 0.31,
+        "run": [
+          1615,
+          2108,
+          2001,
+          2108
+        ]
+      },
+      "numberLine": null,
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "不 鏽 鋼 捲 門 立 面 圖",
+        "x": 1674,
+        "y": 2053,
+        "w": 287,
+        "h": 36
+      },
+      "titleScore": 41.55
+    },
+    {
+      "detailNumber": "4",
+      "numberMethod": "circle_ocr",
+      "detailName": "不鏽鋼鐵捲門剖面圖",
+      "detailNameRaw": "不鏽鋼鐵捲門剖面圖",
+      "review": false,
+      "circle": {
+        "cx": 2064,
+        "cy": 3296,
+        "r": 37,
+        "score": 0.33,
+        "run": [
+          1645,
+          3300,
+          2031,
+          3300
+        ]
+      },
+      "numberLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "4",
+        "x": 2057,
+        "y": 3265,
+        "w": 16,
+        "h": 26
+      },
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "不 鏽 鋼 鐵 捲 門 剖 面 圖",
+        "x": 1707,
+        "y": 3245,
+        "w": 286,
+        "h": 35
+      },
+      "titleScore": 43.2
+    },
+    {
+      "detailNumber": "5",
+      "numberMethod": "circle_ocr",
+      "detailName": "不鏽鋼鐵捲門與隔間詳圖",
+      "detailNameRaw": "不鏽鋼鐵捲門與隔間詳圖",
+      "review": false,
+      "circle": {
+        "cx": 3788,
+        "cy": 1498,
+        "r": 36,
+        "score": 0.33,
+        "run": [
+          3371,
+          1502,
+          3756,
+          1502
+        ]
+      },
+      "numberLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "5",
+        "x": 3783,
+        "y": 1467,
+        "w": 15,
+        "h": 27
+      },
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "不 鏽 鋼 鐵 捲 門 與 隔 間 詳 圖",
+        "x": 3388,
+        "y": 1448,
+        "w": 351,
+        "h": 36
+      },
+      "titleScore": 33.49
+    },
+    {
+      "detailNumber": "6",
+      "numberMethod": "circle_ocr",
+      "detailName": "不鏽鋼鐵捲門機電系統操作圖",
+      "detailNameRaw": "不鏽鋼鐵捲門機電系統操作圖",
+      "review": false,
+      "circle": {
+        "cx": 3550,
+        "cy": 3156,
+        "r": 36,
+        "score": 0.33,
+        "run": [
+          3079,
+          3160,
+          3518,
+          3160
+        ]
+      },
+      "numberLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "6",
+        "x": 3545,
+        "y": 3125,
+        "w": 15,
+        "h": 27
+      },
+      "titleLine": {
+        "page": 38,
+        "width": 4963,
+        "height": 3508,
+        "text": "不 鏽 鋼 鐵 捲 門 機 電 系 統 操 作 圖",
+        "x": 3083,
+        "y": 3105,
+        "w": 416,
+        "h": 35
+      },
+      "titleScore": 35.7
+    }
+  ],
+  "overlayPath": "E:\\GitHub Library\\RevitMCP\\tmp\\pdf_ocr_300\\circle_left_title_arbd09032_overlay.png"
+}

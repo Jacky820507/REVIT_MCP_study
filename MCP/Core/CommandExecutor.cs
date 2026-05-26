@@ -24,10 +24,14 @@ namespace RevitMCP.Core
     public partial class CommandExecutor
     {
         private readonly UIApplication _uiApp;
+        private readonly LinkedModelHelper _linkedModelHelper;
+        private readonly ClashDetector _clashDetector;
 
         public CommandExecutor(UIApplication uiApp)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
+            _linkedModelHelper = new LinkedModelHelper(_uiApp);
+            _clashDetector = new ClashDetector(_uiApp, _linkedModelHelper);
         }
 
         /// <summary>
@@ -115,6 +119,14 @@ namespace RevitMCP.Core
                     
                     case "create_window":
                         result = CreateWindow(parameters);
+                        break;
+
+                    case "move_element":
+                        result = MoveElement(parameters);
+                        break;
+
+                    case "flip_element":
+                        result = FlipElement(parameters);
                         break;
                     
                     case "get_all_grids":
@@ -245,12 +257,24 @@ namespace RevitMCP.Core
                         result = GetRoomDaylightInfo(parameters);
                         break;
 
+                    case "sync_room_ceiling_finish_from_ceilings":
+                        result = SyncRoomCeilingFinishFromCeilings(parameters);
+                        break;
+
+                    case "check_sanitary_fixture_requirements":
+                        result = CheckSanitaryFixtureRequirements(parameters);
+                        break;
+
                     case "get_view_templates":
                         result = GetViewTemplates(parameters);
                         break;
 
                     case "create_view_schedule":
                         result = CreateViewSchedule(parameters);
+                        break;
+
+                    case "query_schedule_data":
+                        result = QueryScheduleData(parameters);
                         break;
 
                     case "get_selected_elements":
@@ -327,6 +351,117 @@ namespace RevitMCP.Core
                         result = GetLineStyles(parameters);
                         break;
 
+                    case "query_elements_with_filter":
+                        result = QueryElements(parameters);
+                        break;
+
+                    case "get_wall_types":
+                        result = GetWallTypes(parameters);
+                        break;
+                    case "change_element_type":
+                        result = ChangeElementType(parameters);
+                        break;
+
+                    case "get_all_sheets":
+                        result = GetAllSheets();
+                        break;
+                    case "get_titleblocks":
+                        result = GetTitleBlocks();
+                        break;
+                    case "create_sheets":
+                        result = CreateSheets(parameters);
+                        break;
+                    case "get_viewport_map":
+                        result = GetViewportMap();
+                        break;
+                    case "auto_renumber_sheets":
+                        result = AutoRenumberSheets(parameters);
+                        break;
+
+                    case "create_dimension_by_ray":
+                        result = CreateDimensionByRay(parameters);
+                        break;
+                    case "create_dimension_by_bounding_box":
+                        result = CreateDimensionByBoundingBox(parameters);
+                        break;
+
+                    case "calculate_grid_bounds":
+                        result = CalculateGridBounds(parameters);
+                        break;
+                    case "create_dependent_views":
+                        result = CreateDependentViews(parameters);
+                        break;
+                    case "create_grid_cropped_views_batch":
+                        result = CreateGridCroppedViewsBatch(parameters);
+                        break;
+
+                    case "get_detail_components":
+                        result = GetDetailComponents(parameters);
+                        break;
+                    case "sync_detail_component_numbers":
+                        result = SyncDetailComponentNumbers();
+                        break;
+                    case "create_detail_component_type":
+                        result = CreateDetailComponentType(parameters);
+                        break;
+                    case "create_detail_component_types_from_sheet_viewports":
+                        result = CreateDetailComponentTypesFromSheetViewports(parameters);
+                        break;
+                    case "create_detail_component_types_from_metadata":
+                        result = CreateDetailComponentTypesFromMetadata(parameters);
+                        break;
+                    case "sync_detail_component_sheet_numbers_by_type_parameters":
+                        result = SyncDetailComponentSheetNumbersByTypeParameters(parameters);
+                        break;
+                    case "list_detail_component_type_parameters":
+                        result = ListDetailComponentTypeParameters(parameters);
+                        break;
+                    case "list_family_symbols":
+                        result = ListFamilySymbols(parameters);
+                        break;
+
+                    case "trace_stair_geometry":
+                        result = TraceStairGeometry(parameters);
+                        break;
+                    case "create_stair_section_view":
+                        result = CreateStairSectionView(parameters);
+                        break;
+                    case "get_stair_actual_width":
+                        result = GetStairActualWidth(parameters);
+                        break;
+                    case "check_stair_headroom":
+                        result = CheckStairHeadroom(parameters);
+                        break;
+                    case "create_stair_text_note_with_leader":
+                        result = CreateTextNoteWithLeader(parameters);
+                        break;
+
+                    case "convert_drafting_to_model_pattern":
+                        result = ConvertDraftingToModelPattern();
+                        break;
+                    case "auto_convert_rotated_viewport_patterns":
+                        result = AutoConvertRotatedViewportPatterns();
+                        break;
+
+                    case "get_linked_models":
+                        result = _linkedModelHelper.GetLinkedModels();
+                        break;
+                    case "query_linked_elements":
+                        result = _linkedModelHelper.QueryLinkedElements(parameters);
+                        break;
+                    case "get_element_geometry":
+                        result = _linkedModelHelper.GetElementGeometry(parameters);
+                        break;
+                    case "detect_clashes":
+                        result = _clashDetector.DetectClashes(parameters);
+                        break;
+                    case "colorize_clashes":
+                        result = _clashDetector.ColorizeClashes(parameters);
+                        break;
+                    case "export_clash_report":
+                        result = _clashDetector.ExportClashReport(parameters);
+                        break;
+
                     default:
                         throw new NotImplementedException($"未實作的命令: {request.CommandName}");
                 }
@@ -382,6 +517,9 @@ namespace RevitMCP.Core
             using (Transaction trans = new Transaction(doc, "建立牆"))
             {
                 trans.Start();
+                FailureHandlingOptions failureOptions = trans.GetFailureHandlingOptions();
+                failureOptions.SetFailuresPreprocessor(new DismissWarningsPreprocessor());
+                trans.SetFailureHandlingOptions(failureOptions);
 
                 // 建立線
                 Line line = Line.CreateBound(start, end);
@@ -629,6 +767,28 @@ namespace RevitMCP.Core
             using (Transaction trans = new Transaction(doc, "修改參數"))
             {
                 trans.Start();
+                FailureHandlingOptions failureOptions = trans.GetFailureHandlingOptions();
+                failureOptions.SetFailuresPreprocessor(new DismissWarningsPreprocessor());
+                trans.SetFailureHandlingOptions(failureOptions);
+
+                if (IsNameParameter(parameterName))
+                {
+                    Element nameTarget = GetNameAssignmentTarget(doc, element);
+                    string oldName = nameTarget.Name;
+                    nameTarget.Name = value;
+
+                    trans.Commit();
+
+                    return new
+                    {
+                        ElementId = elementId,
+                        TargetElementId = nameTarget.Id.GetIdValue(),
+                        ParameterName = parameterName,
+                        OldValue = oldName,
+                        NewValue = value,
+                        Message = $"Renamed {oldName} to {value}"
+                    };
+                }
 
                 Parameter param = element.LookupParameter(parameterName);
                 if (param == null)
@@ -676,6 +836,43 @@ namespace RevitMCP.Core
             }
         }
 
+        private class DismissWarningsPreprocessor : IFailuresPreprocessor
+        {
+            public FailureProcessingResult PreprocessFailures(FailuresAccessor failuresAccessor)
+            {
+                IList<FailureMessageAccessor> failures = failuresAccessor.GetFailureMessages();
+                foreach (FailureMessageAccessor failure in failures)
+                {
+                    if (failure.GetSeverity() == FailureSeverity.Warning)
+                    {
+                        failuresAccessor.DeleteWarning(failure);
+                    }
+                }
+
+                return FailureProcessingResult.Continue;
+            }
+        }
+
+        private bool IsNameParameter(string parameterName)
+        {
+            return parameterName == "Name"
+                || parameterName == "名稱"
+                || parameterName == "類型名稱"
+                || parameterName == "Type Name"
+                || parameterName == "-1002001";
+        }
+
+        private Element GetNameAssignmentTarget(Document doc, Element element)
+        {
+            if (element is Wall)
+            {
+                Element typeElement = doc.GetElement(element.GetTypeId());
+                if (typeElement != null) return typeElement;
+            }
+
+            return element;
+        }
+
         /// <summary>
         /// 建立門
         /// </summary>
@@ -685,8 +882,10 @@ namespace RevitMCP.Core
             IdType wallId = parameters["wallId"]?.Value<IdType>() ?? 0;
             double locationX = parameters["locationX"]?.Value<double>() ?? 0;
             double locationY = parameters["locationY"]?.Value<double>() ?? 0;
+            string doorType = parameters["doorType"]?.Value<string>();
+            IdType? sourceElementId = parameters["sourceElementId"]?.Value<IdType>();
 
-            Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+            Wall wall = doc.GetElement(wallId.ToElementId()) as Wall;
             if (wall == null)
             {
                 throw new Exception($"找不到牆 ID: {wallId}");
@@ -697,11 +896,36 @@ namespace RevitMCP.Core
                 trans.Start();
 
                 // 取得門類型
-                FamilySymbol doorSymbol = new FilteredElementCollector(doc)
-                    .OfClass(typeof(FamilySymbol))
-                    .OfCategory(BuiltInCategory.OST_Doors)
-                    .Cast<FamilySymbol>()
-                    .FirstOrDefault();
+                FamilySymbol doorSymbol = null;
+                Element sourceElement = null;
+
+                if (sourceElementId.HasValue && sourceElementId.Value > 0)
+                {
+                    sourceElement = doc.GetElement(sourceElementId.Value.ToElementId());
+                }
+
+                if (!string.IsNullOrEmpty(doorType))
+                {
+                    doorSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Doors)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault(fs => fs.Name == doorType || (fs.FamilyName + ": " + fs.Name) == doorType);
+                }
+
+                if (doorSymbol == null && sourceElement != null)
+                {
+                    doorSymbol = doc.GetElement(sourceElement.GetTypeId()) as FamilySymbol;
+                }
+
+                if (doorSymbol == null)
+                {
+                    doorSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Doors)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault();
+                }
 
                 if (doorSymbol == null)
                 {
@@ -722,6 +946,19 @@ namespace RevitMCP.Core
                     location, doorSymbol, wall, level, 
                     Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
 
+                if (sourceElement != null)
+                {
+                    CopyInstanceParameters(sourceElement, door);
+
+                    if (sourceElement is FamilyInstance sourceFamilyInstance)
+                    {
+                        if (sourceFamilyInstance.FacingFlipped != door.FacingFlipped && door.CanFlipFacing)
+                            door.flipFacing();
+                        if (sourceFamilyInstance.HandFlipped != door.HandFlipped && door.CanFlipHand)
+                            door.flipHand();
+                    }
+                }
+
                 trans.Commit();
 
                 return new
@@ -729,6 +966,7 @@ namespace RevitMCP.Core
                     ElementId = door.Id.GetIdValue(),
                     DoorType = doorSymbol.Name,
                     WallId = wallId,
+                    SourceElementId = sourceElement?.Id.GetIdValue(),
                     Message = $"成功建立門，ID: {door.Id.GetIdValue()}"
                 };
             }
@@ -743,8 +981,10 @@ namespace RevitMCP.Core
             IdType wallId = parameters["wallId"]?.Value<IdType>() ?? 0;
             double locationX = parameters["locationX"]?.Value<double>() ?? 0;
             double locationY = parameters["locationY"]?.Value<double>() ?? 0;
+            string windowType = parameters["windowType"]?.Value<string>();
+            IdType? sourceElementId = parameters["sourceElementId"]?.Value<IdType>();
 
-            Wall wall = doc.GetElement(new ElementId(wallId)) as Wall;
+            Wall wall = doc.GetElement(wallId.ToElementId()) as Wall;
             if (wall == null)
             {
                 throw new Exception($"找不到牆 ID: {wallId}");
@@ -755,11 +995,36 @@ namespace RevitMCP.Core
                 trans.Start();
 
                 // 取得窗類型
-                FamilySymbol windowSymbol = new FilteredElementCollector(doc)
-                    .OfClass(typeof(FamilySymbol))
-                    .OfCategory(BuiltInCategory.OST_Windows)
-                    .Cast<FamilySymbol>()
-                    .FirstOrDefault();
+                FamilySymbol windowSymbol = null;
+                Element sourceElement = null;
+
+                if (sourceElementId.HasValue && sourceElementId.Value > 0)
+                {
+                    sourceElement = doc.GetElement(sourceElementId.Value.ToElementId());
+                }
+
+                if (!string.IsNullOrEmpty(windowType))
+                {
+                    windowSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Windows)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault(fs => fs.Name == windowType || (fs.FamilyName + ": " + fs.Name) == windowType);
+                }
+
+                if (windowSymbol == null && sourceElement != null)
+                {
+                    windowSymbol = doc.GetElement(sourceElement.GetTypeId()) as FamilySymbol;
+                }
+
+                if (windowSymbol == null)
+                {
+                    windowSymbol = new FilteredElementCollector(doc)
+                        .OfClass(typeof(FamilySymbol))
+                        .OfCategory(BuiltInCategory.OST_Windows)
+                        .Cast<FamilySymbol>()
+                        .FirstOrDefault();
+                }
 
                 if (windowSymbol == null)
                 {
@@ -780,6 +1045,19 @@ namespace RevitMCP.Core
                     location, windowSymbol, wall, level,
                     Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
 
+                if (sourceElement != null)
+                {
+                    CopyInstanceParameters(sourceElement, window);
+
+                    if (sourceElement is FamilyInstance sourceFamilyInstance)
+                    {
+                        if (sourceFamilyInstance.FacingFlipped != window.FacingFlipped && window.CanFlipFacing)
+                            window.flipFacing();
+                        if (sourceFamilyInstance.HandFlipped != window.HandFlipped && window.CanFlipHand)
+                            window.flipHand();
+                    }
+                }
+
                 trans.Commit();
 
                 return new
@@ -787,6 +1065,7 @@ namespace RevitMCP.Core
                     ElementId = window.Id.GetIdValue(),
                     WindowType = windowSymbol.Name,
                     WallId = wallId,
+                    SourceElementId = sourceElement?.Id.GetIdValue(),
                     Message = $"成功建立窗，ID: {window.Id.GetIdValue()}"
                 };
             }

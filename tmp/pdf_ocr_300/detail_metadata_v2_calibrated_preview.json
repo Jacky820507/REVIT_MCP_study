@@ -1,0 +1,1446 @@
+{
+  "sourcePdf": "E:\\GitHub Library\\RevitMCP\\大樣詳圖ALL.pdf",
+  "familyName": "AE-????????-3.5mm",
+  "algorithm": "v2_calibrated_manual-reference-first",
+  "referenceSheets": [
+    "ARA-D07014",
+    "ARA-D07015",
+    "ARA-D07016",
+    "ARA-D07017",
+    "ARA-D07018",
+    "ARB-D03022",
+    "ARB-D09001"
+  ],
+  "items": [
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07014",
+      "sheetName": "玻璃帷幕立面圖",
+      "detailNumber": "1",
+      "detailName": "帷幕牆側立面圖",
+      "typeName": "ARA-D07014-玻璃帷幕立面圖-帷幕牆側立面圖",
+      "typeId": 259687
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07014",
+      "sheetName": "玻璃帷幕立面圖",
+      "detailNumber": "2",
+      "detailName": "帷幕牆正立面詳圖",
+      "typeName": "ARA-D07014-玻璃帷幕立面圖-帷幕牆正立面詳圖",
+      "typeId": 259689
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07015",
+      "sheetName": "玻璃帷幕平剖圖",
+      "detailNumber": "1",
+      "detailName": "入口雨遮平面詳圖",
+      "typeName": "ARA-D07015-玻璃帷幕平剖圖-入口雨遮平面詳圖",
+      "typeId": 259691
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07015",
+      "sheetName": "玻璃帷幕平剖圖",
+      "detailNumber": "2",
+      "detailName": "帷幕牆平面詳剖",
+      "typeName": "ARA-D07015-玻璃帷幕平剖圖-帷幕牆平面詳剖",
+      "typeId": 259695
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07015",
+      "sheetName": "玻璃帷幕平剖圖",
+      "detailNumber": "3",
+      "detailName": "帷幕牆及入口雨遮剖面圖",
+      "typeName": "ARA-D07015-玻璃帷幕平剖圖-帷幕牆及入口雨遮剖面圖",
+      "typeId": 259693
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07016",
+      "sheetName": "玻璃帷幕詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "入口雨剖面詳圖",
+      "typeName": "ARA-D07016-玻璃帷幕詳圖(一)-入口雨剖面詳圖",
+      "typeId": 259697
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07017",
+      "sheetName": "玻璃帷幕詳圖(二)",
+      "detailNumber": "1-5",
+      "detailName": "帷幕牆斷面詳圖",
+      "typeName": "ARA-D07017-玻璃帷幕詳圖(二)-帷幕牆斷面詳圖",
+      "typeId": 259699
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARA-D07018",
+      "sheetName": "玻璃帷幕詳圖(三)",
+      "detailNumber": "1-6",
+      "detailName": "帷幕牆斷面詳圖",
+      "typeName": "ARA-D07018-玻璃帷幕詳圖(三)-帷幕牆斷面詳圖",
+      "typeId": 259701
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D03022",
+      "sheetName": "護欄詳圖",
+      "detailNumber": "1",
+      "detailName": "碼頭區RC護欄圖騰單元立面圖",
+      "typeName": "ARB-D03022-護欄詳圖-碼頭區RC護欄圖騰單元立面圖",
+      "typeId": 259703
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D03022",
+      "sheetName": "護欄詳圖",
+      "detailNumber": "2",
+      "detailName": "碼頭區RC護欄圖騰立面放樣圖",
+      "typeName": "ARB-D03022-護欄詳圖-碼頭區RC護欄圖騰立面放樣圖",
+      "typeId": 259705
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D03022",
+      "sheetName": "護欄詳圖",
+      "detailNumber": "3",
+      "detailName": "護攔粉刷剖面圖",
+      "typeName": "ARB-D03022-護欄詳圖-護攔粉刷剖面圖",
+      "typeId": 259707
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "面磚地坪詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-面磚地坪詳圖",
+      "typeId": 259659
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "10",
+      "detailName": "室內外地坪交界面填縫詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-室內外地坪交界面填縫詳圖",
+      "typeId": 259677
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "11",
+      "detailName": "面磚類牆面及轉角詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-面磚類牆面及轉角詳圖",
+      "typeId": 259679
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "2",
+      "detailName": "環氧樹脂耐磨地坪詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-環氧樹脂耐磨地坪詳圖",
+      "typeId": 259661
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "3",
+      "detailName": "粉面類平頂詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-粉面類平頂詳圖",
+      "typeId": 259663
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "4",
+      "detailName": "1:2防水水泥砂漿刷貼止滑石英磚詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-1-2防水水泥砂漿刷貼止滑石英磚詳圖",
+      "typeId": 259665
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "5",
+      "detailName": "浴廁貼磁磚牆面(RC)及防水層詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-浴廁貼磁磚牆面(RC)及防水層詳圖",
+      "typeId": 259667
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "6",
+      "detailName": "水泥漆牆面詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-水泥漆牆面詳圖",
+      "typeId": 259669
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "7",
+      "detailName": "面磚牆面詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-面磚牆面詳圖",
+      "typeId": 259671
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "8",
+      "detailName": "屋頂地坪防水隔熱收邊詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-屋頂地坪防水隔熱收邊詳圖",
+      "typeId": 259673
+    },
+    {
+      "source": "revit_manual_reference",
+      "sheetNumber": "ARB-D09001",
+      "sheetName": "施工大樣詳圖(一)",
+      "detailNumber": "9",
+      "detailName": "浴廁貼磁磚牆面(輕隔間)及防水層詳圖",
+      "typeName": "ARB-D09001-施工大樣詳圖(一)-浴廁貼磁磚牆面(輕隔間)及防水層詳圖",
+      "typeId": 259675
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "1",
+      "detailName": "地下室底版防水層詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "2",
+      "detailName": "地下室牆面防水層詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "3",
+      "detailName": "混凝土地坏詳桔構",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "4",
+      "detailName": "地下室頂版防水層詳圖(上方覆土)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "5",
+      "detailName": ",碼頭區排水溝/地坪覆面層/防水層詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "6",
+      "detailName": "碼頭區淺水溝詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "7",
+      "detailName": "屋頂高腰式落水罩詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "8",
+      "detailName": "地下室頂版防水層詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "9",
+      "detailName": "地坏覆面層、防水層詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 8,
+      "sheetNumber": "ARB-D09002",
+      "sheetName": "施工大樣詳圖(二)",
+      "detailNumber": "10",
+      "detailName": "鋅格板板詳1",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "排水溝蓋版詳圖1",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "2",
+      "detailName": "井蓋板詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "4",
+      "detailName": "暗溝詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "5",
+      "detailName": "地板排水溝平·剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "6",
+      "detailName": "屋頂通風道剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "7",
+      "detailName": "基座邊溝詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "8",
+      "detailName": "犬走及排水明溝加蓋詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 9,
+      "sheetNumber": "ARB-D09003",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+      "detailNumber": "9",
+      "detailName": "水泥涵管埋設詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "1",
+      "detailName": "水箱防水示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "2",
+      "detailName": "水箱洩水口詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "3",
+      "detailName": "污、廢水(集水)池泵浦人孔蓋標準詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "4",
+      "detailName": "污水坑人孔蓋板詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "5",
+      "detailName": "集水坑剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "6",
+      "detailName": "水箱防水詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "7-8",
+      "detailName": "水箱人孔蓋剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "9",
+      "detailName": "人孔蓋平面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 10,
+      "sheetNumber": "ARB-D09004",
+      "sheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+      "detailNumber": "10",
+      "detailName": "框防水詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 11,
+      "sheetNumber": "ARB-D09005",
+      "sheetName": "停車場設施詳圖",
+      "detailNumber": "1",
+      "detailName": "框座錨錠詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 11,
+      "sheetNumber": "ARB-D09005",
+      "sheetName": "停車場設施詳圖",
+      "detailNumber": "2",
+      "detailName": "地下室外防水詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 12,
+      "sheetNumber": "ARB-D09006",
+      "sheetName": "防火被覆、門檻、車擋、停車標線詳圖",
+      "detailNumber": "1",
+      "detailName": "車擋詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 12,
+      "sheetNumber": "ARB-D09006",
+      "sheetName": "防火被覆、門檻、車擋、停車標線詳圖",
+      "detailNumber": "2",
+      "detailName": "停車空間名種指示圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "1",
+      "detailName": "剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "2",
+      "detailName": "踏步及扶手詳圖(鋼構樓梯",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "3",
+      "detailName": "樓梯扶手詳圖(RC",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "4",
+      "detailName": "無障道欄杆扶手詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "6",
+      "detailName": "扶壁式扶手詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 13,
+      "sheetNumber": "ARB-D09007",
+      "sheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+      "detailNumber": "8",
+      "detailName": "機坑及水箱內立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 14,
+      "sheetNumber": "ARB-D09008",
+      "sheetName": "樓梯無障礙樓梯扶手立/剖面圖",
+      "detailNumber": "1",
+      "detailName": "扶壁式圓管烤杆阝圖1",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 14,
+      "sheetNumber": "ARB-D09008",
+      "sheetName": "樓梯無障礙樓梯扶手立/剖面圖",
+      "detailNumber": "2",
+      "detailName": "扶壁式圓管烤干扶手固定細部圖2",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 14,
+      "sheetNumber": "ARB-D09008",
+      "sheetName": "樓梯無障礙樓梯扶手立/剖面圖",
+      "detailNumber": "5",
+      "detailName": "安全爬側立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 14,
+      "sheetNumber": "ARB-D09008",
+      "sheetName": "樓梯無障礙樓梯扶手立/剖面圖",
+      "detailNumber": "6",
+      "detailName": "安全爬梯剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 15,
+      "sheetNumber": "ARB-D09009",
+      "sheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "detailNumber": "1",
+      "detailName": "室內玻璃攔杆立面示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 15,
+      "sheetNumber": "ARB-D09009",
+      "sheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "detailNumber": "2",
+      "detailName": "欄杆固定詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 15,
+      "sheetNumber": "ARB-D09009",
+      "sheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "detailNumber": "4",
+      "detailName": "室內玻璃攔杆剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 15,
+      "sheetNumber": "ARB-D09009",
+      "sheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "detailNumber": "5",
+      "detailName": "室內玻璃欄杆剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 15,
+      "sheetNumber": "ARB-D09009",
+      "sheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+      "detailNumber": "6",
+      "detailName": "不鏽鋼欄杆剖面A,B詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 17,
+      "sheetNumber": "ARB-D09011",
+      "sheetName": "輕隔間詳圖(二)",
+      "detailNumber": "1",
+      "detailName": "依圖說厚度m纖維水泥板",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 17,
+      "sheetNumber": "ARB-D09011",
+      "sheetName": "輕隔間詳圖(二)",
+      "detailNumber": "2",
+      "detailName": "複壁牆剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 17,
+      "sheetNumber": "ARB-D09011",
+      "sheetName": "輕隔間詳圖(二)",
+      "detailNumber": "3",
+      "detailName": "依圖說厚度1m土0·m纖維水泥板(複壁使用)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 17,
+      "sheetNumber": "ARB-D09011",
+      "sheetName": "輕隔間詳圖(二)",
+      "detailNumber": "4",
+      "detailName": "防潮複壁牆剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "1",
+      "detailName": "管道牆電氣開關盒按裝示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "2",
+      "detailName": "門框補強示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "3",
+      "detailName": "吊掛補強示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "4",
+      "detailName": "門框封板示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "5",
+      "detailName": "接縫處理示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 18,
+      "sheetNumber": "ARB-D09012",
+      "sheetName": "輕隔間詳圖(三)",
+      "detailNumber": "6",
+      "detailName": "骨架橫向補強示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "1",
+      "detailName": "3接縫詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "2",
+      "detailName": "灌漿牆立面圖(樓板底)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "3",
+      "detailName": "防火性:防火區劃依圖說提符合設計寬度之內政防火-小時或以上證明。",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "4",
+      "detailName": "木水泥板(面飾材打板)詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "5",
+      "detailName": "T型轉角圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "6",
+      "detailName": "L型轉角圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "7",
+      "detailName": "木門框按裝詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "8",
+      "detailName": "電氣開關按裝詳圖(非輕隔間工程)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "9",
+      "detailName": "門框上緣接縫詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 19,
+      "sheetNumber": "ARB-D09013",
+      "sheetName": "輕隔間詳圖(四)",
+      "detailNumber": "10",
+      "detailName": "輕隔間圖(四)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 20,
+      "sheetNumber": "ARB-D09014",
+      "sheetName": "岩棉庫板詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "棉庫板施工大樣圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 20,
+      "sheetNumber": "ARB-D09014",
+      "sheetName": "岩棉庫板詳圖(一)",
+      "detailNumber": "4",
+      "detailName": "庫板窗戶型收邊斷面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 20,
+      "sheetNumber": "ARB-D09014",
+      "sheetName": "岩棉庫板詳圖(一)",
+      "detailNumber": "5",
+      "detailName": "庫板開口型收邊斷面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "1",
+      "detailName": "高架地板安裝透視圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "2",
+      "detailName": "高架地板安裝組合詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "3",
+      "detailName": "牆角收邊剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "4",
+      "detailName": "2·本圖為表示各種構材組合及裝俢之設計意旨,僅供參考,承商所採",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "5",
+      "detailName": "桁詳圖、聯接座及螺帽",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "6-7",
+      "detailName": "斜坡示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 22,
+      "sheetNumber": "ARB-D09016",
+      "sheetName": "鋁合金高架地板及防颱百葉詳圖",
+      "detailNumber": "8",
+      "detailName": "用之產品品質不得低於圖示之標準。承商於施工前應繪製施工大樣",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "1",
+      "detailName": "c架防潮礦纖天花平面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "2",
+      "detailName": "c架防潮吸音礦纖天花剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "3",
+      "detailName": "c架防潮吸音礦纖天花燈具收頭圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "4",
+      "detailName": "C3,c企口天花板安裝示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "5",
+      "detailName": "C3,c企口板平面示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 24,
+      "sheetNumber": "ARB-D09018",
+      "sheetName": "礦纖及鋁企口天花板詳圖",
+      "detailNumber": "8",
+      "detailName": "c架矽酸鈣板造型天花板(含收邊板)剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 25,
+      "sheetNumber": "ARB-D09019",
+      "sheetName": "C7金屬障板天花詳圖",
+      "detailNumber": "1",
+      "detailName": "平面示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 25,
+      "sheetNumber": "ARB-D09019",
+      "sheetName": "C7金屬障板天花詳圖",
+      "detailNumber": "2",
+      "detailName": "組裝大樣圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 25,
+      "sheetNumber": "ARB-D09019",
+      "sheetName": "C7金屬障板天花詳圖",
+      "detailNumber": "3",
+      "detailName": "A-A詳剖圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 26,
+      "sheetNumber": "ARB-D09020",
+      "sheetName": "暗架矽酸鈣板天花板詳圖",
+      "detailNumber": "1",
+      "detailName": "牆邊收頭及施工斷面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 26,
+      "sheetNumber": "ARB-D09020",
+      "sheetName": "暗架矽酸鈣板天花板詳圖",
+      "detailNumber": "5",
+      "detailName": "天花板安裝示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 27,
+      "sheetNumber": "ARB-D09021",
+      "sheetName": "暗架吸音石膏板天花板",
+      "detailNumber": "1",
+      "detailName": "暗架組合式吸音天花剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 27,
+      "sheetNumber": "ARB-D09021",
+      "sheetName": "暗架吸音石膏板天花板",
+      "detailNumber": "2",
+      "detailName": "齒夾式骨架詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 27,
+      "sheetNumber": "ARB-D09021",
+      "sheetName": "暗架吸音石膏板天花板",
+      "detailNumber": "6",
+      "detailName": "蓋夾式骨架詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "1",
+      "detailName": "側向立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "2",
+      "detailName": "五金配置及鋁合金腳柱大樣圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "3",
+      "detailName": "背向立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "4",
+      "detailName": "設備背箱面板詳圖(下郚)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "5",
+      "detailName": "設備背箱面板詳圖(上郚)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 28,
+      "sheetNumber": "ARB-D09022",
+      "sheetName": "廁所隔間詳圖",
+      "detailNumber": "6",
+      "detailName": "小便斗隔屛詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "鋁合金接頭(詳圖A)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "2,8-9",
+      "detailName": "圖文內容面貼彩色光輸出",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "3",
+      "detailName": "結構横剖面詳圖(雙面)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "4",
+      "detailName": "詳圖A:鋁金接頭",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "5-6",
+      "detailName": "圖文以膠膜切割貼附",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "7",
+      "detailName": "鋁合金接頭(詳圖A》",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "10",
+      "detailName": "結構橫剖面詳圖(單面)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "11",
+      "detailName": "結構横剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 30,
+      "sheetNumber": "ARB-D09024",
+      "sheetName": "指標系統詳圖(一)",
+      "detailNumber": "12",
+      "detailName": "基座結構詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 31,
+      "sheetNumber": "ARB-D09025",
+      "sheetName": "指標系統詳圖(二)",
+      "detailNumber": "1",
+      "detailName": "文字圖案電腦切割鏤空處理,",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 31,
+      "sheetNumber": "ARB-D09025",
+      "sheetName": "指標系統詳圖(二)",
+      "detailNumber": "2",
+      "detailName": "可掀式維俢門框詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 31,
+      "sheetNumber": "ARB-D09025",
+      "sheetName": "指標系統詳圖(二)",
+      "detailNumber": "3",
+      "detailName": "結構横剖面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 31,
+      "sheetNumber": "ARB-D09025",
+      "sheetName": "指標系統詳圖(二)",
+      "detailNumber": "4",
+      "detailName": "圖文以彩色反光貼貼附",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 31,
+      "sheetNumber": "ARB-D09025",
+      "sheetName": "指標系統詳圖(二)",
+      "detailNumber": "5",
+      "detailName": "組合結構圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 32,
+      "sheetNumber": "ARB-D09026",
+      "sheetName": "指標系統詳圖(三)",
+      "detailNumber": "1",
+      "detailName": "圖文以膠膜電腦切割貼附",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 32,
+      "sheetNumber": "ARB-D09026",
+      "sheetName": "指標系統詳圖(三)",
+      "detailNumber": "2",
+      "detailName": "組合結構圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 32,
+      "sheetNumber": "ARB-D09026",
+      "sheetName": "指標系統詳圖(三)",
+      "detailNumber": "3",
+      "detailName": "圖文以膠電腦切割貼附",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 32,
+      "sheetNumber": "ARB-D09026",
+      "sheetName": "指標系統詳圖(三)",
+      "detailNumber": "4",
+      "detailName": "圖文以電腦噴晝出",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 32,
+      "sheetNumber": "ARB-D09026",
+      "sheetName": "指標系統詳圖(三)",
+      "detailNumber": "7",
+      "detailName": "L壁式各樓層棸急逃生圖標示",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 33,
+      "sheetNumber": "ARB-D09027",
+      "sheetName": "指標系統詳圖(四)",
+      "detailNumber": "1",
+      "detailName": "圖文以白色反光貼紙貼附",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 33,
+      "sheetNumber": "ARB-D09027",
+      "sheetName": "指標系統詳圖(四)",
+      "detailNumber": "2",
+      "detailName": "(1)安裝之確實位置依圖面現場監工人員之指示辦理。",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 33,
+      "sheetNumber": "ARB-D09027",
+      "sheetName": "指標系統詳圖(四)",
+      "detailNumber": "3",
+      "detailName": "圖文以彩色輸出",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 33,
+      "sheetNumber": "ARB-D09027",
+      "sheetName": "指標系統詳圖(四)",
+      "detailNumber": "4",
+      "detailName": "LED嬁組安裝示意圖(背光)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 34,
+      "sheetNumber": "ARB-D09028",
+      "sheetName": "FRP水箱詳圖(一)",
+      "detailNumber": "1",
+      "detailName": "基礎座剖面圖(屬建築工程)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 34,
+      "sheetNumber": "ARB-D09028",
+      "sheetName": "FRP水箱詳圖(一)",
+      "detailNumber": "2",
+      "detailName": "基礎精度圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 34,
+      "sheetNumber": "ARB-D09028",
+      "sheetName": "FRP水箱詳圖(一)",
+      "detailNumber": "3",
+      "detailName": "RC基座圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 35,
+      "sheetNumber": "ARB-D09029",
+      "sheetName": "FRP水箱詳圖(二)",
+      "detailNumber": "1",
+      "detailName": "基礎座剖面圖(屬建築工程)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 35,
+      "sheetNumber": "ARB-D09029",
+      "sheetName": "FRP水箱詳圖(二)",
+      "detailNumber": "2",
+      "detailName": "基礎精度圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 35,
+      "sheetNumber": "ARB-D09029",
+      "sheetName": "FRP水箱詳圖(二)",
+      "detailNumber": "3-4",
+      "detailName": "RC基座圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 36,
+      "sheetNumber": "ARB-D09030",
+      "sheetName": "防水閘門詳圖",
+      "detailNumber": "7",
+      "detailName": "拖架詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "1",
+      "detailName": "防水閘門立面示意圖-單片式",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "2",
+      "detailName": "詳圖H哋面固定法灻樣)",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "3",
+      "detailName": "A-A剖面示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "4",
+      "detailName": "RC地坪面鑽孔安裝示意圖4",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "5",
+      "detailName": "門板詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "6",
+      "detailName": "防水閘門立面示意圖-多片式2",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "7-8,13",
+      "detailName": "邊框大樣之詳圖A",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "9",
+      "detailName": "邊框大樣圖之詳圖A",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "10-11,20,23",
+      "detailName": "未使用中示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "12,25",
+      "detailName": "牆面崁板安裝立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "14",
+      "detailName": "石材面崁板安裝立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "15,24",
+      "detailName": "牆面安裝示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "16",
+      "detailName": "石材面崁板安裝示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "17",
+      "detailName": "底框詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "18",
+      "detailName": "置板架立面圖10",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "19",
+      "detailName": "邊框樣之c詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "21",
+      "detailName": "側面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "22",
+      "detailName": "立面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "26",
+      "detailName": "邊框大樣之c詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 37,
+      "sheetNumber": "ARB-D09031",
+      "sheetName": "防水閘板詳圖",
+      "detailNumber": "27",
+      "detailName": "使用中示意圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "1",
+      "detailName": "防煙捲幕(簾)立面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "2",
+      "detailName": "防煙捲幕(簾)平面詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "3",
+      "detailName": "12呠圖為示意圖,依現場實際狀況為主。",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "4",
+      "detailName": "不鏽鋼鐵捲門剖面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "5",
+      "detailName": "不鏽鋼鐵捲門與隔間詳圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "6",
+      "detailName": "不鏽鋼鐵捲門機電系統操作圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "7",
+      "detailName": "不鏽鋼捲門立面圖",
+      "source": "ocr_v2_preview"
+    },
+    {
+      "sourcePage": 38,
+      "sheetNumber": "ARB-D09032",
+      "sheetName": "防煙捲簾及捲門詳圖",
+      "detailNumber": "8",
+      "detailName": "自動防火連動裝置系統圖",
+      "source": "ocr_v2_preview"
+    }
+  ]
+}

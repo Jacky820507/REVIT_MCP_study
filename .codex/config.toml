@@ -1,0 +1,3 @@
+[mcp_servers.revit-mcp]
+args = ["./MCP-Server/build/index.js"]
+command = "node"

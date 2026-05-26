@@ -1,0 +1,155 @@
+v2_input_items=176
+v3_current_items=66
+v4_grouped_items=174
+missing_or_correction=114
+recommended_for_import=88
+review_only=26
+
+[recommended_for_import_by_sheet]
+ARB-D09002: 4
+ARB-D09003: 8
+ARB-D09004: 4
+ARB-D09005: 2
+ARB-D09006: 1
+ARB-D09007: 6
+ARB-D09008: 3
+ARB-D09009: 4
+ARB-D09012: 1
+ARB-D09013: 6
+ARB-D09014: 1
+ARB-D09016: 1
+ARB-D09018: 2
+ARB-D09019: 2
+ARB-D09022: 5
+ARB-D09024: 7
+ARB-D09025: 3
+ARB-D09026: 1
+ARB-D09027: 1
+ARB-D09028: 2
+ARB-D09029: 2
+ARB-D09031: 20
+ARB-D09032: 2
+
+[recommended_for_import]
+ARB-D09002 4. 地下室頂版防水層詳圖(上方覆土) | missingAdd | medium
+ARB-D09002 5. 3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖 | correctExisting | high_correction
+  current: ARB-D09002-施工大樣詳圖(二)-,碼頭區排水溝/地坪覆面層/防水層詳圖
+ARB-D09002 8. 地下室頂版防水層詳圖 | missingAdd | medium
+ARB-D09002 9. 地坪覆面層、防水層詳圖 | missingAdd | medium
+ARB-D09003 1. 排水溝蓋版詳圖1 | missingAdd | medium
+ARB-D09003 2. 井蓋板詳圖 | missingAdd | medium
+ARB-D09003 4. 暗溝詳圖 | missingAdd | medium
+ARB-D09003 5. 地板排水溝平·剖面圖 | missingAdd | medium
+ARB-D09003 6. 屋頂通風道剖面圖 | missingAdd | medium
+ARB-D09003 7. 基座邊溝詳圖 | missingAdd | medium
+ARB-D09003 8. 犬走及排水明溝加蓋詳圖 | missingAdd | medium
+ARB-D09003 9. 水泥涵管埋設詳圖 | missingAdd | medium
+ARB-D09004 3. 污、廢水(集水)池泵浦人孔蓋標準詳圖 | missingAdd | medium
+ARB-D09004 4. 污水坑人孔蓋板詳圖 | missingAdd | medium
+ARB-D09004 5. 集水坑剖面詳圖 | missingAdd | medium
+ARB-D09004 10. 框防水詳圖 | missingAdd | medium
+ARB-D09005 1. 框座錨錠詳圖 | missingAdd | medium
+ARB-D09005 2. 地下室外防水詳圖 | missingAdd | medium
+ARB-D09006 1. 車擋詳圖 | missingAdd | medium
+ARB-D09007 1. 剖面詳圖 | missingAdd | medium
+ARB-D09007 2. 踏步及扶手詳圖(鋼構樓梯 | missingAdd | medium
+ARB-D09007 3. 樓梯扶手詳圖(RC | missingAdd | medium
+ARB-D09007 4. 無障道欄杆扶手詳圖 | correctExisting | medium
+  current: ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖(RC
+ARB-D09007 6. 扶壁式扶手詳圖 | missingAdd | medium
+ARB-D09007 8. 機坑及水箱內立面圖 | missingAdd | medium
+ARB-D09008 2. 扶壁式圓管烤干扶手固定細部圖2 | missingAdd | medium
+ARB-D09008 5. 安全爬側立面圖 | missingAdd | medium
+ARB-D09008 6. 安全爬梯剖面圖 | missingAdd | medium
+ARB-D09009 1. 室內玻璃欄杆立面示意圖 | missingAdd | medium
+ARB-D09009 2. 欄杆固定詳圖 | missingAdd | medium
+ARB-D09009 4-5. 室內玻璃欄杆剖面詳圖 | missingAdd | medium
+ARB-D09009 6. 不鏽鋼欄杆剖面A,B詳圖 | missingAdd | medium
+ARB-D09012 3. 吊掛補強示意圖 | missingAdd | medium
+ARB-D09013 1. 3接縫詳圖 | missingAdd | medium
+ARB-D09013 2. 灌漿牆立面圖(樓板底) | missingAdd | medium
+ARB-D09013 4. 木水泥板(面飾材打板)詳圖 | missingAdd | medium
+ARB-D09013 7. 木門框按裝詳圖 | missingAdd | medium
+ARB-D09013 8. 電氣開關按裝詳圖(非輕隔間工程) | missingAdd | medium
+ARB-D09013 9. 門框上緣接縫詳圖 | missingAdd | medium
+ARB-D09014 1. 棉庫板施工大樣圖 | missingAdd | medium
+ARB-D09016 3. 牆角收邊剖面圖 | missingAdd | medium
+ARB-D09018 3. c架防潮吸音礦纖天花燈具收頭圖 | missingAdd | medium
+ARB-D09018 4-5. C3,C9鋁企口天花板安裝示意圖 | mergeOrCorrectExisting | high_correction
+  current: ARB-D09018-礦纖及鋁企口天花板詳圖-C3,c企口天花板安裝示意圖
+  current: ARB-D09018-礦纖及鋁企口天花板詳圖-C3,c企口板平面示意圖
+ARB-D09019 2. 組裝大樣圖 | missingAdd | medium
+ARB-D09019 3. A-A詳剖圖 | missingAdd | medium
+ARB-D09022 1. 側向立面圖 | missingAdd | medium
+ARB-D09022 3. 背向立面圖 | missingAdd | medium
+ARB-D09022 4. 設備背箱面板詳圖(下部) | missingAdd | medium
+ARB-D09022 5. 設備背箱面板詳圖(上部) | missingAdd | medium
+ARB-D09022 6. 小便斗隔屏詳圖 | missingAdd | medium
+ARB-D09024 1. 鋁合金接頭(詳圖A) | missingAdd | medium
+ARB-D09024 3. 結構横剖面詳圖(雙面) | missingAdd | medium
+ARB-D09024 4. 詳圖A:鋁金接頭 | missingAdd | medium
+ARB-D09024 7. 鋁合金接頭(詳圖A》 | missingAdd | medium
+ARB-D09024 10. 結構橫剖面詳圖(單面) | missingAdd | medium
+ARB-D09024 11. 結構横剖面詳圖 | missingAdd | medium
+ARB-D09024 12. 基座結構詳圖 | missingAdd | medium
+ARB-D09025 2. 可掀式維修門框詳圖 | missingAdd | medium
+ARB-D09025 3. 結構横剖面詳圖 | missingAdd | medium
+ARB-D09025 5. 組合結構圖 | missingAdd | medium
+ARB-D09026 2. 組合結構圖 | missingAdd | medium
+ARB-D09027 4. LED燈組安裝示意圖(背光) | missingAdd | medium
+ARB-D09028 1. 基礎座剖面圖(屬建築工程) | missingAdd | medium
+ARB-D09028 3. RC基座圖 | missingAdd | medium
+ARB-D09029 1. 基礎座剖面圖(屬建築工程) | missingAdd | medium
+ARB-D09029 3-4. RC基座圖 | mergeOrCorrectExisting | medium
+  current: ARB-D09029-FRP水箱詳圖(二)-RC基座圖
+ARB-D09031 1. 防水閘門立面示意圖-單片式 | missingAdd | medium
+ARB-D09031 2. 詳圖H地面固定法大樣) | missingAdd | medium
+ARB-D09031 3. A-A剖面示意圖 | correctExisting | medium
+  current: ARB-D09031-防水閘板詳圖-RC地坪面鑽孔安裝示意圖4
+ARB-D09031 4. RC地坪面鑽孔安裝示意圖4 | missingAdd | medium
+ARB-D09031 5. 門板詳圖 | missingAdd | medium
+ARB-D09031 6. 防水閘門立面示意圖-多片式2 | missingAdd | medium
+ARB-D09031 7-8,13. 邊框大樣之詳圖A | missingAdd | medium
+ARB-D09031 9. 邊框大樣圖之詳圖A | missingAdd | medium
+ARB-D09031 10-11,20,23. 未使用中示意圖 | missingAdd | medium
+ARB-D09031 12,25. 牆面崁板安裝立面圖 | missingAdd | medium
+ARB-D09031 14. 石材面崁板安裝立面圖 | missingAdd | medium
+ARB-D09031 15,24. 牆面安裝示意圖 | missingAdd | medium
+ARB-D09031 16. 石材面崁板安裝示意圖 | missingAdd | medium
+ARB-D09031 17. 底框詳圖 | missingAdd | medium
+ARB-D09031 18. 置板架立面圖10 | missingAdd | medium
+ARB-D09031 19. 邊框樣之c詳圖 | missingAdd | medium
+ARB-D09031 21. 側面詳圖 | missingAdd | medium
+ARB-D09031 22. 立面詳圖 | missingAdd | medium
+ARB-D09031 26. 邊框大樣之c詳圖 | missingAdd | medium
+ARB-D09031 27. 使用中示意圖 | missingAdd | medium
+ARB-D09032 3. 12呠圖為示意圖,依現場實際狀況為主。 | missingAdd | medium
+ARB-D09032 7. 不鏽鋼捲門立面圖 | missingAdd | medium
+
+[review_only]
+ARB-D09002 3. 混凝土地坪詳桔構 | missingAdd | low
+ARB-D09002 10. 鋅格板板詳1 | missingAdd | low
+ARB-D09006 2. 停車空間名種指示圖 | missingAdd | low
+ARB-D09008 1. 扶壁式圓管烤杆阝圖1 | missingAdd | low
+ARB-D09011 1. 依圖說厚度m纖維水泥板 | missingAdd | low_note_like
+ARB-D09011 3. 依圖說厚度1m土0·m纖維水泥板(複壁使用) | missingAdd | low_note_like
+ARB-D09013 3. 防火性:防火區劃依圖說提符合設計寬度之內政防火-小時或以上證明。 | missingAdd | low_note_like
+ARB-D09013 5. T型轉角圖 | missingAdd | low
+ARB-D09013 6. L型轉角圖 | missingAdd | low
+ARB-D09013 10. 輕隔間圖(四) | missingAdd | low
+ARB-D09016 4. 2·本圖為表示各種構材組合及裝俢之設計意旨,僅供參考,承商所採 | missingAdd | low_note_like
+ARB-D09016 8. 用之產品品質不得低於圖示之標準。承商於施工前應繪製施工大樣 | missingAdd | low_note_like
+ARB-D09024 2,8-9. 圖文內容面貼彩色光輸出 | missingAdd | low
+ARB-D09024 5-6. 圖文以膠膜切割貼附 | missingAdd | low
+ARB-D09025 1. 文字圖案電腦切割鏤空處理, | missingAdd | low
+ARB-D09025 4. 圖文以彩色反光貼貼附 | missingAdd | low
+ARB-D09026 1. 圖文以膠膜電腦切割貼附 | missingAdd | low
+ARB-D09026 3. 圖文以膠電腦切割貼附 | missingAdd | low
+ARB-D09026 4. 圖文以電腦噴晝出 | missingAdd | low
+ARB-D09026 7. L壁式各樓層棸急逃生圖標示 | missingAdd | low
+ARB-D09027 1. 圖文以白色反光貼紙貼附 | missingAdd | low
+ARB-D09027 2. (1)安裝之確實位置依圖面現場監工人員之指示辦理。 | missingAdd | low_note_like
+ARB-D09027 3. 圖文以彩色輸出 | missingAdd | low
+ARB-D09028 2. 基礎精度圖 | missingAdd | low
+ARB-D09029 2. 基礎精度圖 | missingAdd | low
+ARB-D09032 8. 自動防火連動裝置系統圖 | missingAdd | low

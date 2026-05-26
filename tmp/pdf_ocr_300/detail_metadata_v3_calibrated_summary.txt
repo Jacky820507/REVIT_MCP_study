@@ -1,0 +1,124 @@
+total_items=66
+manual_reference_items=22
+ocr_v3_items=44
+reference_sheets=ARA-D07014, ARA-D07015, ARA-D07016, ARA-D07017, ARA-D07018, ARB-D03022, ARB-D09001
+
+page 01 ARA-D07014 玻璃帷幕立面圖: mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 02 ARA-D07015 玻璃帷幕平剖圖: mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 03 ARA-D07016 玻璃帷幕詳圖(一): mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 04 ARA-D07017 玻璃帷幕詳圖(二): mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 05 ARA-D07018 玻璃帷幕詳圖(三): mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 06 ARB-D03022 護欄詳圖: mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 07 ARB-D09001 施工大樣詳圖(一): mode=manual_reference grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=0
+
+page 08 ARB-D09002 施工大樣詳圖(二): mode=ocr_v3 grouped=5 numbers=7 raw_titles=10 large_titles=7 title_h_threshold=33.300000000000004
+  1. 地下室底版防水層詳圖
+  2. 地下室牆面防水層詳圖
+  5. ,碼頭區排水溝/地坪覆面層/防水層詳圖
+  6. 碼頭區淺水溝詳圖
+  7. 屋頂高腰式落水罩詳圖
+
+page 09 ARB-D09003 陰井、排水溝、淺溝、水箱人孔詳圖(一): mode=ocr_v3 grouped=0 numbers=13 raw_titles=8 large_titles=1 title_h_threshold=37.800000000000004
+
+page 10 ARB-D09004 陰井、排水溝、淺溝、水箱人孔詳圖(二): mode=ocr_v3 grouped=5 numbers=17 raw_titles=10 large_titles=9 title_h_threshold=31.5
+  1. 水箱防水示意圖
+  2. 水箱洩水口詳圖
+  6. 水箱防水詳圖
+  7-8. 水箱人孔蓋剖面詳圖
+  9. 人孔蓋平面詳圖
+
+page 11 ARB-D09005 停車場設施詳圖: mode=ocr_v3 grouped=0 numbers=6 raw_titles=2 large_titles=1 title_h_threshold=28.8
+
+page 12 ARB-D09006 防火被覆、門檻、車擋、停車標線詳圖: mode=ocr_v3 grouped=0 numbers=2 raw_titles=2 large_titles=2 title_h_threshold=31.5
+
+page 13 ARB-D09007 樓梯扶手、不鏽鋼爬梯詳圖: mode=ocr_v3 grouped=1 numbers=11 raw_titles=6 large_titles=1 title_h_threshold=47.7
+  4. 樓梯扶手詳圖(RC
+
+page 14 ARB-D09008 樓梯無障礙樓梯扶手立/剖面圖: mode=ocr_v3 grouped=0 numbers=9 raw_titles=4 large_titles=2 title_h_threshold=40.5
+
+page 15 ARB-D09009 玻璃、不鏽鋼扶手及花崗石詳圖: mode=ocr_v3 grouped=0 numbers=10 raw_titles=5 large_titles=1 title_h_threshold=38.7
+
+page 16 ARB-D09010 輕隔間詳圖(一): mode=ocr_v3 grouped=0 numbers=0 raw_titles=0 large_titles=0 title_h_threshold=28
+
+page 17 ARB-D09011 輕隔間詳圖(二): mode=ocr_v3 grouped=2 numbers=4 raw_titles=4 large_titles=4 title_h_threshold=28.8
+  2. 複壁牆剖面詳圖
+  4. 防潮複壁牆剖面詳圖
+
+page 18 ARB-D09012 輕隔間詳圖(三): mode=ocr_v3 grouped=5 numbers=5 raw_titles=6 large_titles=6 title_h_threshold=28.8
+  1. 管道牆電氣開關盒按裝示意圖
+  2. 門框補強示意圖
+  4. 門框封板示意圖
+  5. 接縫處理示意圖
+  6. 骨架橫向補強示意圖
+
+page 19 ARB-D09013 輕隔間詳圖(四): mode=ocr_v3 grouped=0 numbers=7 raw_titles=10 large_titles=1 title_h_threshold=40.5
+
+page 20 ARB-D09014 岩棉庫板詳圖(一): mode=ocr_v3 grouped=2 numbers=4 raw_titles=3 large_titles=3 title_h_threshold=39.6
+  4. 庫板窗戶型收邊斷面圖
+  5. 庫板開口型收邊斷面圖
+
+page 21 ARB-D09015 岩棉庫板詳圖(二): mode=ocr_v3 grouped=0 numbers=2 raw_titles=0 large_titles=0 title_h_threshold=28
+
+page 22 ARB-D09016 鋁合金高架地板及防颱百葉詳圖: mode=ocr_v3 grouped=4 numbers=6 raw_titles=8 large_titles=6 title_h_threshold=31.5
+  1. 高架地板安裝透視圖
+  2. 高架地板安裝組合詳圖
+  5. 桁詳圖、聯接座及螺帽
+  6-7. 斜坡示意圖
+
+page 23 ARB-D09017 防煙垂壁詳圖: mode=ocr_v3 grouped=0 numbers=4 raw_titles=0 large_titles=0 title_h_threshold=28
+
+page 24 ARB-D09018 礦纖及鋁企口天花板詳圖: mode=ocr_v3 grouped=5 numbers=5 raw_titles=6 large_titles=6 title_h_threshold=31.5
+  1. c架防潮礦纖天花平面圖
+  2. c架防潮吸音礦纖天花剖面圖
+  4. C3,c企口天花板安裝示意圖
+  5. C3,c企口板平面示意圖
+  8. c架矽酸鈣板造型天花板(含收邊板)剖面圖
+
+page 25 ARB-D09019 C7金屬障板天花詳圖: mode=ocr_v3 grouped=1 numbers=9 raw_titles=3 large_titles=3 title_h_threshold=31.5
+  1. 平面示意圖
+
+page 26 ARB-D09020 暗架矽酸鈣板天花板詳圖: mode=ocr_v3 grouped=2 numbers=3 raw_titles=2 large_titles=2 title_h_threshold=36.9
+  1. 牆邊收頭及施工斷面圖
+  5. 天花板安裝示意圖
+
+page 27 ARB-D09021 暗架吸音石膏板天花板: mode=ocr_v3 grouped=3 numbers=6 raw_titles=3 large_titles=3 title_h_threshold=31.5
+  1. 暗架組合式吸音天花剖面圖
+  2. 齒夾式骨架詳圖
+  6. 蓋夾式骨架詳圖
+
+page 28 ARB-D09022 廁所隔間詳圖: mode=ocr_v3 grouped=1 numbers=3 raw_titles=6 large_titles=2 title_h_threshold=39.6
+  2. 五金配置及鋁合金腳柱大樣圖
+
+page 29 ARB-D09023 無障礙廁所詳圖: mode=ocr_v3 grouped=0 numbers=1 raw_titles=0 large_titles=0 title_h_threshold=28
+
+page 30 ARB-D09024 指標系統詳圖(一): mode=ocr_v3 grouped=0 numbers=2 raw_titles=12 large_titles=6 title_h_threshold=34.2
+
+page 31 ARB-D09025 指標系統詳圖(二): mode=ocr_v3 grouped=0 numbers=3 raw_titles=5 large_titles=3 title_h_threshold=35.1
+
+page 32 ARB-D09026 指標系統詳圖(三): mode=ocr_v3 grouped=0 numbers=7 raw_titles=5 large_titles=1 title_h_threshold=34.2
+
+page 33 ARB-D09027 指標系統詳圖(四): mode=ocr_v3 grouped=0 numbers=2 raw_titles=4 large_titles=1 title_h_threshold=35.1
+
+page 34 ARB-D09028 FRP水箱詳圖(一): mode=ocr_v3 grouped=0 numbers=5 raw_titles=3 large_titles=1 title_h_threshold=31.5
+
+page 35 ARB-D09029 FRP水箱詳圖(二): mode=ocr_v3 grouped=1 numbers=5 raw_titles=4 large_titles=2 title_h_threshold=31.5
+  4. RC基座圖
+
+page 36 ARB-D09030 防水閘門詳圖: mode=ocr_v3 grouped=1 numbers=7 raw_titles=1 large_titles=1 title_h_threshold=31.5
+  7. 拖架詳圖
+
+page 37 ARB-D09031 防水閘板詳圖: mode=ocr_v3 grouped=1 numbers=9 raw_titles=27 large_titles=2 title_h_threshold=37.800000000000004
+  3. RC地坪面鑽孔安裝示意圖4
+
+page 38 ARB-D09032 防煙捲簾及捲門詳圖: mode=ocr_v3 grouped=5 numbers=5 raw_titles=8 large_titles=7 title_h_threshold=33.300000000000004
+  1. 防煙捲幕(簾)立面詳圖
+  2. 防煙捲幕(簾)平面詳圖
+  4. 不鏽鋼鐵捲門剖面圖
+  5. 不鏽鋼鐵捲門與隔間詳圖
+  6. 不鏽鋼鐵捲門機電系統操作圖

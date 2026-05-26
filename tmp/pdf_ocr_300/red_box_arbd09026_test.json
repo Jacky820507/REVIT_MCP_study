@@ -1,0 +1,300 @@
+{
+  "sourcePdf": "E:\\GitHub Library\\RevitMCP\\大樣詳圖ALL-1.pdf",
+  "sheetNumber": "ARB-D09026",
+  "sheetName": "指標系統詳圖(三)",
+  "page": 32,
+  "pageSize": {
+    "pdf": {
+      "width": 1191.0,
+      "height": 842.0
+    },
+    "image": {
+      "width": 4963,
+      "height": 3508
+    }
+  },
+  "redBoxCount": 7,
+  "redBoxes": [
+    {
+      "annotationIndex": 7,
+      "rectPdf": [
+        107.4,
+        535.327157,
+        182.4,
+        546.129723
+      ],
+      "rectPx": {
+        "x1": 447.5450881612091,
+        "y1": 1232.6756908741093,
+        "x2": 760.0765743073049,
+        "y2": 1277.6821059904987
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "H • 貼 壁 式 上 下 樓 層 標 示",
+          "x": 461,
+          "y": 1240,
+          "w": 287,
+          "h": 32
+        }
+      ],
+      "detailNameRaw": "H•貼壁式上下樓層標示",
+      "detailName": "H•貼壁式上下樓層標示",
+      "nearbyDetailNumber": {
+        "text": "1",
+        "method": "nearby_number",
+        "x": 927,
+        "y": 1251,
+        "w": 7,
+        "h": 25,
+        "dx": 327,
+        "dy": 8,
+        "score": 217
+      }
+    },
+    {
+      "annotationIndex": 1,
+      "rectPdf": [
+        473.4,
+        535.927299,
+        574.2,
+        548.530293
+      ],
+      "rectPx": {
+        "x1": 1972.6987405541563,
+        "y1": 1222.6742662185272,
+        "x2": 2392.741057934509,
+        "y2": 1275.181751909739
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "Ⅰ 1 · 懸 臂 式 無 障 礙 電 梯 / 樓 梯 標 示",
+          "x": 1982,
+          "y": 1240,
+          "w": 396,
+          "h": 31
+        }
+      ],
+      "detailNameRaw": "Ⅰ1·懸臂式無障礙電梯/樓梯標示",
+      "detailName": "I1·懸臂式無障礙電梯/樓梯標示",
+      "nearbyDetailNumber": {
+        "text": "2",
+        "method": "nearby_number",
+        "x": 2455,
+        "y": 1251,
+        "w": 14,
+        "h": 25,
+        "dx": 279,
+        "dy": 15,
+        "score": 184
+      }
+    },
+    {
+      "annotationIndex": 2,
+      "rectPdf": [
+        880.0,
+        535.0,
+        960.0,
+        548.0
+      ],
+      "rectPx": {
+        "x1": 3667.03610411419,
+        "y1": 1224.8836104513064,
+        "x2": 4000.4030226700256,
+        "y2": 1279.0451306413302
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "Ⅰ 2 • 懸 臂 式 服 務 空 間 標 示",
+          "x": 3685,
+          "y": 1240,
+          "w": 297,
+          "h": 31
+        }
+      ],
+      "detailNameRaw": "Ⅰ2•懸臂式服務空間標示",
+      "detailName": "I2•懸臂式服務空間標示",
+      "nearbyDetailNumber": {
+        "text": "3",
+        "method": "sequence_fallback",
+        "x": null,
+        "y": null,
+        "w": null,
+        "h": null,
+        "dx": null,
+        "dy": null,
+        "score": null
+      }
+    },
+    {
+      "annotationIndex": 3,
+      "rectPdf": [
+        204.0,
+        305.0,
+        285.0,
+        319.0
+      ],
+      "rectPx": {
+        "x1": 850.0856423173805,
+        "y1": 2178.959619952494,
+        "x2": 1187.6196473551638,
+        "y2": 2237.2874109263657
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "JI · 貼 壁 式 服 務 空 間 標 示",
+          "x": 871,
+          "y": 2203,
+          "w": 294,
+          "h": 32
+        }
+      ],
+      "detailNameRaw": "JI·貼壁式服務空間標示",
+      "detailName": "J1·貼壁式服務空間標示",
+      "nearbyDetailNumber": {
+        "text": "4",
+        "method": "nearby_number",
+        "x": 1333,
+        "y": 2214,
+        "w": 15,
+        "h": 25,
+        "dx": 322,
+        "dy": 18,
+        "score": 216
+      }
+    },
+    {
+      "annotationIndex": 4,
+      "rectPdf": [
+        747.0,
+        302.0,
+        856.0,
+        316.0
+      ],
+      "rectPx": {
+        "x1": 3112.8136020151137,
+        "y1": 2191.458432304038,
+        "x2": 3567.026028547439,
+        "y2": 2249.78622327791
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "J2 · 貼 壁 式 無 障 礙 電 梯 / 樓 梯 標 示",
+          "x": 3127,
+          "y": 2203,
+          "w": 411,
+          "h": 32
+        }
+      ],
+      "detailNameRaw": "J2·貼壁式無障礙電梯/樓梯標示",
+      "detailName": "J2·貼壁式無障礙電梯/樓梯標示",
+      "nearbyDetailNumber": {
+        "text": "5",
+        "method": "nearby_number",
+        "x": 3614,
+        "y": 2214,
+        "w": 14,
+        "h": 24,
+        "dx": 281,
+        "dy": 5,
+        "score": 184
+      }
+    },
+    {
+      "annotationIndex": 5,
+      "rectPdf": [
+        103.0,
+        37.0,
+        144.0,
+        45.0
+      ],
+      "rectPx": {
+        "x1": 429.20990764063816,
+        "y1": 3320.517814726841,
+        "x2": 600.0604534005038,
+        "y2": 3353.8479809976247
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "K 號 標 示",
+          "x": 447,
+          "y": 3322,
+          "w": 139,
+          "h": 31
+        }
+      ],
+      "detailNameRaw": "K號標示",
+      "detailName": "K號標示",
+      "nearbyDetailNumber": {
+        "text": "6",
+        "method": "nearby_number",
+        "x": 909,
+        "y": 3333,
+        "w": 14,
+        "h": 24,
+        "dx": 401,
+        "dy": 8,
+        "score": 274
+      }
+    },
+    {
+      "annotationIndex": 6,
+      "rectPdf": [
+        623.0,
+        36.0,
+        727.0,
+        47.0
+      ],
+      "rectPx": {
+        "x1": 2596.094878253569,
+        "y1": 3312.185273159145,
+        "x2": 3029.471872376155,
+        "y2": 3358.014251781473
+      },
+      "linesInBox": [
+        {
+          "page": 32,
+          "width": 4963,
+          "height": 3508,
+          "text": "L 壁 式 各 樓 層 棸 急 逃 生 圖 標 示",
+          "x": 2606,
+          "y": 3322,
+          "w": 405,
+          "h": 32
+        }
+      ],
+      "detailNameRaw": "L壁式各樓層棸急逃生圖標示",
+      "detailName": "L壁式各樓層緊急逃生圖標示",
+      "nearbyDetailNumber": {
+        "text": "7",
+        "method": "nearby_number",
+        "x": 3068,
+        "y": 3333,
+        "w": 14,
+        "h": 24,
+        "dx": 262,
+        "dy": 10,
+        "score": 171
+      }
+    }
+  ],
+  "overlayPath": "E:\\GitHub Library\\RevitMCP\\tmp\\pdf_ocr_300\\red_box_arbd09026_overlay.png"
+}

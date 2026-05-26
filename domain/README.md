@@ -7,7 +7,7 @@
 
 ## Domain ↔ Skill 對照表
 
-### 已有對應 Skill 的 Domain（20 個）
+### 已有對應 Skill 的 Domain（21 個）
 
 | Domain 文件 | 對應 Skill | 觸發關鍵字 |
 |------------|-----------|-----------|
@@ -16,6 +16,7 @@
 | `exterior-wall-opening-check.md` | fire-safety-check | 外牆開口、鄰地距離、Article 45 |
 | `daylight-area-check.md` | building-compliance | 採光、daylight、§41 |
 | `floor-area-review.md` | building-compliance | 容積、FAR、樓地板面積 |
+| `sanitary-fixture-review.md` | building-compliance | C-1 廠房衛浴設備、大便器、小便器、洗面盆 |
 | `element-query-workflow.md` | element-query | 查詢元素、filter、上色 |
 | `element-coloring-workflow.md` | element-coloring | 上色、顏色標示、color code |
 | `curtain-wall-pattern.md` | curtain-wall | 帷幕牆、面板排列 |
@@ -53,7 +54,7 @@
 ## 貢獻新 Domain
 
 1. 建立 `domain/你的-workflow.md`
-2. 建立對應 Skill：`.claude/skills/你的-skill/SKILL.md`
+2. 建立對應 Skill：`.agents/skills/你的-skill/SKILL.md`
 3. 提 PR，格式參考現有檔案
 
 詳見 `CONTRIBUTING.md` 和 `docs/architecture-v2-module-system.md`

@@ -5,12 +5,15 @@
  *       分三類（汽車、機車、大客車）各自從 1 開始編號，
  *       寫入例證參數「備註」。
  * 
- * 用法：node scripts/number_parking.js [--tolerance 500] [--order yx|xy] [--dry-run]
+ * 用法：node scripts/number_parking.js [--tolerance 500] [--order yx|xy|clockwise] [--dry-run]
  * 
  *   --tolerance <mm>  座標分群容差值（mm），預設 500
  *   --order <mode>    編號順序：
  *                     yx - 由上到下，由左至右 (預設)
  *                     xy - 由左至右，由上到下
+ *                     clockwise - 依整體外圈順時鐘排序
+ *   --start-corner <corner> 順時鐘模式起點角落：top-left, top-right, bottom-right, bottom-left
+ *   --start-element <id> 指定排序後從哪個 ElementId 開始編號
  *   --only <key>      僅針對單一類別編號 (car, motorcycle, bus)
  *   --dry-run          僅模擬列印結果，不實際寫入 Revit
  */
@@ -29,7 +32,13 @@ const tolIdx = args.indexOf('--tolerance');
 const TOLERANCE = tolIdx !== -1 ? parseFloat(args[tolIdx + 1]) : 1500; // mm (更通用的停車格間距)
 
 const orderIdx = args.indexOf('--order');
-const SORT_ORDER = orderIdx !== -1 ? args[orderIdx + 1] : 'yx'; // 'yx' or 'xy'
+const SORT_ORDER = orderIdx !== -1 ? args[orderIdx + 1] : 'yx'; // 'yx', 'xy', or 'clockwise'
+
+const startCornerIdx = args.indexOf('--start-corner');
+const START_CORNER = startCornerIdx !== -1 ? args[startCornerIdx + 1] : 'top-left';
+
+const startElementIdx = args.indexOf('--start-element');
+const START_ELEMENT_ID = startElementIdx !== -1 ? String(args[startElementIdx + 1]) : null;
 
 const onlyIdx = args.indexOf('--only');
 const ONLY_CATEGORY = onlyIdx !== -1 ? args[onlyIdx + 1] : null; 
@@ -90,11 +99,58 @@ function sendCommand(ws, name, params) {
 // ============================================================
 function classifyParking(typeName, familyName, name) {
     const combined = (typeName || '') + (familyName || '') + (name || '');
+    if (combined.includes('機車')) return 'motorcycle';
+    if (combined.includes('大客車') || combined.includes('巴士') || combined.includes('客車')) return 'bus';
+    if (combined.includes('汽車') || combined.includes('大車') || combined.includes('小車')) return 'car';
     // 優先比對「大客車」（避免被「車」吃掉）
     for (const cat of CATEGORY_KEYWORDS) {
         if (combined.includes(cat.keyword)) return cat.key;
     }
     return 'unknown';
+}
+
+function getCornerAngle(corner, cx, cy, minX, maxX, minY, maxY) {
+    const targets = {
+        'top-left': { x: minX, y: maxY },
+        'top-right': { x: maxX, y: maxY },
+        'bottom-right': { x: maxX, y: minY },
+        'bottom-left': { x: minX, y: minY },
+    };
+    const target = targets[corner] || targets['top-left'];
+    return (Math.atan2(target.x - cx, target.y - cy) + Math.PI * 2) % (Math.PI * 2);
+}
+
+function sortClockwise(bays) {
+    if (bays.length === 0) return bays;
+
+    const cx = bays.reduce((sum, bay) => sum + bay.x, 0) / bays.length;
+    const cy = bays.reduce((sum, bay) => sum + bay.y, 0) / bays.length;
+    const xs = bays.map(bay => bay.x);
+    const ys = bays.map(bay => bay.y);
+    const startAngle = getCornerAngle(
+        START_CORNER,
+        cx,
+        cy,
+        Math.min(...xs),
+        Math.max(...xs),
+        Math.min(...ys),
+        Math.max(...ys)
+    );
+
+    bays.sort((a, b) => {
+        // 0 degrees at north/top, increasing clockwise, then rotated to the requested corner.
+        const angleA = (Math.atan2(a.x - cx, a.y - cy) + Math.PI * 2) % (Math.PI * 2);
+        const angleB = (Math.atan2(b.x - cx, b.y - cy) + Math.PI * 2) % (Math.PI * 2);
+        const rotatedA = (angleA - startAngle + Math.PI * 2) % (Math.PI * 2);
+        const rotatedB = (angleB - startAngle + Math.PI * 2) % (Math.PI * 2);
+        if (Math.abs(rotatedA - rotatedB) > 1e-9) return rotatedA - rotatedB;
+
+        const radiusA = Math.hypot(a.x - cx, a.y - cy);
+        const radiusB = Math.hypot(b.x - cx, b.y - cy);
+        return radiusB - radiusA;
+    });
+
+    return bays;
 }
 
 /**
@@ -112,6 +168,10 @@ function classifyParking(typeName, familyName, name) {
  */
 function sortParkingBays(bays, tolerance, mode = 'yx') {
     if (bays.length === 0) return bays;
+
+    if (mode === 'clockwise') {
+        return sortClockwise(bays);
+    }
 
     if (mode === 'xy') {
         // === X 優先：欄蛇形 (左→右，每欄上下交替) ===
@@ -167,6 +227,48 @@ function sortParkingBays(bays, tolerance, mode = 'yx') {
     return bays;
 }
 
+function rotateToStartElement(bays, startElementId) {
+    if (!startElementId || bays.length === 0) return bays;
+
+    const index = bays.findIndex(bay => String(bay.id) === String(startElementId));
+    if (index <= 0) return bays;
+
+    return bays.slice(index).concat(bays.slice(0, index));
+}
+
+function applyStartElement(bays, requestedStartElementId) {
+    if (bays.length === 0) {
+        return { bays, startId: null, source: 'none', warning: null };
+    }
+
+    if (requestedStartElementId) {
+        const requested = String(requestedStartElementId);
+        const index = bays.findIndex(bay => String(bay.id) === requested);
+        if (index >= 0) {
+            return {
+                bays: index === 0 ? bays : bays.slice(index).concat(bays.slice(0, index)),
+                startId: requested,
+                source: 'user',
+                warning: null,
+            };
+        }
+
+        return {
+            bays,
+            startId: String(bays[0].id),
+            source: 'auto',
+            warning: `Requested start ElementId ${requested} was not found in this category; using auto start ElementId ${bays[0].id}.`,
+        };
+    }
+
+    return {
+        bays,
+        startId: String(bays[0].id),
+        source: 'auto',
+        warning: null,
+    };
+}
+
 // ============================================================
 // 解析座標 — 嘗試從元素資料中提取 X, Y
 // ============================================================
@@ -219,6 +321,8 @@ function extractLocation(element) {
 async function main() {
     console.log('=== 停車格自動編號 ===');
     console.log(`  順序: ${SORT_ORDER === 'xy' ? '⬅️➡️ 由左至右，⬆️⬇️ 由上至下' : '⬆️⬇️ 由上至下，⬅️➡️ 由左至右'}`);
+    if (SORT_ORDER === 'clockwise') console.log(`  順時鐘起點: ${START_CORNER}`);
+    console.log(`  起點模式: ${START_ELEMENT_ID ? `使用者指定 ElementId ${START_ELEMENT_ID}` : '自動判定'}`);
     if (ONLY_CATEGORY) console.log(`  僅編號類別: ${ONLY_CATEGORY}`);
     console.log(`  容差: ${TOLERANCE} mm`);
     console.log(`  模式: ${DRY_RUN ? '🔍 模擬 (dry-run)' : '✍️  實際寫入'}`);
@@ -350,7 +454,13 @@ async function main() {
                     
                     let x = null, y = null;
 
-                    if (locData?.Location?.Type === 'Point') {
+                    if (locData?.x != null && locData?.y != null) {
+                        x = locData.x;
+                        y = locData.y;
+                    } else if (locData?.X != null && locData?.Y != null) {
+                        x = locData.X;
+                        y = locData.Y;
+                    } else if (locData?.Location?.Type === 'Point') {
                         x = locData.Location.X;
                         y = locData.Location.Y;
                     } else if (locData?.BoundingBox?.Center) {
@@ -384,15 +494,28 @@ async function main() {
             }
 
             // ------ Step 6: 排序 ------
-            console.log(`\n[Step 6] 排序 (${SORT_ORDER === 'xy' ? '左到右、上到下' : '上到下、左到右'})...`);
+            console.log(`\n[Step 6] 排序 (${SORT_ORDER === 'clockwise' ? `順時鐘/${START_CORNER}` : (SORT_ORDER === 'xy' ? '左到右、上到下' : '上到下、左到右')})...`);
             sortParkingBays(groups.car, TOLERANCE, SORT_ORDER);
             sortParkingBays(groups.motorcycle, TOLERANCE, SORT_ORDER);
             sortParkingBays(groups.bus, TOLERANCE, SORT_ORDER);
+            const startInfo = {};
+            for (const key of ['car', 'motorcycle', 'bus']) {
+                const result = applyStartElement(groups[key], START_ELEMENT_ID);
+                groups[key] = result.bays;
+                startInfo[key] = result;
+                if (result.warning && (!ONLY_CATEGORY || ONLY_CATEGORY === key)) {
+                    console.warn(`   ⚠️  ${result.warning}`);
+                }
+            }
 
             // 印出排序預覽
             for (const [key, label] of [['car','汽車'], ['motorcycle','機車'], ['bus','大客車']]) {
                 if (groups[key].length === 0) continue;
                 if (ONLY_CATEGORY && ONLY_CATEGORY !== key) continue; // 預覽也過濾
+                if (startInfo[key]?.startId) {
+                    const sourceLabel = startInfo[key].source === 'user' ? '使用者指定' : '自動判定';
+                    console.log(`\n   ${label} 起點: ${sourceLabel} ElementId ${startInfo[key].startId}`);
+                }
                 console.log(`\n   ${label} 排序預覽 (前 10 個):`);
                 groups[key].slice(0, 10).forEach((b, i) => {
                     const groupInfo = `群組:${b._group}`;

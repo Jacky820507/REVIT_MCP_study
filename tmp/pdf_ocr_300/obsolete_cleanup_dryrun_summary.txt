@@ -1,0 +1,61 @@
+mode=dryRun
+desired_count=176
+existing_count=190
+proposed_delete_count=14
+proposed_delete_unused=14
+proposed_delete_with_instances=0
+no_revit_changes=true
+
+ARB-D09002: proposed_delete=1
+  DELETE 259727 | instances=0 | 5. 3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖
+    ARB-D09002-施工大樣詳圖(二)-3F,5F碼頭區排水溝/地坪覆面層/防水層詳圖
+    replacement same number: 5. ,碼頭區排水溝/地坪覆面層/防水層詳圖
+
+ARB-D09003: proposed_delete=3
+  DELETE 259729 | instances=0 | 1. 排水溝蓋板詳圖
+    ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-排水溝蓋板詳圖
+    replacement same number: 1. 排水溝蓋版詳圖1
+  DELETE 259921 | instances=0 | 2. 陰井溝蓋詳圖
+    ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井溝蓋詳圖
+    replacement same number: 2. 井蓋板詳圖
+  DELETE 259923 | instances=0 | 3. 陰井詳圖
+    ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-陰井詳圖
+    replacement same number: <none>
+
+ARB-D09004: proposed_delete=1
+  DELETE 259759 | instances=0 | 10. 窗框防水詳圖
+    ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-窗框防水詳圖
+    replacement same number: 10. 框防水詳圖
+
+ARB-D09007: proposed_delete=1
+  DELETE 259769 | instances=0 | 2. 樓梯扶手詳圖
+    ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖
+    replacement same number: 2. 踏步及扶手詳圖(鋼構樓梯
+
+ARB-D09022: proposed_delete=1
+  DELETE 259837 | instances=0 | 1. 廁所隔間標準詳圖
+    ARB-D09022-廁所隔間詳圖-廁所隔間標準詳圖
+    replacement same number: 1. 側向立面圖
+
+ARB-D09030: proposed_delete=7
+  DELETE 259871 | instances=0 | 1. 防水閘門背立面圖
+    ARB-D09030-防水閘門詳圖-防水閘門背立面圖
+    replacement same number: <none>
+  DELETE 259873 | instances=0 | 2. 防水閘門開平面圖
+    ARB-D09030-防水閘門詳圖-防水閘門開平面圖
+    replacement same number: <none>
+  DELETE 259875 | instances=0 | 3. 防水閘門關閉平面圖
+    ARB-D09030-防水閘門詳圖-防水閘門關閉平面圖
+    replacement same number: <none>
+  DELETE 259877 | instances=0 | 4. 防水閘門正立面圖
+    ARB-D09030-防水閘門詳圖-防水閘門正立面圖
+    replacement same number: <none>
+  DELETE 259879 | instances=0 | 5. 防水閘門蓋版剖面圖
+    ARB-D09030-防水閘門詳圖-防水閘門蓋版剖面圖
+    replacement same number: <none>
+  DELETE 259883 | instances=0 | 7. 防水閘門關閉剖面圖
+    ARB-D09030-防水閘門詳圖-防水閘門關閉剖面圖
+    replacement same number: 7. 拖架詳圖
+  DELETE 259885 | instances=0 | 8. 防水閘門鏈側詳圖
+    ARB-D09030-防水閘門詳圖-防水閘門鏈側詳圖
+    replacement same number: <none>

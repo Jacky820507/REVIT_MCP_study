@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'E:\\GitHub Library\\RevitMCP\\.codex\\hooks\\detect-claudemd-trigger.sh'",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'E:\\GitHub Library\\RevitMCP\\.codex\\hooks\\remind-tool-call-data-honesty.sh'",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

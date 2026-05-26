@@ -1,0 +1,204 @@
+{
+  "Success": true,
+  "Count": 22,
+  "Items": [
+    {
+      "Id": 259687,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07014-玻璃帷幕立面圖-帷幕牆側立面圖",
+      "SheetNumber": "ARA-D07014",
+      "SheetName": "玻璃帷幕立面圖",
+      "DetailNumber": "1",
+      "DetailName": "帷幕牆側立面圖"
+    },
+    {
+      "Id": 259689,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07014-玻璃帷幕立面圖-帷幕牆正立面詳圖",
+      "SheetNumber": "ARA-D07014",
+      "SheetName": "玻璃帷幕立面圖",
+      "DetailNumber": "2",
+      "DetailName": "帷幕牆正立面詳圖"
+    },
+    {
+      "Id": 259691,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07015-玻璃帷幕平剖圖-入口雨遮平面詳圖",
+      "SheetNumber": "ARA-D07015",
+      "SheetName": "玻璃帷幕平剖圖",
+      "DetailNumber": "1",
+      "DetailName": "入口雨遮平面詳圖"
+    },
+    {
+      "Id": 259695,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07015-玻璃帷幕平剖圖-帷幕牆平面詳剖",
+      "SheetNumber": "ARA-D07015",
+      "SheetName": "玻璃帷幕平剖圖",
+      "DetailNumber": "2",
+      "DetailName": "帷幕牆平面詳剖"
+    },
+    {
+      "Id": 259693,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07015-玻璃帷幕平剖圖-帷幕牆及入口雨遮剖面圖",
+      "SheetNumber": "ARA-D07015",
+      "SheetName": "玻璃帷幕平剖圖",
+      "DetailNumber": "3",
+      "DetailName": "帷幕牆及入口雨遮剖面圖"
+    },
+    {
+      "Id": 259697,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07016-玻璃帷幕詳圖(一)-入口雨剖面詳圖",
+      "SheetNumber": "ARA-D07016",
+      "SheetName": "玻璃帷幕詳圖(一)",
+      "DetailNumber": "1",
+      "DetailName": "入口雨剖面詳圖"
+    },
+    {
+      "Id": 259699,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07017-玻璃帷幕詳圖(二)-帷幕牆斷面詳圖",
+      "SheetNumber": "ARA-D07017",
+      "SheetName": "玻璃帷幕詳圖(二)",
+      "DetailNumber": "1-5",
+      "DetailName": "帷幕牆斷面詳圖"
+    },
+    {
+      "Id": 259701,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARA-D07018-玻璃帷幕詳圖(三)-帷幕牆斷面詳圖",
+      "SheetNumber": "ARA-D07018",
+      "SheetName": "玻璃帷幕詳圖(三)",
+      "DetailNumber": "1-6",
+      "DetailName": "帷幕牆斷面詳圖"
+    },
+    {
+      "Id": 259703,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D03022-護欄詳圖-碼頭區RC護欄圖騰單元立面圖",
+      "SheetNumber": "ARB-D03022",
+      "SheetName": "護欄詳圖",
+      "DetailNumber": "1",
+      "DetailName": "碼頭區RC護欄圖騰單元立面圖"
+    },
+    {
+      "Id": 259705,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D03022-護欄詳圖-碼頭區RC護欄圖騰立面放樣圖",
+      "SheetNumber": "ARB-D03022",
+      "SheetName": "護欄詳圖",
+      "DetailNumber": "2",
+      "DetailName": "碼頭區RC護欄圖騰立面放樣圖"
+    },
+    {
+      "Id": 259707,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D03022-護欄詳圖-護攔粉刷剖面圖",
+      "SheetNumber": "ARB-D03022",
+      "SheetName": "護欄詳圖",
+      "DetailNumber": "3",
+      "DetailName": "護攔粉刷剖面圖"
+    },
+    {
+      "Id": 259659,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-面磚地坪詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "1",
+      "DetailName": "面磚地坪詳圖"
+    },
+    {
+      "Id": 259677,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-室內外地坪交界面填縫詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "10",
+      "DetailName": "室內外地坪交界面填縫詳圖"
+    },
+    {
+      "Id": 259679,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-面磚類牆面及轉角詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "11",
+      "DetailName": "面磚類牆面及轉角詳圖"
+    },
+    {
+      "Id": 259661,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-環氧樹脂耐磨地坪詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "2",
+      "DetailName": "環氧樹脂耐磨地坪詳圖"
+    },
+    {
+      "Id": 259663,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-粉面類平頂詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "3",
+      "DetailName": "粉面類平頂詳圖"
+    },
+    {
+      "Id": 259665,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-1-2防水水泥砂漿刷貼止滑石英磚詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "4",
+      "DetailName": "1:2防水水泥砂漿刷貼止滑石英磚詳圖"
+    },
+    {
+      "Id": 259667,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-浴廁貼磁磚牆面(RC)及防水層詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "5",
+      "DetailName": "浴廁貼磁磚牆面(RC)及防水層詳圖"
+    },
+    {
+      "Id": 259669,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-水泥漆牆面詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "6",
+      "DetailName": "水泥漆牆面詳圖"
+    },
+    {
+      "Id": 259671,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-面磚牆面詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "7",
+      "DetailName": "面磚牆面詳圖"
+    },
+    {
+      "Id": 259673,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-屋頂地坪防水隔熱收邊詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "8",
+      "DetailName": "屋頂地坪防水隔熱收邊詳圖"
+    },
+    {
+      "Id": 259675,
+      "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+      "TypeName": "ARB-D09001-施工大樣詳圖(一)-浴廁貼磁磚牆面(輕隔間)及防水層詳圖",
+      "SheetNumber": "ARB-D09001",
+      "SheetName": "施工大樣詳圖(一)",
+      "DetailNumber": "9",
+      "DetailName": "浴廁貼磁磚牆面(輕隔間)及防水層詳圖"
+    }
+  ]
+}

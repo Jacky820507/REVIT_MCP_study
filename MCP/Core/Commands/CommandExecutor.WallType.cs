@@ -160,7 +160,7 @@ namespace RevitMCP.Core
         /// <summary>
         /// 追蹤樓梯幾何並偵測被遮擋的邊緣
         /// </summary>
-        private object TraceStairGeometry(JObject parameters)
+        private object TraceStairGeometryLegacy(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
             View view = _uiApp.ActiveUIDocument.ActiveView;

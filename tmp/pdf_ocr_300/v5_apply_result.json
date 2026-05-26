@@ -1,0 +1,1115 @@
+{
+  "familyName": "AE-圖號詳圖編號標頭-3.5mm",
+  "dryRun": false,
+  "totalInput": 111,
+  "reviewInput": 41,
+  "normalInput": 70,
+  "batchSize": 20,
+  "counts": {
+    "created": 111
+  },
+  "results": [
+    {
+      "batch": 1,
+      "inputCount": 20,
+      "reviewCount": 9,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 20,
+        "Created": 20,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "1",
+            "DetailName": "地下室底版防水層詳圖",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-地下室底版防水層詳圖",
+            "TypeId": 260840,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "2",
+            "DetailName": "地下室牆面防水層詳圖",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-地下室牆面防水層詳圖",
+            "TypeId": 260842,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "3",
+            "DetailName": "加強型改質瀝靑防水氈t=25m",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-加強型改質瀝靑防水氈t=25m",
+            "TypeId": 260844,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "4",
+            "DetailName": "地下室頂版防水層詳圖",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-地下室頂版防水層詳圖",
+            "TypeId": 260846,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "5",
+            "DetailName": ",碼頭區排水溝/地坪覆面層/防水層詳圖",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-,碼頭區排水溝/地坪覆面層/防水層詳圖",
+            "TypeId": 260848,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09002",
+            "SheetName": "施工大樣詳圖(二)",
+            "DetailNumber": "6",
+            "DetailName": "碼頭區淺水溝詳圖",
+            "TargetTypeName": "ARB-D09002-施工大樣詳圖(二)-碼頭區淺水溝詳圖",
+            "TypeId": 260850,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "1",
+            "DetailName": "m扁鋼邊框",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-m扁鋼邊框",
+            "TypeId": 260852,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "2",
+            "DetailName": "井蓋板詳圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-井蓋板詳圖",
+            "TypeId": 260854,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "3",
+            "DetailName": "井詳圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-井詳圖",
+            "TypeId": 260856,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "4,9",
+            "DetailName": "結構圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-結構圖",
+            "TypeId": 260858,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "5",
+            "DetailName": "地板排水溝平·剖面圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-地板排水溝平·剖面圖",
+            "TypeId": 260860,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "6",
+            "DetailName": "屋頂通風道剖面圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-屋頂通風道剖面圖",
+            "TypeId": 260862,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "7",
+            "DetailName": "基座邊溝詳圖",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-基座邊溝詳圖",
+            "TypeId": 260864,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "8",
+            "DetailName": "犬走及排水明溝加蓋詳",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-犬走及排水明溝加蓋詳",
+            "TypeId": 260866,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09003",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(一)",
+            "DetailNumber": "10",
+            "DetailName": "不銹鋼排水溝深度依現況竇際",
+            "TargetTypeName": "ARB-D09003-陰井、排水溝、淺溝、水箱人孔詳圖(一)-不銹鋼排水溝深度依現況竇際",
+            "TypeId": 260868,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "1",
+            "DetailName": "水箱防水示意圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-水箱防水示意圖",
+            "TypeId": 260870,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "2,11",
+            "DetailName": "水箱洩水口詳圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-水箱洩水口詳圖",
+            "TypeId": 260872,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "3",
+            "DetailName": "污、廢水(集水)池泵浦人孔蓋標準詳圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-污、廢水(集水)池泵浦人孔蓋標準詳圖",
+            "TypeId": 260874,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "4-5",
+            "DetailName": "詳剖圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-詳剖圖",
+            "TypeId": 260876,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "6,10",
+            "DetailName": "8預埋排水管",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-8預埋排水管",
+            "TypeId": 260878,
+            "Action": "created"
+          }
+        ]
+      }
+    },
+    {
+      "batch": 2,
+      "inputCount": 20,
+      "reviewCount": 12,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 20,
+        "Created": 20,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "7-8,12",
+            "DetailName": "水箱人孔蓋剖面詳圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-水箱人孔蓋剖面詳圖",
+            "TypeId": 260880,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "9",
+            "DetailName": "人孔蓋平面詳圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-人孔蓋平面詳圖",
+            "TypeId": 260882,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09004",
+            "SheetName": "陰井、排水溝、淺溝、水箱人孔詳圖(二)",
+            "DetailNumber": "13",
+            "DetailName": "框防水詳圖",
+            "TargetTypeName": "ARB-D09004-陰井、排水溝、淺溝、水箱人孔詳圖(二)-框防水詳圖",
+            "TypeId": 260884,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09005",
+            "SheetName": "停車場設施詳圖",
+            "DetailNumber": "1",
+            "DetailName": "T:依結構圖為準(至少2m厚)",
+            "TargetTypeName": "ARB-D09005-停車場設施詳圖-T：依結構圖為準(至少2m厚)",
+            "TypeId": 260886,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09005",
+            "SheetName": "停車場設施詳圖",
+            "DetailNumber": "2",
+            "DetailName": "框座錨錠詳圖",
+            "TargetTypeName": "ARB-D09005-停車場設施詳圖-框座錨錠詳圖",
+            "TypeId": 260888,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09005",
+            "SheetName": "停車場設施詳圖",
+            "DetailNumber": "3",
+            "DetailName": "(底排水溝朝向集水",
+            "TargetTypeName": "ARB-D09005-停車場設施詳圖-(底排水溝朝向集水",
+            "TypeId": 260890,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09005",
+            "SheetName": "停車場設施詳圖",
+            "DetailNumber": "4",
+            "DetailName": "(屬排水工程)",
+            "TargetTypeName": "ARB-D09005-停車場設施詳圖-(屬排水工程)",
+            "TypeId": 260892,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09005",
+            "SheetName": "停車場設施詳圖",
+            "DetailNumber": "5",
+            "DetailName": "地下室外防水詳",
+            "TargetTypeName": "ARB-D09005-停車場設施詳圖-地下室外防水詳",
+            "TypeId": 260894,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09006",
+            "SheetName": "防火被覆、門檻、車擋、停車標線詳圖",
+            "DetailNumber": "1",
+            "DetailName": "平面圖",
+            "TargetTypeName": "ARB-D09006-防火被覆、門檻、車擋、停車標線詳圖-平面圖",
+            "TypeId": 260896,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09006",
+            "SheetName": "防火被覆、門檻、車擋、停車標線詳圖",
+            "DetailNumber": "2",
+            "DetailName": "車擋詳圖",
+            "TargetTypeName": "ARB-D09006-防火被覆、門檻、車擋、停車標線詳圖-車擋詳圖",
+            "TypeId": 260898,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "1",
+            "DetailName": "樓梯扶手詳圖",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖",
+            "TypeId": 260900,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "2",
+            "DetailName": "踏步及扶手詳圖(鋼構樓梯",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-踏步及扶手詳圖(鋼構樓梯",
+            "TypeId": 260902,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "3",
+            "DetailName": "立面圖",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-立面圖",
+            "TypeId": 260904,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "4",
+            "DetailName": "無障道欄杆扶手詳圖",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-無障道欄杆扶手詳圖",
+            "TypeId": 260906,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "5",
+            "DetailName": "剖面詳圖",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-剖面詳圖",
+            "TypeId": 260908,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "6-7",
+            "DetailName": "扶壁式扶手詳圖",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-扶壁式扶手詳圖",
+            "TypeId": 260910,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09007",
+            "SheetName": "樓梯扶手、不鏽鋼爬梯詳圖",
+            "DetailNumber": "8",
+            "DetailName": "樓梯扶手詳圖(RC",
+            "TargetTypeName": "ARB-D09007-樓梯扶手、不鏽鋼爬梯詳圖-樓梯扶手詳圖(RC",
+            "TypeId": 260912,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09008",
+            "SheetName": "樓梯無障礙樓梯扶手立/剖面圖",
+            "DetailNumber": "5",
+            "DetailName": "安全爬側立面圖",
+            "TargetTypeName": "ARB-D09008-樓梯無障礙樓梯扶手立/剖面圖-安全爬側立面圖",
+            "TypeId": 260914,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09009",
+            "SheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+            "DetailNumber": "1",
+            "DetailName": "室內玻璃欄杆立面示意圖",
+            "TargetTypeName": "ARB-D09009-玻璃、不鏽鋼扶手及花崗石詳圖-室內玻璃欄杆立面示意圖",
+            "TypeId": 260916,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09009",
+            "SheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+            "DetailNumber": "4-5",
+            "DetailName": "室內玻璃欄杆剖面詳圖",
+            "TargetTypeName": "ARB-D09009-玻璃、不鏽鋼扶手及花崗石詳圖-室內玻璃欄杆剖面詳圖",
+            "TypeId": 260918,
+            "Action": "created"
+          }
+        ]
+      }
+    },
+    {
+      "batch": 3,
+      "inputCount": 20,
+      "reviewCount": 7,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 20,
+        "Created": 20,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09009",
+            "SheetName": "玻璃、不鏽鋼扶手及花崗石詳圖",
+            "DetailNumber": "6",
+            "DetailName": "不鏽鋼欄杆剖面A,B詳圖",
+            "TargetTypeName": "ARB-D09009-玻璃、不鏽鋼扶手及花崗石詳圖-不鏽鋼欄杆剖面A,B詳圖",
+            "TypeId": 260920,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09011",
+            "SheetName": "輕隔間詳圖(二)",
+            "DetailNumber": "1",
+            "DetailName": "排水溝蓋",
+            "TargetTypeName": "ARB-D09011-輕隔間詳圖(二)-排水溝蓋",
+            "TypeId": 260922,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09011",
+            "SheetName": "輕隔間詳圖(二)",
+            "DetailNumber": "2",
+            "DetailName": "複壁牆剖面詳圖",
+            "TargetTypeName": "ARB-D09011-輕隔間詳圖(二)-複壁牆剖面詳圖",
+            "TypeId": 260924,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09011",
+            "SheetName": "輕隔間詳圖(二)",
+            "DetailNumber": "3",
+            "DetailName": "檢俢門框接頭份詳圖",
+            "TargetTypeName": "ARB-D09011-輕隔間詳圖(二)-檢俢門框接頭份詳圖",
+            "TypeId": 260926,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09012",
+            "SheetName": "輕隔間詳圖(三)",
+            "DetailNumber": "1",
+            "DetailName": "管道牆電氣開關盒按裝示意圖",
+            "TargetTypeName": "ARB-D09012-輕隔間詳圖(三)-管道牆電氣開關盒按裝示意圖",
+            "TypeId": 260928,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09012",
+            "SheetName": "輕隔間詳圖(三)",
+            "DetailNumber": "2",
+            "DetailName": "門框補強示意圖",
+            "TargetTypeName": "ARB-D09012-輕隔間詳圖(三)-門框補強示意圖",
+            "TypeId": 260930,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09012",
+            "SheetName": "輕隔間詳圖(三)",
+            "DetailNumber": "3",
+            "DetailName": "吊掛補強示意圖",
+            "TargetTypeName": "ARB-D09012-輕隔間詳圖(三)-吊掛補強示意圖",
+            "TypeId": 260932,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09012",
+            "SheetName": "輕隔間詳圖(三)",
+            "DetailNumber": "5",
+            "DetailName": "接縫處理示意圖",
+            "TargetTypeName": "ARB-D09012-輕隔間詳圖(三)-接縫處理示意圖",
+            "TypeId": 260934,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09012",
+            "SheetName": "輕隔間詳圖(三)",
+            "DetailNumber": "6",
+            "DetailName": "骨架橫向補強示意圖",
+            "TargetTypeName": "ARB-D09012-輕隔間詳圖(三)-骨架橫向補強示意圖",
+            "TypeId": 260936,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09014",
+            "SheetName": "岩棉庫板詳圖(一)",
+            "DetailNumber": "2",
+            "DetailName": "岩棉庫板施工大樣圖",
+            "TargetTypeName": "ARB-D09014-岩棉庫板詳圖(一)-岩棉庫板施工大樣圖",
+            "TypeId": 260938,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09014",
+            "SheetName": "岩棉庫板詳圖(一)",
+            "DetailNumber": "3",
+            "DetailName": "棉庫板施工大樣圖",
+            "TargetTypeName": "ARB-D09014-岩棉庫板詳圖(一)-棉庫板施工大樣圖",
+            "TypeId": 260940,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09016",
+            "SheetName": "鋁合金高架地板及防颱百葉詳圖",
+            "DetailNumber": "2",
+            "DetailName": "高架地板安裝組合詳圖",
+            "TargetTypeName": "ARB-D09016-鋁合金高架地板及防颱百葉詳圖-高架地板安裝組合詳圖",
+            "TypeId": 260942,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09016",
+            "SheetName": "鋁合金高架地板及防颱百葉詳圖",
+            "DetailNumber": "3",
+            "DetailName": "牆角收邊剖面圖",
+            "TargetTypeName": "ARB-D09016-鋁合金高架地板及防颱百葉詳圖-牆角收邊剖面圖",
+            "TypeId": 260944,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09016",
+            "SheetName": "鋁合金高架地板及防颱百葉詳圖",
+            "DetailNumber": "5",
+            "DetailName": "桁詳圖、聯接座及螺帽",
+            "TargetTypeName": "ARB-D09016-鋁合金高架地板及防颱百葉詳圖-桁詳圖、聯接座及螺帽",
+            "TypeId": 260946,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09016",
+            "SheetName": "鋁合金高架地板及防颱百葉詳圖",
+            "DetailNumber": "6",
+            "DetailName": "斜坡示意圖",
+            "TargetTypeName": "ARB-D09016-鋁合金高架地板及防颱百葉詳圖-斜坡示意圖",
+            "TypeId": 260948,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "1",
+            "DetailName": "c架防潮礦纖天花平面圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-c架防潮礦纖天花平面圖",
+            "TypeId": 260950,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "2",
+            "DetailName": "c架防潮吸音礦纖天花剖面圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-c架防潮吸音礦纖天花剖面圖",
+            "TypeId": 260952,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "3",
+            "DetailName": "c架防潮吸音礦纖天花燈具收頭圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-c架防潮吸音礦纖天花燈具收頭圖",
+            "TypeId": 260954,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "4,6",
+            "DetailName": "C3,c企口天花板安裝示意圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-C3,c企口天花板安裝示意圖",
+            "TypeId": 260956,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "5",
+            "DetailName": "C3,c企口板平面示意圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-C3,c企口板平面示意圖",
+            "TypeId": 260958,
+            "Action": "created"
+          }
+        ]
+      }
+    },
+    {
+      "batch": 4,
+      "inputCount": 20,
+      "reviewCount": 4,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 20,
+        "Created": 20,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09018",
+            "SheetName": "礦纖及鋁企口天花板詳圖",
+            "DetailNumber": "8",
+            "DetailName": "c架矽酸鈣板造型天花板(含收邊板)剖面圖",
+            "TargetTypeName": "ARB-D09018-礦纖及鋁企口天花板詳圖-c架矽酸鈣板造型天花板(含收邊板)剖面圖",
+            "TypeId": 260960,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09019",
+            "SheetName": "C7金屬障板天花詳圖",
+            "DetailNumber": "1",
+            "DetailName": "平面示意圖",
+            "TargetTypeName": "ARB-D09019-C7金屬障板天花詳圖-平面示意圖",
+            "TypeId": 260962,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09019",
+            "SheetName": "C7金屬障板天花詳圖",
+            "DetailNumber": "1",
+            "DetailName": "組裝大樣圖",
+            "TargetTypeName": "ARB-D09019-C7金屬障板天花詳圖-組裝大樣圖",
+            "TypeId": 260964,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09019",
+            "SheetName": "C7金屬障板天花詳圖",
+            "DetailNumber": "3",
+            "DetailName": "A-A詳剖圖",
+            "TargetTypeName": "ARB-D09019-C7金屬障板天花詳圖-A-A詳剖圖",
+            "TypeId": 260966,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09019",
+            "SheetName": "C7金屬障板天花詳圖",
+            "DetailNumber": "4",
+            "DetailName": "詳剖圖",
+            "TargetTypeName": "ARB-D09019-C7金屬障板天花詳圖-詳剖圖",
+            "TypeId": 260968,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09020",
+            "SheetName": "暗架矽酸鈣板天花板詳圖",
+            "DetailNumber": "1",
+            "DetailName": "牆邊收頭及施工斷面圖",
+            "TargetTypeName": "ARB-D09020-暗架矽酸鈣板天花板詳圖-牆邊收頭及施工斷面圖",
+            "TypeId": 260970,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09020",
+            "SheetName": "暗架矽酸鈣板天花板詳圖",
+            "DetailNumber": "2",
+            "DetailName": "檢修孔開孔剖面示意圖",
+            "TargetTypeName": "ARB-D09020-暗架矽酸鈣板天花板詳圖-檢修孔開孔剖面示意圖",
+            "TypeId": 260972,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09020",
+            "SheetName": "暗架矽酸鈣板天花板詳圖",
+            "DetailNumber": "5",
+            "DetailName": "天花板安裝示意圖",
+            "TargetTypeName": "ARB-D09020-暗架矽酸鈣板天花板詳圖-天花板安裝示意圖",
+            "TypeId": 260974,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09021",
+            "SheetName": "暗架吸音石膏板天花板",
+            "DetailNumber": "1",
+            "DetailName": "暗架組合式吸音天花剖面圖",
+            "TargetTypeName": "ARB-D09021-暗架吸音石膏板天花板-暗架組合式吸音天花剖面圖",
+            "TypeId": 260976,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09021",
+            "SheetName": "暗架吸音石膏板天花板",
+            "DetailNumber": "2",
+            "DetailName": "齒夾式骨架詳圖",
+            "TargetTypeName": "ARB-D09021-暗架吸音石膏板天花板-齒夾式骨架詳圖",
+            "TypeId": 260978,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09022",
+            "SheetName": "廁所隔間詳圖",
+            "DetailNumber": "1",
+            "DetailName": "廁所隔間標準詳圖",
+            "TargetTypeName": "ARB-D09022-廁所隔間詳圖-廁所隔間標準詳圖",
+            "TypeId": 260980,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09022",
+            "SheetName": "廁所隔間詳圖",
+            "DetailNumber": "2",
+            "DetailName": "五金配置及鋁合金腳柱大樣圖",
+            "TargetTypeName": "ARB-D09022-廁所隔間詳圖-五金配置及鋁合金腳柱大樣圖",
+            "TypeId": 260982,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09022",
+            "SheetName": "廁所隔間詳圖",
+            "DetailNumber": "3",
+            "DetailName": "小便斗隔屏詳圖",
+            "TargetTypeName": "ARB-D09022-廁所隔間詳圖-小便斗隔屏詳圖",
+            "TypeId": 260984,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09024",
+            "SheetName": "指標系統詳圖(一)",
+            "DetailNumber": "1",
+            "DetailName": "A·立地式停車場出入口標示",
+            "TargetTypeName": "ARB-D09024-指標系統詳圖(一)-A·立地式停車場出入口標示",
+            "TypeId": 260986,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09024",
+            "SheetName": "指標系統詳圖(一)",
+            "DetailNumber": "2",
+            "DetailName": "底座收邊框仃=18m)",
+            "TargetTypeName": "ARB-D09024-指標系統詳圖(一)-底座收邊框仃=18m)",
+            "TypeId": 260988,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09024",
+            "SheetName": "指標系統詳圖(一)",
+            "DetailNumber": "3",
+            "DetailName": "c·貼壁式科室空間標示",
+            "TargetTypeName": "ARB-D09024-指標系統詳圖(一)-c·貼壁式科室空間標示",
+            "TypeId": 260990,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09025",
+            "SheetName": "指標系統詳圖(二)",
+            "DetailNumber": "2",
+            "DetailName": "E吊式無障礙專用車位標示",
+            "TargetTypeName": "ARB-D09025-指標系統詳圖(二)-E吊式無障礙專用車位標示",
+            "TypeId": 260992,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09025",
+            "SheetName": "指標系統詳圖(二)",
+            "DetailNumber": "4",
+            "DetailName": "G·貼壁式方向引導標示",
+            "TargetTypeName": "ARB-D09025-指標系統詳圖(二)-G·貼壁式方向引導標示",
+            "TypeId": 260994,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "1",
+            "DetailName": "H•貼壁式上下樓層標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-H•貼壁式上下樓層標示",
+            "TypeId": 260996,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "2",
+            "DetailName": "I1·懸臂式無障礙電梯/樓梯標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-I1·懸臂式無障礙電梯/樓梯標示",
+            "TypeId": 260998,
+            "Action": "created"
+          }
+        ]
+      }
+    },
+    {
+      "batch": 5,
+      "inputCount": 20,
+      "reviewCount": 6,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 20,
+        "Created": 20,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "3",
+            "DetailName": "I2•懸臂式服務空間標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-I2•懸臂式服務空間標示",
+            "TypeId": 261000,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "4",
+            "DetailName": "J1·貼壁式服務空間標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-J1·貼壁式服務空間標示",
+            "TypeId": 261002,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "5",
+            "DetailName": "J2·貼壁式無障礙電梯/樓梯標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-J2·貼壁式無障礙電梯/樓梯標示",
+            "TypeId": 261004,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "6",
+            "DetailName": "K號標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-K號標示",
+            "TypeId": 261006,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09026",
+            "SheetName": "指標系統詳圖(三)",
+            "DetailNumber": "7",
+            "DetailName": "L壁式各樓層緊急逃生圖標示",
+            "TargetTypeName": "ARB-D09026-指標系統詳圖(三)-L壁式各樓層緊急逃生圖標示",
+            "TypeId": 261008,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09027",
+            "SheetName": "指標系統詳圖(四)",
+            "DetailNumber": "1",
+            "DetailName": "M·立地式無障礙設施標示",
+            "TargetTypeName": "ARB-D09027-指標系統詳圖(四)-M·立地式無障礙設施標示",
+            "TypeId": 261010,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09027",
+            "SheetName": "指標系統詳圖(四)",
+            "DetailNumber": "2",
+            "DetailName": "N·貼壁式服務空間標示(哺集乳室)",
+            "TargetTypeName": "ARB-D09027-指標系統詳圖(四)-N·貼壁式服務空間標示(哺集乳室)",
+            "TypeId": 261012,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09028",
+            "SheetName": "FRP水箱詳圖(一)",
+            "DetailNumber": "1",
+            "DetailName": "RC基座圖",
+            "TargetTypeName": "ARB-D09028-FRP水箱詳圖(一)-RC基座圖",
+            "TypeId": 261014,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09028",
+            "SheetName": "FRP水箱詳圖(一)",
+            "DetailNumber": "4",
+            "DetailName": "基座圖",
+            "TargetTypeName": "ARB-D09028-FRP水箱詳圖(一)-基座圖",
+            "TypeId": 261016,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09029",
+            "SheetName": "FRP水箱詳圖(二)",
+            "DetailNumber": "1,4",
+            "DetailName": "RC基座圖",
+            "TargetTypeName": "ARB-D09029-FRP水箱詳圖(二)-RC基座圖",
+            "TypeId": 261018,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "1",
+            "DetailName": "防水閘門開平面圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-防水閘門開平面圖",
+            "TypeId": 261020,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "2",
+            "DetailName": "防水閘門關閉平面圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉平面圖",
+            "TypeId": 261022,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "3",
+            "DetailName": "防水閘門正立面圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-防水閘門正立面圖",
+            "TypeId": 261024,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "5",
+            "DetailName": "防水閘門關閉剖面圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-防水閘門關閉剖面圖",
+            "TypeId": 261026,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "6",
+            "DetailName": "防水閘門鏈側詳圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-防水閘門鏈側詳圖",
+            "TypeId": 261028,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09030",
+            "SheetName": "防水閘門詳圖",
+            "DetailNumber": "7",
+            "DetailName": "拖架詳圖",
+            "TargetTypeName": "ARB-D09030-防水閘門詳圖-拖架詳圖",
+            "TypeId": 261030,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "1",
+            "DetailName": "防水閘門立面示意圖一單片式",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-防水閘門立面示意圖一單片式",
+            "TypeId": 261032,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "3",
+            "DetailName": "A一A剖面示意圖",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-A一A剖面示意圖",
+            "TypeId": 261034,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "4",
+            "DetailName": "詳圖H地面固定法大樣)",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-詳圖H地面固定法大樣)",
+            "TypeId": 261036,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "5,7",
+            "DetailName": "防水閘門板",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-防水閘門板",
+            "TypeId": 261038,
+            "Action": "created"
+          }
+        ]
+      }
+    },
+    {
+      "batch": 6,
+      "inputCount": 11,
+      "reviewCount": 3,
+      "response": {
+        "Success": true,
+        "DryRun": false,
+        "FamilyName": "AE-圖號詳圖編號標頭-3.5mm",
+        "Count": 11,
+        "Created": 11,
+        "Updated": 0,
+        "Skipped": 0,
+        "Invalid": 0,
+        "Items": [
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "6",
+            "DetailName": "(D一D)詳圖支撐柱(外拉式)",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-(D一D)詳圖支撐柱(外拉式)",
+            "TypeId": 261040,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "8,10",
+            "DetailName": "底框詳圖",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-底框詳圖",
+            "TypeId": 261042,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "9",
+            "DetailName": "邊框大樣圖之詳圖A",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-邊框大樣圖之詳圖A",
+            "TypeId": 261044,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "11",
+            "DetailName": "未使用中示意圖",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-未使用中示意圖",
+            "TypeId": 261046,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09031",
+            "SheetName": "防水閘板詳圖",
+            "DetailNumber": "12",
+            "DetailName": "詳圖Ⅰ",
+            "TargetTypeName": "ARB-D09031-防水閘板詳圖-詳圖Ⅰ",
+            "TypeId": 261048,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "1",
+            "DetailName": "防煙捲幕(簾)立面詳圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-防煙捲幕(簾)立面詳圖",
+            "TypeId": 261050,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "2",
+            "DetailName": "防煙捲幕(簾)平面詳圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-防煙捲幕(簾)平面詳圖",
+            "TypeId": 261052,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "3",
+            "DetailName": "不鏽鋼捲門立面圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-不鏽鋼捲門立面圖",
+            "TypeId": 261054,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "4",
+            "DetailName": "不鏽鋼鐵捲門剖面圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-不鏽鋼鐵捲門剖面圖",
+            "TypeId": 261056,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "5",
+            "DetailName": "不鏽鋼鐵捲門與隔間詳圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-不鏽鋼鐵捲門與隔間詳圖",
+            "TypeId": 261058,
+            "Action": "created"
+          },
+          {
+            "SheetNumber": "ARB-D09032",
+            "SheetName": "防煙捲簾及捲門詳圖",
+            "DetailNumber": "6",
+            "DetailName": "不鏽鋼鐵捲門機電系統操作圖",
+            "TargetTypeName": "ARB-D09032-防煙捲簾及捲門詳圖-不鏽鋼鐵捲門機電系統操作圖",
+            "TypeId": 261060,
+            "Action": "created"
+          }
+        ]
+      }
+    }
+  ],
+  "completedAt": "2026-05-20T02:38:10.513Z"
+}

@@ -62,8 +62,8 @@ metadata:
 
 | 項目 | 詳細說明 |
 |------|------|
-| **限制** | `get_all_views` 可列出 `ViewSchedule` 類型的視圖，但目前 MCP 工具無法讀取 Revit 明細表/報表的內容 |
-| **未來方案** | 開發 `query_schedule_data` C# 擴充 |
+| **目前能力** | `get_all_views` 可列出 `ViewSchedule` 類型的視圖；`query_schedule_data` 可指定 `scheduleId` 或 `scheduleName` 讀取明細表欄位與 Body 區資料列。 |
+| **限制** | 目前讀取的是 Revit schedule 表格顯示文字，適合報表/查核；若需要原始元素參數值、公式拆解或跨 linked model 追溯，仍需另開專用查詢工具。 |
 
 ---
 

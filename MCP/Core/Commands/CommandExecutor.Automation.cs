@@ -61,6 +61,8 @@ namespace RevitMCP.Core
             using (Transaction trans = new Transaction(doc, "Rename Element"))
             {
                 trans.Start();
+                Element nameTarget = GetNameAssignmentTarget(doc, element);
+                element = nameTarget;
                 element.Name = newName;
                 trans.Commit();
             }
@@ -126,10 +128,7 @@ namespace RevitMCP.Core
             {
                 hit = true,
                 distance = distanceMm,
-                elementId = hitElement.Id.IntegerValue,
-#if REVIT2024_OR_GREATER
-                elementIdLong = hitElement.Id.Value,
-#endif
+                elementId = hitElement.Id.GetIdValue(),
                 elementName = hitElement.Name,
                 category = hitElement.Category?.Name
             };
