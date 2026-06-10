@@ -282,7 +282,7 @@ BIM 的知識是共用的——防火法規同時被消防檢查、走廊分析�
 
 > **不要把每個 Domain 都升級成 Skill。** Domain 被引用就已經在發揮作用了。詳見 `domain/skill-authoring-standard.md`。
 
-## Skills（20 個）
+## Skills（21 個）
 
 Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`。
 
@@ -306,6 +306,7 @@ Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`�
 | `/sheet-management` | 圖紙與視圖埠管理（批次建立、重新排序） |
 | `/stair-hidden-line` | 剖面隱藏樓梯可視化（虛線詳圖線） |
 | `/detect-clashes` | MEP vs CSA 碰撞偵測（Curve-to-Solid 干涉分析 + 視覺化 + 報告匯出） |
+| `/dwg-column-import` | DWG 圖層批次建柱（作者 upstream Skill；Jacky R20 後端 routing 本次保護未合併） |
 | `/claude-md-sync` | CLAUDE.md 雙向同步驗證（合併/Skill異動/Tools異動後觸發） |
 | `/hj-pr-proposal` | 將自訂內容轉譯為 HJPLUS 台灣建築師知識庫 PR 草案 |
 
@@ -346,7 +347,7 @@ All AI clients connect to the MCP Server via the same config format. Replace `{a
 | Port 8964 被 System (PID: 4) 佔用 | Revit 異常關閉後 HTTP.sys 孤兒 Request Queue | 執行 `scripts\release-port.ps1`，或手動：`net stop http /y && net start http` |
 | Commands not responding in Revit | Revit UI thread issue | Ensure `ExternalEventManager` is used; check `%AppData%\RevitMCP\Logs\` |
 
-## Domain Knowledge & Workflow Files（43 個）
+## Domain Knowledge & Workflow Files（47 個）
 
 The `domain/` directory contains BIM compliance workflows that AI must consult before executing related tasks:
 
@@ -395,6 +396,10 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 | 銜接線, matchline, 叢屬視圖, CropBox, 圖紙號碼 | `domain/matchline-automation.md` |
 | RC 貼紙, FilledRegion, 指紋, 智慧更新, smart fill | `domain/rc-filled-region-workflow.md` |
 | C-1 廠房, 衛浴設備數量, 大便器, 小便器, 洗面盆, factory, bathroom | `domain/sanitary-fixture-review.md` |
+| DWG, CAD, 圖層建柱, 批次建柱, dwg 建柱, cad 匯入建模 | `domain/dwg-column-import.md` |
+| 樓板坡度, 排水坡度, floor slope, 洩水, 坡度檢討, 找坡 | `domain/floor-slope-analysis.md` |
+| 剖面重新命名, 剖面編號, section numbering, 自動編排剖面 | `domain/section-auto-numbering.md` |
+| 剖面基準線, section datum, 網格線, 樓層線, adjust_section_datums | `domain/section-datum-adjustment.md` |
 
 ## Deployment Rules (DO NOT VIOLATE)
 

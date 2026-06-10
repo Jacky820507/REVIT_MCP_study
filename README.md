@@ -19,7 +19,7 @@
 
 **🎥 示範影片：[Revit MCP - AI 驅動的 BIM 工作流程示範](https://youtu.be/YpAYF-GxrhA)**
 
-**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 43 Domain + 19 Skill + 89 Tool 視覺化索引
+**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 47 Domain + 21 Skill + 127 Tool 視覺化索引
 
 ---
 
@@ -87,7 +87,7 @@
 >    ```
 > 3. 複製 DLL 到 Revit Addins 資料夾：
 >    ```powershell
->    Copy-Item "bin/Release/RevitMCP.dll" "C:\ProgramData\Autodesk\Revit\Addins\2024\RevitMCP\" -Force
+>    Copy-Item "bin/Release.R{YY}/RevitMCP.dll" "C:\ProgramData\Autodesk\Revit\Addins\2024\RevitMCP\" -Force
 >    ```
 > 4. 重新啟動 Revit
 > 
@@ -312,7 +312,7 @@ dotnet build -c Release.R26   # Revit 2026
    explorer %APPDATA%\Autodesk\Revit\Addins\2022
    
    # 或使用指令複製
-   Copy-Item "bin\Release\RevitMCP.dll" "%APPDATA%\Autodesk\Revit\Addins\2022\" -Force
+   Copy-Item "bin\Release.R{YY}\RevitMCP.dll" "%APPDATA%\Autodesk\Revit\Addins\2022\" -Force
    Copy-Item "RevitMCP.addin" "%APPDATA%\Autodesk\Revit\Addins\2022\" -Force
    ```
    
@@ -1281,13 +1281,13 @@ public Result OnStartup(UIControlledApplication application)
 1. **編譯 C# 專案**
    ```powershell
    cd MCP
-   dotnet build -c Release
+   dotnet build -c Release.R22
    ```
 
 2. **複製 DLL 到 Revit Add-in 目錄**
    ```powershell
    $target = "$env:APPDATA\Autodesk\Revit\Addins\2022"
-   Copy-Item "bin\Release\RevitMCP.dll" $target
+   Copy-Item "bin\Release.R22\RevitMCP.dll" $target
    ```
 
 3. **重新啟動 Revit**

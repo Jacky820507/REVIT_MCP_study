@@ -1,3 +1,18 @@
+---
+name: matchline-automation
+description: "銜接線自動化標註 SOP：在母視圖與從屬視圖出圖流程中，自動偵測相鄰 CropBox 邊界並建立銜接線、相鄰圖紙號碼文字與清理舊標註。"
+metadata:
+  version: "1.0"
+  updated: "2026-04-13"
+  created: "2026-04-13"
+  contributors:
+    - "Jacky820507"
+  references: []
+  related: ["dependent-view-crop-workflow.md", "sheet-viewport-management.md"]
+  referenced_by: []
+  tags: [Revit, Matchline, DependentView, Sheet, CropBox, 銜接線]
+---
+
 # 切圖界線自動化標註工作流程 (Matchline Automation Workflow)
 
 ## 1. 背景與需求

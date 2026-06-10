@@ -1,3 +1,18 @@
+---
+name: rc-filled-region-workflow
+description: "RC 結構剖切面填滿區域自動化 SOP：依圖紙視埠批次收集牆、柱、樓版、樑剖切面，建立深灰色 FilledRegion，並以幾何指紋支援智慧更新。"
+metadata:
+  version: "1.0"
+  updated: "2026-04-13"
+  created: "2026-04-13"
+  contributors:
+    - "Jacky820507"
+  references: []
+  related: ["finish-legend-creation.md", "tool-capability-boundary.md"]
+  referenced_by: []
+  tags: [Revit, RC, FilledRegion, Section, Fingerprint, 智慧更新]
+---
+
 # RC 結構填滿貼紙 自動化工作流程
 
 ## 📌 使用場景
