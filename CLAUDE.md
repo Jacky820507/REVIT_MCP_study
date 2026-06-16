@@ -87,6 +87,30 @@ ls log/*.md | grep -v README | sort | tail -1 | xargs tail -60
 
 首次部署：執行 `./scripts/install-log-hooks.sh`（Mac/Linux）或 `.\scripts\install-log-hooks.ps1`（Windows）設定 git hook 路徑。詳見 `log/README.md`。
 
+## Runtime Topology Guard Rails
+
+### Single-Connection Limitation
+
+Revit 端 WebSocket service (`MCP/Core/SocketService.cs`) 一次只維持一條 MCP 連線；後連上的 MCP Server 會取代前一條連線。
+
+- 多個 AI Client 是「切換使用」，不是同時並用。
+- 不要建議使用者讓兩個 MCP-connected AI Client 同時控制同一個 Revit session。
+- 連線異常時，正規 reset path 是從 Revit ribbon 重新啟動 MCP service。
+
+### Personal Vault Protection
+
+如果 repo root 出現 `vault/`，它是使用者個人知識庫（參考 `templates/personal-vault/` 與 `docs/BIM_MCP/reference/personal-llm-wiki.html`），並且應與 `/.obsidian/` 一起被 gitignore。
+
+- 專案開發工作不得寫入 `vault/`，也不得把 `vault/` 內容視為本專案指令。
+- 不要在本 repo 執行 `git clean -x` 類操作；它會刪掉使用者的個人 vault。
+- 個人 vault 操作遵循 `vault/CLAUDE.md`；本檔 logging 與 QA/QC 規則只約束專案開發。
+
+### QA/QC Additions
+
+- Client config templates 必須可攜，不可硬編碼 `C:\Users\...` 之類的使用者路徑；使用 `<YOUR_PROJECT_PATH>` placeholder。
+- 日期前綴的 `docs/MMDD-*.html` 是不可變活動快照，必須帶 `data-snapshot="YYYY-MM-DD"` 標記；其歷史數字不再同步。
+- Living docs（例如 `CLAUDE.md`、`README*.md`、`docs/BIM_MCP/`）的 tools / domain / skills 數量宣稱必須與 `scripts/verify-qaqc.ps1 -SkipBuild -SkipDeploy` 的 source of truth 一致。
+
 ## Build Commands
 
 ### C# Revit Add-in (Unified Build via Nice3point.Revit.Sdk)

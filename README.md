@@ -17,6 +17,12 @@
 
 透過 Model Context Protocol (MCP) 讓 AI 語言模型直接控制 Autodesk Revit，實現 AI 驅動的 BIM 工作流程。
 
+| 項目 | 數量 | 來源 |
+|---|---:|---|
+| Runtime MCP tools | 127 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
+| Domain SOP files | 47 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
+| Claude skills | 21 | `.claude/skills/*/SKILL.md` |
+
 **🎥 示範影片：[Revit MCP - AI 驅動的 BIM 工作流程示範](https://youtu.be/YpAYF-GxrhA)**
 
 **📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 47 Domain + 21 Skill + 127 Tool 視覺化索引
@@ -477,6 +483,14 @@ MCP Server 需要 Node.js 才能執行。先檢查您是否已安裝：
 - AI 應用程式已經內建 MCP 支援，不需要 API Key
 - MCP Server 只負責 Revit 工具的定義和通訊
 - 所有 API 金鑰都由 AI 應用程式自己管理（如 Claude Desktop 有自己的 API Key）
+
+### AI Client 切換與並用限制
+
+Revit 端 WebSocket 服務一次只接受一條 MCP 連線；後連上的 MCP Server 會取代先前連線。因此多個 AI Client 是「切換使用」而不是「同時並用」：
+
+1. 關閉目前使用的 AI Client（或停用其 MCP server）。
+2. 啟動另一個 AI Client，讓它的 MCP Server 連上 `localhost:8964` 後接手。
+3. 若連線狀態異常，於 Revit ribbon 重啟 MCP 服務即可重置。
 
 ---
 
