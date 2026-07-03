@@ -314,3 +314,108 @@ metadata:
 - **實踐**：(a) 設計師若用 MCP 查面積、紙本仕上表查面積，兩個值會差→AI 應主動標記；(b) 法定報告用哪個 → 法務 / 業主決定 → AI 不替你選。
 - **更上游問題**：這不是 MCP 工具 bug，是 BIM 模型本身「幾何 vs 手填表格值」的失同步。可能來源——建模時牆邊界稍有移動但仕上表沒同步；校正値本來就是對齊圖紙標註的手調值；仕上表用「外側量測」vs 面積用「內側淨空」差異等。
 - **對照**：呼應 P4「限制顯現器」+ Tool Call Data Honesty——MCP 不會替你決定「哪個面積才算數」，把兩個都端出來，由你決定。
+
+## [L-038] DLL 部署被鎖定時必須立刻停止
+
+- **情境**：Revit 開啟時部署 `RevitMCP.dll`，`Copy-Item` 可能因拒絕存取或「檔案正被另一個處理程序使用」而失敗。
+- **教訓**：不要迴圈重試部署。DLL 被鎖定後，不要繼續輪詢 WebSocket、反覆檢查 process，或繼續消耗 tool call。
+- **規則**：立刻停止，告知使用者必須先關閉 Revit，並等待使用者明確回覆「已關閉」後，才嘗試一次新的部署。
+- **原因**：Revit 會把 add-in DLL 載入 process。Revit 釋放 DLL 之前，後續複製嘗試都只是雜訊，並且會浪費執行預算。
+
+## [L-039] 直接 Revit WebSocket wrapper 必須符合目前 socket contract
+
+- **情境**：`MCP-Server/scripts/run_command.js` 一開始送出 `{ CommandName, Parameters, RequestId }`，但目前 Revit socket model 預期的是 `{ method, params, id }`。
+- **症狀**：Revit log 顯示空白 command name 與空白 request id；wrapper 看起來像卡住，因為它等待的 response id 永遠無法匹配。
+- **教訓**：若因 Codex 可見的 MCP schema 尚未刷新而使用 repository wrapper，wrapper 必須與 `MCP-Server/src/socket.ts` 和 `MCP/Models/CommandModels.cs` 保持一致。
+- **規則**：wrapper 必須具備 command hard timeout 與 connection timeout。也應從 `REVIT_MCP_PARAMS_JSON` 接收 JSON 參數，避免 PowerShell quote mangling。
+- **驗證**：健康的直接 command 會回傳匹配的 `RequestId`；dry-run command 即使 Revit 沒有回答，也必須能自行結束。
+
+## [L-040] 視埠標題類型最安全的來源是已放置 Viewport.GetValidTypes()
+
+- **情境**：在本專案的 Revit 2020 中，使用 `FilteredElementCollector(doc).OfCategory(OST_Viewports).WhereElementIsElementType()` 收集視埠標題類型時回傳 0 個類型。
+- **教訓**：若要變更視埠類型，最可靠的來源是既有、已放置的 `Viewport`。
+- **規則**：用 `viewport.GetTypeId()` 收集目前類型，並用 `viewport.GetValidTypes()` 收集可切換類型。這會反映 Revit 對 `Viewport.ChangeTypeId()` 實際允許的類型。
+- **流程**：先執行 `get_viewport_types`，再以 `dryRun=true` 執行 `sync_viewport_types_by_view_scale`，接著以 `dryRun=false` 套用，最後再次 dry-run。成功判定為 `ChangedCount = 0`。
+- **範圍控制**：只處理圖紙上的 `FloorPlan`、`Elevation`、`Section` 視埠。若已放置視圖名稱或 `Title on Sheet` 包含 `圖例`，則略過。若沒有精確比例標題類型，使用備援的有線條標題視埠類型。
+- **Domain 參考**：`domain/viewport-type-scale-sync.md`。
+
+## [L-041] 輕隔間算量：host-only 開口與 Revit 面積基準
+
+- **情境**：輕隔間 CSV 初版以「門窗座標靠近 TYPE 牆」推定開口扣除，導致房間 F212 的 `廁所門-60x200 cm` 被錯扣；該門實際 `主體 ID` 是非 TYPE 的廁所隔牆。另以 `不連續高度` 直接相乘，使 `Type-B 濕式輕隔間-襯板` 從舊表約 64 m² 被高估到 76.4928 m²。
+- **規則 1：開口扣除必須 host-only**。門窗或開口只有在其 `主體 ID` / Host ElementId 等於本次計算的 TYPE 牆 ElementId 時才能扣除。不得用 nearest wall、座標距離、同樓層接近、房間內接近等幾何近似替代 host 關係。
+- **規則 2：表內牆高是有效高度，不是原始 `不連續高度`**。若範本要求保留 `牆長 × 牆高` 公式，應以 Revit 牆 `面積` 為基準反推有效高度：`表內牆高 = (Revit 牆面積 + 已驗證 host 開口面積) / 牆長`。Excel 再扣開口後，總計才會回到 Revit 牆面積基準。
+- **驗證**：抽查一個使用者質疑的房間與一個總量敏感的牆型。F212 應無 `廁所門-60x200 cm` 扣除；`Type-B 濕式輕隔間-襯板` 應回到舊表基準約 64.0563 m²。若任一不符，停止交付並重查 host 與面積來源。
+- **Domain 參考**：`domain/revit-partition-takeoff.md`。
+## [L-042] 房間重新排序編號應使用 Revit 端批次交易
+
+- **情境**：使用者要求「房間重新排序編號，只排 B1F，從 B134 開始」。若用 MCP 層逐筆 `modify_element_parameter`，每間房間都會有一次 tool 往返與一次 Revit transaction，20 間房間就會明顯變慢。
+- **教訓**：大量房間編號不是單筆參數修改問題，而是「查詢、排序、批次寫入」問題；排序與寫入應放在 Revit add-in 端一次完成。
+- **正確做法**：使用 `renumber_rooms_by_level`，先 `dryRun=true` 預覽，再 `dryRun=false` 寫入。工具在 Revit 端依 Room 中心點由上到下、同列由左到右排序，並用單一 Transaction 批次寫入房間 `ROOM_NUMBER`。
+- **安全檢查**：寫入前先 re-anchor `get_active_view`；樓層名稱不可猜，若 `B1F` 解析為 `C-B1F` 必須在回覆中說明；若候選房號已存在於其他樓層，除非使用者明確允許，否則停止。
+- **文件化**：此流程已整理到 `domain/room-numbering-workflow.md` 與 `room-numbering` Skill。後續遇到 room numbering / 房間重新排序 / 自動編號需求，優先走此批次工具，不要退回舊 WebSocket 腳本或逐筆修改。
+
+## [L-043] 樑頂貼齊樓板底：先判斷主要覆蓋範圍，再取樓層相對偏移最低的樓板底
+
+- **教訓**：樑頂貼齊樓板底不能只靠最近樓板命中、全模型最大樓板面積，或起點/終點各自獨立選板。這些策略可能選到完成面、相鄰上層樓板，或讓同一根樑分別貼到兩片不同樓板。
+- **規則**：既有 StructuralFraming 樑若使用 `起始樓層偏移` 與 `結束樓層偏移`，應沿樑取樣，依 Floor ElementId 分組樓板底命中，保留 sample-hit 數最高的主要覆蓋群組，再選擇相對自身 Revit Level 樓板底偏移最低的樓板。該樓板應作為樑兩端共同目標。
+- **校正案例**：`8546314 -> 8693275`、`8543272 -> 8115865`、`8541251 -> 8103066` 在未來邏輯變更後仍必須正確。全棟執行前要先 dry-run 這些案例。
+- **安全規則**：Floor 候選應限制為真正樓板，目前為名稱包含 `樓板` 或以 `RC_` 開頭者；除非使用者明確擴大目標集合。必須先 dry-run，且只在目標 FloorId 驗證後才套用。
+- **Domain/Skill**：詳見 `domain/beam-slab-alignment.md` 與 `beam-slab-alignment` Skill。
+
+## [L-044] IFC 原生結構同步必須用 Source Fingerprint 追蹤並允許重建
+
+- **情境**：依 IFC Link 建立 Revit 原生 `StructuralFraming` 與 `StructuralColumns` 時，幾何、族類型、樓板貼附規則可能會在工具優化後改變。舊元素若只靠 ElementId 逐筆修改，很容易留下錯族、錯參數或錯偏移。
+- **規則**：同步工具建立的元素必須寫入可追蹤的來源註記，例如 LinkId、IFC ElementId、SourceKind、SourceFingerprint 與 `IFC_STRUCT_SYNC`。當判斷邏輯修正後，應支援 `replaceExisting=true` 先刪除舊同步元素再重建。
+- **避坑經驗**：使用者可能已手動刪除舊梁，或工具套用逾時但 Revit 端 Transaction 其實已完成。不能用舊 ElementId 當唯一驗證基準；套用後要重新查同步標記、類型名稱、族類型、參數與幾何位置。
+- **實踐**：標準流程為 `get_linked_models` → `sync_ifc_structural_to_native(dryRun=true)` → 使用者確認範圍 → `dryRun=false` → 回讀抽查。重大邏輯變更後優先用 `replaceExisting=true`，避免舊錯誤混在新模型裡。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md` 與 `ifc-structural-sync` Skill。
+
+## [L-045] IFC 結構柱 b/h 不可直接相信全域 X/Y 或類型名稱
+
+- **情境**：IFC 柱截面轉 Revit 柱族時，局部軸、族參數語意與全域 BoundingBox 方向可能不同。若直接把 X 當 b、Y 當 h，可能產生使用者看到的 b/h 顛倒。
+- **規則**：柱截面尺寸應先從 IFC 幾何或截面外框取得兩個主尺寸，再依本專案命名約定正規化為 `b = 短邊`、`h = 長邊`。類型名稱應寫成 `IFC-COL-H{h}xB{b}`，且類型參數 `b`、`h` 必須同步寫入，不可只改名稱。
+- **避坑經驗**：只改類型名稱而未改類型參數，外觀或明細仍會錯。只看 BoundingBox 全域 X/Y，也可能因柱旋轉而誤判。重建後舊 ElementId 可能消失，因此要用同步標記或新元素集合回查。
+- **實踐**：抽查時同時驗證三件事：族類型是否正確、`b/h` 類型參數是否正確、模型幾何尺寸是否與 IFC 主尺寸一致。方柱若兩邊相同仍要寫入參數，不可省略。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md`。
+
+## [L-046] IFC 柱族選型要判斷實心/空心，不可只靠使用者指定一次
+
+- **情境**：同一批 IFC 柱可能混有鋼柱、SHS 方形空心鋼管柱、RC 方柱或其他實心柱。使用者更正一次 `SRC` 應為 `SHS`，不代表所有方柱都應套同一族。
+- **規則**：柱族選型應由工具自動依 IFC 材料、名稱、截面外框、內孔與 solid volume ratio 判斷。空心方管使用 `SHS-正方形空心剖面-柱`，一般鋼柱使用既有鋼柱族，完全實心且材料/名稱偏 RC 的柱應使用 RC 方柱。
+- **避坑經驗**：只依名稱包含 SRC、SHS、RC 會失敗，因 IFC 名稱常不穩定；只依外框尺寸也會把空心管與實心柱混在一起。必須把「是否完全實心」列為選型條件。
+- **實踐**：工具回傳應揭露 `sourceKind`、判斷到的截面尺寸、空心/實心分類、族名稱與 type name。若信心不足，先 dry-run 列入人工確認，不要直接大量套用。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md`。
+
+## [L-047] 柱頂貼齊樓板底不可只用柱中心點射線
+
+- **情境**：柱頂需頂到樓板底部，例如使用者指出某柱未貼附指定樓板。若只用柱中心點往上/下找樓板，柱位在樓板邊緣、洞口、斜板或梁柱交界時會漏判。
+- **規則**：柱頂目標樓板應使用柱 BoundingBox 或截面範圍做多點取樣，至少包含中心、邊點與角點，並優先使用實際幾何 bottom face 交點，而不是只用樓板 BoundingBox。
+- **避坑經驗**：BoundingBox 只能當候選篩選，不能當最終貼附高度；斜板、複合樓板或邊緣區域會讓 BoundingBox 高度與真正樓板底不同。中心點沒打到樓板不代表柱不用延伸。
+- **實踐**：柱同步後應批次執行 `align_columns_top_to_floor_bottom`，先 dry-run 抽查 `targetFloorId`、`targetBottomElevation`、`newTopOffset`，再 apply。apply 後再次 dry-run，殘差應接近 0。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md`。
+
+## [L-048] 梁頂貼樓板底要同時處理斜板、接合與上下疊梁
+
+- **情境**：IFC 梁轉成 `UB-通用樑` 後，梁頂可能仍凸出樓板。原因不只偏移值錯誤，也可能是梁端接合、cutback、斜板底面高度變化，或同位置上下疊梁未等量跟隨。
+- **規則**：梁同步時先建立正確 XYZ 軸線與 `UB-通用樑` 類型，再用 `align_beams_top_to_floor_bottom` 貼板。工具需自動判斷樓板底是否傾斜；若傾斜，起點與終點偏移應各自對應樓板底高度；若水平，兩端等量下降。
+- **避坑經驗**：只把 LocationCurve Z 平移不一定會改到 `起始樓層偏移` / `結束樓層偏移`；梁端接合可能讓幾何仍被拉回或凸出。貼板前應可選擇 disallow join，貼板後要做 geometry residual correction。
+- **疊梁規則**：同一垂直堆疊的梁，先以最上方梁貼樓板底作為基準，下面梁依原本相對間距等量偏移，避免把所有梁都拉到同一樓板底。
+- **實踐**：全棟執行前先 dry-run 代表性水平板、斜板、屋頂邊緣與疊梁案例。apply 後再次 dry-run 檢查 protruding/residual，仍凸出者優先檢查 join/cutback 與選板是否錯誤。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md` 與 `domain/beam-slab-alignment.md`。
+
+## [L-049] MCP 結構工具更新後要驗證 schema、DLL 與 Revit 狀態三者一致
+
+- **情境**：新增或修改 `sync_ifc_structural_to_native`、`align_beams_top_to_floor_bottom`、`align_columns_top_to_floor_bottom` 後，可能發生 TypeScript schema 已改但 MCP 工具列表未刷新，或 DLL 編譯成功但 Revit 仍載入舊 DLL。
+- **規則**：改工具邏輯後要完成三層驗證：MCP-Server schema 可見、Revit add-in DLL 已部署、Revit 重開後實際工具行為符合新邏輯。若 Revit 開著導致 DLL 被鎖，立即要求使用者關閉，不要重複複製。
+- **避坑經驗**：工具呼叫 timeout 不等於失敗；大型 Transaction 可能在 timeout 後才完成。此時應重新回讀模型驗證，而不是重複 apply 造成重建或刪除風險。
+- **實踐**：每次部署後先做小範圍 dry-run，再做單一或少量元素 apply，最後才全棟 apply。使用者回報具體 ElementId 時，先查該元素目前參數與幾何，再決定是否是工具邏輯、舊元素殘留或 Revit 接合造成。
+- **Domain/Skill**：詳見 `domain/ifc-structural-native-sync.md`。
+
+## [L-050] 施工架算量必須分清室外、一般室內與樓電梯室內裝修
+
+- **情境**：施工架數量同時包含 `框式施工架(含防護設施)<室外施工架>`、室內一般房間施工架、樓梯/電梯類室內裝修施工架。若全部套同一個周長或同一個長寬高公式，會把單位與數量基準混在一起。
+- **規則 1：室外施工架採人工描繪外周長**。優先使用 `calculate_selected_detail_line_perimeter` 讀取使用者選取的 detail line / filled region 周長。自動外牆偵測只可作輔助，不作預設正式數量來源。
+- **規則 2：室內一般房間用 `周長 * 高`**。排除 `戶外平台/戶外平臺`、`露臺/露台`、`陽台/陽臺`、`管道間`、`水箱`，並排除樓層 `FN`、`TF`。
+- **規則 3：樓梯/電梯類室內裝修施工架用 `長 * 寬 * 高`**。觸發字包含 `安全梯`、`無障礙梯`、`樓梯`、`電梯`、`貨梯`、`昇降機`、`升降機`、`客梯`。其中 `梯廳` 不是 `樓梯`，除非使用者另行指定，仍屬一般房間。
+- **實踐**：回報時必須列出公式與單位，不可把 `m`、`m2`、`m3` 加總成單一數字。若沒有指定 `scaffoldHeightMm`，需說明是否使用房間 bounding-box 高度作為暫時計算基準。
+- **Domain/Skill**：詳見 `domain/scaffold-takeoff.md` 與 `scaffold-takeoff` Skill。
