@@ -7,7 +7,7 @@
 
 ## Domain ↔ Skill 對照表
 
-### 已有對應 Skill 的 Domain（23 個）
+### 已有對應 Skill 的 Domain（24 個）
 
 | Domain 文件 | 對應 Skill | 觸發關鍵字 |
 |------------|-----------|-----------|
@@ -34,6 +34,7 @@
 | `dependent-view-crop-workflow.md` | dependent-view-crop | 從屬視圖、分區出圖 |
 | `beam-slab-alignment.md` | beam-slab-alignment | 降樑、樓板底、起始樓層偏移、結束樓層偏移 |
 | `ifc-structural-native-sync.md` | ifc-structural-sync | IFC 結構同步、原生結構構架、結構柱、b/h、貼樓板底 |
+| `finish-schedule-governance.md` | finish-schedule-governance | 粉刷明細表、F/B/W/C、材料表對照、AE-材料版、finish code remap |
 
 ### 不需要成為 Skill 的 Domain（13 個，含 README）
 
@@ -44,6 +45,7 @@
 | `session-context-guard.md` | AI 內部守衛 | 定義 AI 互動安全等級（L1-L3），是所有 Skill 的通用行為規範，不由使用者觸發 |
 | `tool-capability-boundary.md` | 工具邊界定義 | 定義 MCP 工具「不能做的事」（L1-L5 能力等級），防止 AI 嘗試超出能力的操作，是 meta-reference |
 | `path-maintenance-qa.md` | 內部維護指南 | 目錄重構後的路徑交叉參照檢查清單，是開發者維護用文件 |
+| `core-reload-boundary.md` | 開發流程知識（opt-in） | 定義 Loader/Core 熱重載邊界、重啟條件與效率估算；對應 opt-in 開發分支，非 main 單一 csproj 架構，供進階開發者引用 |
 | `skill-authoring-standard.md` | Skill 品質規範 | 定義 Skill 編寫標準與品質要求，是 meta-reference |
 | `traditional-chinese-md-translation.md` | Markdown 繁中化規範 | 定義知識捕捉時的 `.md` 翻譯規則，保護 frontmatter、工具名稱、路徑與英文觸發關鍵字，是 meta-reference |
 | `user-specified-runtime-parameters.md` | 使用者指定參數規範 | 定義圖紙名稱、圖層名稱、Excel/CSV/PDF 名稱、校準值等情境參數不可寫死，需由使用者指定、工具查詢、上傳檔案或校準流程提供，是 meta-reference |

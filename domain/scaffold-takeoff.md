@@ -1,3 +1,17 @@
+---
+name: scaffold-takeoff
+description: "施工架算量 SOP：室外施工架以外牆周長×高度、室內施工架以房間周長×高度計算，含框式施工架與防護設施規則。"
+metadata:
+  version: "1.0"
+  updated: "2026-07-03"
+  created: "2026-07-03"
+  contributors:
+    - "Jacky820507"
+  references:
+    - "MCP/Core/Commands/CommandExecutor.ScaffoldTakeoff.cs"
+    - "MCP-Server/src/tools/scaffold-tools.ts"
+---
+
 # 施工架算量 Domain
 
 本 Domain 記錄 RevitMCP 中施工架數量計算的規則。

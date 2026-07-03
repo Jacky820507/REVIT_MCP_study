@@ -19,13 +19,13 @@
 
 | 項目 | 數量 | 來源 |
 |---|---:|---|
-| Runtime MCP tools | 117 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
-| Domain SOP files | 51 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
-| Claude skills | 24 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 139 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
+| Domain SOP files | 67 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
+| Claude skills | 30 | `.claude/skills/*/SKILL.md` |
 
 **🎥 示範影片：[Revit MCP - AI 驅動的 BIM 工作流程示範](https://youtu.be/YpAYF-GxrhA)**
 
-**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 51 Domain + 24 Skill + 127 Tool 視覺化索引
+**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 67 Domain + 30 Skill + 139 Tool 視覺化索引
 
 ---
 

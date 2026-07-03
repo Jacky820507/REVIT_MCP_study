@@ -419,3 +419,24 @@ metadata:
 - **規則 3：樓梯/電梯類室內裝修施工架用 `長 * 寬 * 高`**。觸發字包含 `安全梯`、`無障礙梯`、`樓梯`、`電梯`、`貨梯`、`昇降機`、`升降機`、`客梯`。其中 `梯廳` 不是 `樓梯`，除非使用者另行指定，仍屬一般房間。
 - **實踐**：回報時必須列出公式與單位，不可把 `m`、`m2`、`m3` 加總成單一數字。若沒有指定 `scaffoldHeightMm`，需說明是否使用房間 bounding-box 高度作為暫時計算基準。
 - **Domain/Skill**：詳見 `domain/scaffold-takeoff.md` 與 `scaffold-takeoff` Skill。
+
+## [L-051] 粉刷代碼重排不是冪等操作，必須先 dry-run 且只套用一次
+
+- **情境**：粉刷明細表的 F/B/W/C 代碼若要移除空白號並往前遞增，會形成 `舊碼 -> 新碼` 的批次映射。若同一套映射在已更新的模型上重跑，後段代碼會被再次往前推，造成錯誤。
+- **規則**：每次正式寫入前都要重新讀取目前 Revit 明細表與材料表 CSV，先 dry-run，再 apply。apply 後若使用者要求再次執行，不可沿用上一輪 mapping，必須從目前模型狀態重算。
+- **實踐**：使用完整 token 替換，分隔符以 `+` 處理；不得用 substring replace，避免 `F1` 影響 `F11`。回覆需列出 `ChangedRooms`、`PlannedChanges`、`UnusedMappings` 與錯誤狀態。
+- **Domain/Skill**：詳見 `domain/finish-schedule-governance.md` 與 `finish-schedule-governance` Skill。
+
+## [L-052] `AE-材料版` 同步以材料名稱為身份，編號只是要更新的屬性
+
+- **情境**：材料重排後，`AE-材料版` 類型名稱、`標記`、`描述` 與 `@` 表面材料都要同步。若只依舊編號找類型，可能把類型名稱尾碼、表面材料與材料表 CSV 的名稱錯配。
+- **規則**：先用材料名稱確認身份，再更新材料編號。類型名稱尾碼去掉編號後，必須與表面材料去掉 `@` 後的名稱一致；再將 `標記` 寫入新材料編號、`描述` 寫入材料名稱。
+- **避坑**：Revit 類型名稱不可使用半形冒號 `:`，應轉成全形冒號 `：`。不要只改 `描述` 或 `標記`，也要檢查可寫入的 `@*` 類型參數與對應 Material。
+- **Domain/Skill**：詳見 `domain/finish-schedule-governance.md` 與 `finish-schedule-governance` Skill。
+
+## [L-053] 粉刷比對 CSV 必須以欄名與代碼欄動態判斷
+
+- **情境**：不同粉刷比對 CSV 可能有不同前置欄、換行標題或欄位順序。若用固定欄位索引讀取房間編號或材料代碼，檔案一更新就會比錯欄。
+- **規則**：用結構化 CSV parser 讀取；以欄名尋找 `編號`、`空間名稱` 等欄位，再依任務類型選 F/B/W/C 代碼欄。空白與 `-` 視為無代碼，Revit 參數以 `+` 分割成集合後比對。
+- **實踐**：差異報告分成三類：值不一致、CSV 有但 Revit 明細表沒有、Revit 明細表有但 CSV 沒有。每次比對前都要重新讀取 CSV，不沿用上一版檔案內容。
+- **Domain/Skill**：詳見 `domain/finish-schedule-governance.md` 與 `finish-schedule-governance` Skill。

@@ -1,3 +1,17 @@
+---
+name: threshold-opening-takeoff
+description: "門檻開口統計 SOP：依房間關聯統計門/窗數量，用於門檻與開口相關算量。"
+metadata:
+  version: "1.0"
+  updated: "2026-07-03"
+  created: "2026-07-03"
+  contributors:
+    - "Jacky820507"
+  references:
+    - "MCP/Core/Commands/CommandExecutor.RoomDoorCounts.cs"
+    - "MCP/Core/Commands/CommandExecutor.RoomWindowCounts.cs"
+---
+
 # 門檻開口統計
 
 本 Domain 工作流定義依房間關聯進行門/窗統計的方法，用於門檻與未來開口相關計算。
