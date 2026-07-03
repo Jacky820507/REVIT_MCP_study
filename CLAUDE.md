@@ -29,7 +29,7 @@ A 5th "embedded" option bypasses the MCP Server entirely — a WPF chat window i
 | 行為指引 | CLAUDE.md | GEMINI.md → CLAUDE.md | .github/copilot-instructions.md |
 | Skills | `.claude/skills/SKILL.md` | `.gemini/skills/SKILL.md`（[官方文件](https://geminicli.com/docs/cli/skills/)） | instructions 引導 |
 | Domain 文件 | 共用 `domain/` | 共用 `domain/` | 共用 `domain/` |
-| MCP Tools | 共用 127 個工具 | 共用 127 個工具 | 共用 127 個工具 |
+| MCP Tools | 共用 117 個工具 | 共用 117 個工具 | 共用 117 個工具 |
 | Event Log | 共用 `log/` | 共用 `log/` | 共用 `log/` |
 
 SKILL.md 格式遵循 [Agent Skills 開放標準](https://agentskills.io)（YAML frontmatter + Markdown body），Claude Code 與 Gemini CLI 皆原生支援。
@@ -145,13 +145,13 @@ npm run watch    # tsc --watch (development)
 | File | Role |
 |------|------|
 | `MCP/Application.cs` | Revit IExternalApplication entry point, creates ribbon panel |
-| `MCP/Core/CommandExecutor.cs` | Central command dispatcher (127+ commands), largest file |
+| `MCP/Core/CommandExecutor.cs` | Central command dispatcher (117+ commands), largest file |
 | `MCP/Core/SocketService.cs` | HttpListener-based WebSocket server in Revit |
 | `MCP/Core/RevitCompatibility.cs` | Cross-version compatibility layer (ElementId int→long for 2025+) |
 | `MCP/Core/ExternalEventManager.cs` | Ensures commands execute on Revit UI thread |
 | `MCP-Server/src/index.ts` | MCP Server entry (StdioServerTransport) |
 | `MCP-Server/src/socket.ts` | RevitSocketClient — WebSocket client to Revit |
-| `MCP-Server/src/tools/` | Tool definitions (127 tools, 分 16 個模組) |
+| `MCP-Server/src/tools/` | Tool definitions (117 tools, 分 16 個模組) |
 | `scripts/setup.ps1` | One-click setup for new users (prereqs, build, deploy, AI config) |
 
 ## Code Conventions
@@ -179,7 +179,7 @@ npm run watch    # tsc --watch (development)
 3. **查閱法規知識** → 讀取 Domain 文件（`domain/*.md`）
 
 ### 為什麼
-MCP Server 已封裝 127 個 tools，處理了格式轉換、錯誤處理、重連機制。自寫腳本會：
+MCP Server 已封裝 117 個 tools，處理了格式轉換、錯誤處理、重連機制。自寫腳本會：
 - 繞過既有的錯誤處理與格式驗證
 - 產生 process 掛起（如自動重連導致無法退出）
 - 與 Revit API 的 PascalCase 欄位不一致而靜默失敗
@@ -306,7 +306,7 @@ BIM 的知識是共用的——防火法規同時被消防檢查、走廊分析�
 
 > **不要把每個 Domain 都升級成 Skill。** Domain 被引用就已經在發揮作用了。詳見 `domain/skill-authoring-standard.md`。
 
-## Skills（21 個）
+## Skills（24 個）
 
 Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`。
 
@@ -319,6 +319,7 @@ Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`�
 | `/smoke-exhaust` | 排煙窗法規檢討（無窗居室、無開口樓層、有效面積） |
 | `/building-compliance` | 建築法規檢討（採光比、容積率、停車位） |
 | `/parking-check` | 停車場檢討（淨空高度、數量分類統計） |
+| `/room-numbering` | 房間重新排序編號（批次 dry-run / 寫入，依座標由上到下、由左到右） |
 | `/element-query` | 元素查詢與視覺化（三階段查詢協議） |
 | `/element-coloring` | 元素上色工作流程（依參數值顏色標記） |
 | `/wall-orientation-check` | 牆壁內外方向檢查 |
@@ -331,6 +332,8 @@ Skills 位於 `.claude/skills/`，每個 Skill 為一個資料夾 + `SKILL.md`�
 | `/stair-hidden-line` | 剖面隱藏樓梯可視化（虛線詳圖線） |
 | `/detect-clashes` | MEP vs CSA 碰撞偵測（Curve-to-Solid 干涉分析 + 視覺化 + 報告匯出） |
 | `/dwg-column-import` | DWG 圖層批次建柱（作者 upstream Skill；Jacky R20 後端 routing 本次保護未合併） |
+| `/beam-slab-alignment` | 既有結構樑降樑貼齊樓板底，依主要樓板覆蓋範圍與樓層偏移最低規則調整起始/結束樓層偏移 |
+| `/partition-takeoff` | Revit 輕隔間牆數量計算與 CSV 報表更新 |
 | `/claude-md-sync` | CLAUDE.md 雙向同步驗證（合併/Skill異動/Tools異動後觸發） |
 | `/hj-pr-proposal` | 將自訂內容轉譯為 HJPLUS 台灣建築師知識庫 PR 草案 |
 
@@ -370,8 +373,9 @@ All AI clients connect to the MCP Server via the same config format. Replace `{a
 | MCP Server connection failed | Wrong path or not built | Check absolute path in config, re-run `npm run build`, verify port 8964 free |
 | Port 8964 被 System (PID: 4) 佔用 | Revit 異常關閉後 HTTP.sys 孤兒 Request Queue | 執行 `scripts\release-port.ps1`，或手動：`net stop http /y && net start http` |
 | Commands not responding in Revit | Revit UI thread issue | Ensure `ExternalEventManager` is used; check `%AppData%\RevitMCP\Logs\` |
+| Markdown 中文在 Windows PowerShell 顯示亂碼 | PowerShell 5.1 預設用 ANSI/系統碼頁讀取 UTF-8 no BOM 檔案 | 讀 `.md` 請用 `Get-Content -Encoding UTF8`；寫入請用 UTF-8，避免把顯示亂碼複製成 patch context |
 
-## Domain Knowledge & Workflow Files（47 個）
+## Domain Knowledge & Workflow Files（51 個）
 
 The `domain/` directory contains BIM compliance workflows that AI must consult before executing related tasks:
 
@@ -383,7 +387,8 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 | PDF, 出圖, 送審, DCC, 文管, 加工發包, PDFExportOptions | `domain/pdf-export-comparison.md` |
 | fire rating, fireproofing, 防火, 耐燃 | `domain/fire-rating-check.md` |
 | corridor, escape route, 走廊, 逃生, 通道寬度 | `domain/corridor-analysis-protocol.md` |
-| floor area, FAR, 容積, 樓地板面積, 送審 | `domain/floor-area-review.md` |
+| floor area, FAR, 容積, 樓地板面積, 送審, 大底防水, 底板防水, 地下室底版防水, 地下室外牆防水毯, 外牆防水毯, 地下外牆防水, 水平投影, FN, 筏基, 基礎底版 | `domain/floor-area-review.md` |
+| 施工架, 框式施工架, 室外施工架, 室內施工架, 外部施工架周長, frame scaffold, scaffold with protection facilities, room perimeter x height | `domain/scaffold-takeoff.md` |
 | element coloring, visualization, 上色, 顏色標示 | `domain/element-coloring-workflow.md` |
 | exterior wall openings, 外牆開口, 鄰地距離 | `domain/exterior-wall-opening-check.md` |
 | daylight area, 採光 | `domain/daylight-area-check.md` |
@@ -400,12 +405,15 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 | 從屬視圖, dependent view, 網格裁剪, grid crop | `domain/dependent-view-crop-workflow.md` |
 | 查詢, 元素, 參數, element query, filter | `domain/element-query-workflow.md` |
 | 圖紙, sheet, 視埠, viewport, titleblock | `domain/sheet-viewport-management.md` |
+| 視埠類型, 視圖比例, viewport type, view scale, title type | `domain/viewport-type-scale-sync.md` |
 | 樓梯, 虛線, stair, hidden line, 剖面 | `domain/stair-hidden-line-workflow.md` |
 | 牆壁, 內外方向, wall orientation, wall check | `domain/wall-check.md` |
 | 路徑, 維護, QA, QC, 目錄重構 | `domain/path-maintenance-qa.md` |
 | 上下文, context guard, 視圖, 樓層, 連結模型 | `domain/session-context-guard.md` |
 | 工具, 能力邊界, capability, 限制 | `domain/tool-capability-boundary.md` |
 | skill 規範, skill 品質, 編寫標準 | `domain/skill-authoring-standard.md` |
+| 幫我把這個功能及經驗新增至SKILL, 新增至 /Domain, 新增至 /Lessons, 新增至 /Lessions, .md 翻譯為繁體中文, 知識文件繁中化 | `domain/traditional-chinese-md-translation.md` |
+| 指定圖紙名稱, 指定圖層名稱, Excel名稱, CSV名稱, PDF名稱, 校準數值, 使用者指定, 不要寫死, sheet name, layer name, Excel name, CSV name, PDF name, calibration value, runtime parameter | `domain/user-specified-runtime-parameters.md` |
 | 停車自動編號, parking numbering | `domain/parking-auto-numbering.md` |
 | 填充圖案, fill pattern, 轉換 | `domain/revit-fill-pattern-conversion.md` |
 | 房間編號, room numbering, 自動編號 | `domain/room-numbering-workflow.md` |
@@ -414,6 +422,7 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 | 碰撞, 干涉, clash, MEP, 管線穿牆, 套管, penetration | `domain/mep-csa-clash-detection.md` |
 | frontmatter, metadata, YAML 標頭, 欄位規範 | `domain/frontmatter-standard.md` |
 | IFC, 結構構架, 鋼構同步, IFC sync, structural framing | `domain/ifc-structural-sync.md` |
+| 降樑, 梁貼齊樓板底, 樑貼齊樓板底, beam top to floor bottom, slab underside, 起始樓層偏移, 結束樓層偏移, UB-通用樑 | `domain/beam-slab-alignment.md` |
 | 輕隔間, partition, 隔間牆算量, takeoff, 數量統計 | `domain/revit-partition-takeoff.md` |
 | 粉刷, 油漆, finish legend, 圖例, FilledRegion, 飾面圖例 | `domain/finish-legend-creation.md` |
 | 門表, 窗表, door schedule, window schedule, 圖例表, seed Legend | `domain/door-window-legend-workflow.md` |
@@ -428,6 +437,12 @@ The `domain/` directory contains BIM compliance workflows that AI must consult b
 ## Deployment Rules (DO NOT VIOLATE)
 
 These rules ensure unified multi-version deployment. **Any AI assistant or code reviewer MUST follow them.**
+
+### DLL Lock Stop Rule (MUST)
+- When deploying `RevitMCP.dll`, if the copy/deploy step fails because the target DLL is locked, in use by another process, access denied, or otherwise cannot be overwritten, STOP the deployment workflow immediately.
+- Do NOT retry the copy, escalate and retry, poll the WebSocket, inspect Revit processes repeatedly, or run follow-up deployment commands in the same turn after a DLL lock/blocking failure.
+- Report the blocker once and ask the user to close Revit, then wait for the user's explicit "closed" confirmation before attempting deployment again.
+- Rationale: Revit must release the loaded DLL before deployment can succeed; repeated attempts waste user tokens and cannot resolve the lock.
 
 ### Forbidden Actions
 - **DO NOT** create version-specific `.csproj` files (e.g., `RevitMCP.2024.csproj`, `RevitMCP.2025.csproj`)
@@ -492,5 +507,7 @@ When adding new `IExternalCommand` in `Commands/` folder:
 2. After TypeScript changes: `npm run build` in MCP-Server (no Revit restart needed)
 3. Config/addin file changes: restart may be needed depending on scope
 4. Use `/lessons` to capture new rules, `/domain` to convert workflows to SOP
-5. 品質檢核：定期執行 `/qaqc`（含 Phase 6 Content Quality Lint），驗證 domain frontmatter 完整性與交叉引用一致性。詳見 `domain/frontmatter-standard.md`
-6. Before writing new scripts, check `domain/`, `scripts/`, and `MCP-Server/scripts/` for existing workflows — avoid duplicating logic
+5. 當使用者要求「把功能及經驗新增至 SKILL / Domain / Lessons / Lessions」或要求 `.md` 翻譯時，先讀 `domain/traditional-chinese-md-translation.md`；新增或修改的 `.md` 可讀內容預設繁體中文化，但不得破壞 frontmatter、工具名稱、路徑、程式碼區塊與英文觸發關鍵字。
+6. 當 Skill / Domain / Lessons / Lessions 的 `.md` 內容涉及指定圖紙名稱、圖層名稱、Excel/CSV/PDF 名稱、校準數值、門檻值、偏移量或其他情境參數時，先讀 `domain/user-specified-runtime-parameters.md`；這些值應由使用者指定、工具查詢、上傳檔案或校準流程提供，不應在知識文件中寫死。
+7. 品質檢核：定期執行 `/qaqc`（含 Phase 6 Content Quality Lint），驗證 domain frontmatter 完整性與交叉引用一致性。詳見 `domain/frontmatter-standard.md`
+8. Before writing new scripts, check `domain/`, `scripts/`, and `MCP-Server/scripts/` for existing workflows — avoid duplicating logic
