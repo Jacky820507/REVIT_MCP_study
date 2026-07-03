@@ -26,15 +26,17 @@ import { dependentViewTools } from "./dependent-view-tools.js";
 import { clashTools } from "./clash-tools.js";
 import { doorWindowLegendTools } from "./door-window-legend-tools.js";
 import { listSeedsTools } from "./list-seeds-tools.js";
+import { structuralTools } from "./structural-tools.js";
+import { scaffoldTools } from "./scaffold-tools.js";
 
 /**
  * Profile 對照表：每個 profile 包含哪些模組
  */
 const PROFILE_MODULES: Record<string, Tool[][]> = {
-    full: [baseTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, mepTools, curtainWallTools, smokeExhaustTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, clashTools, doorWindowLegendTools, listSeedsTools],
-    architect: [baseTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, curtainWallTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, doorWindowLegendTools, listSeedsTools],
+    full: [baseTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, mepTools, curtainWallTools, smokeExhaustTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, clashTools, doorWindowLegendTools, structuralTools, scaffoldTools, listSeedsTools],
+    architect: [baseTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, curtainWallTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, doorWindowLegendTools, structuralTools, scaffoldTools, listSeedsTools],
     mep: [baseTools, mepTools, scheduleTools, visualizationTools, smokeExhaustTools, clashTools],
-    structural: [baseTools, wallTools, visualizationTools, clashTools],
+    structural: [baseTools, wallTools, visualizationTools, clashTools, structuralTools],
     "fire-safety": [baseTools, roomTools, corridorAnalysisTools, visualizationTools, smokeExhaustTools],
 };
 
@@ -50,7 +52,14 @@ export function registerRevitTools(): Tool[] {
         return PROFILE_MODULES.full.flat();
     }
 
-    const tools = modules.flat();
-    console.error(`[Tools] Profile="${profile}", loaded ${tools.length} tools`);
+    const rawTools = modules.flat();
+    const toolMap = new Map<string, Tool>();
+    for (const tool of rawTools) {
+        toolMap.set(tool.name, tool);
+    }
+
+    const tools = Array.from(toolMap.values());
+    const duplicateCount = rawTools.length - tools.length;
+    console.error(`[Tools] Profile="${profile}", loaded ${tools.length} tools${duplicateCount > 0 ? ` (${duplicateCount} duplicate definitions overridden)` : ""}`);
     return tools;
 }

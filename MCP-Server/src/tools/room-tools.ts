@@ -29,6 +29,175 @@ export const roomTools: Tool[] = [
         },
     },
     {
+        name: "analyze_tall_partition_rooms",
+        description: "Find rooms on target levels that share or contain TYPE partition walls taller than a threshold. Uses room boundary segment ElementIds so shared room-to-room walls are assigned to both rooms, and can add upward ray evidence from room bottom to floor underside.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                levels: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Level names to scan. Defaults to B-1F and B-3F unless autoDetectLevels is true.",
+                },
+                autoDetectLevels: {
+                    type: "boolean",
+                    description: "When true and levels is omitted, scan all placed-room levels and let tall TYPE walls identify candidates.",
+                    default: false,
+                },
+                wallTypeContains: {
+                    type: "string",
+                    description: "Case-insensitive wall type name keyword for partition walls.",
+                    default: "TYPE",
+                },
+                minWallHeightMm: {
+                    type: "number",
+                    description: "Minimum wall height in millimeters. Default is 6000.",
+                    default: 6000,
+                },
+                excludeRoomNameContains: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Room name keywords to exclude. Defaults include shafts, stairs, and elevators.",
+                },
+                includeSingleRoomBoundaryWalls: {
+                    type: "boolean",
+                    description: "Include tall TYPE walls that only appear on one target room boundary. Set false to keep only walls shared by two or more target rooms.",
+                    default: true,
+                },
+                includeRoomRayHeight: {
+                    type: "boolean",
+                    description: "Add ray-cast evidence from room bottom to the nearest floor underside above sampled points.",
+                    default: true,
+                },
+                sampleGrid: {
+                    type: "number",
+                    description: "Room ray sample grid size, clamped to 1-7. Default 3.",
+                    default: 3,
+                },
+                maxSearchDistanceMm: {
+                    type: "number",
+                    description: "Maximum upward/downward floor search distance used by the ray helper.",
+                    default: 40000,
+                },
+                includeDetails: {
+                    type: "boolean",
+                    description: "Return wall-level and room-side details.",
+                    default: true,
+                },
+            },
+        },
+    },
+    {
+        name: "get_room_door_counts",
+        description: "Count doors by room. Each door is counted once against its primary room; default primary room is ToRoom with FromRoom fallback. Compatible with Revit 2020.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                level: {
+                    type: "string",
+                    description: "Optional level name or unambiguous partial level name. If omitted, all placed rooms are considered.",
+                },
+                roomIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "Optional explicit Room ElementId list. Overrides level filtering for rooms.",
+                },
+                includeUnnamed: {
+                    type: "boolean",
+                    description: "Whether unnamed placed rooms should be included.",
+                    default: true,
+                },
+                includeDoorDetails: {
+                    type: "boolean",
+                    description: "Whether to include door-level detail rows under each room.",
+                    default: true,
+                },
+                primaryRoomSource: {
+                    type: "string",
+                    enum: ["toRoom", "fromRoom", "auto"],
+                    description: "Which Revit door room relationship counts as the primary room. Default toRoom counts each door once using ToRoom, then falls back to FromRoom.",
+                    default: "toRoom",
+                },
+            },
+        },
+    },
+    {
+        name: "get_room_window_counts",
+        description: "Count windows by room. Each window is counted once against its primary room; default primary room is ToRoom with FromRoom fallback. Compatible with Revit 2020.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                level: {
+                    type: "string",
+                    description: "Optional level name or unambiguous partial level name. If omitted, all placed rooms are considered.",
+                },
+                roomIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "Optional explicit Room ElementId list. Overrides level filtering for rooms.",
+                },
+                includeUnnamed: {
+                    type: "boolean",
+                    description: "Whether unnamed placed rooms should be included.",
+                    default: true,
+                },
+                includeWindowDetails: {
+                    type: "boolean",
+                    description: "Whether to include window-level detail rows under each room.",
+                    default: true,
+                },
+                primaryRoomSource: {
+                    type: "string",
+                    enum: ["toRoom", "fromRoom", "auto"],
+                    description: "Which Revit window room relationship counts as the primary room. Default toRoom counts each window once using ToRoom, then falls back to FromRoom.",
+                    default: "toRoom",
+                },
+            },
+        },
+    },
+    {
+        name: "renumber_rooms_by_level",
+        description: "Batch-renumber placed rooms on one level in a single Revit transaction. Sorts by room center from top to bottom, then left to right, using a configurable Y-row tolerance. Supports dry-run preview and starts from a seed such as B134.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                level: {
+                    type: "string",
+                    description: "Level name or unambiguous partial level name, e.g. B1F or C-B1F.",
+                },
+                startNumber: {
+                    type: "string",
+                    description: "First room number to assign, e.g. B134. The trailing digit width is preserved.",
+                },
+                dryRun: {
+                    type: "boolean",
+                    description: "true previews the planned order without writing to Revit.",
+                    default: false,
+                },
+                includeUnnamed: {
+                    type: "boolean",
+                    description: "Whether unnamed placed rooms should be included.",
+                    default: true,
+                },
+                yToleranceMm: {
+                    type: "number",
+                    description: "Y-axis grouping tolerance in millimeters for row detection.",
+                    default: 3000,
+                },
+                parameterName: {
+                    type: "string",
+                    description: "Optional explicit room number parameter name. If omitted, the Revit built-in room number parameter is used.",
+                },
+                allowExistingNumberConflicts: {
+                    type: "boolean",
+                    description: "Allow proposed numbers even when the same room numbers already exist outside the target level.",
+                    default: false,
+                },
+            },
+            required: ["level", "startNumber"],
+        },
+    },
+    {
         name: "sync_room_ceiling_finish_from_ceilings",
         description: "依房間範圍偵測同樓層天花板，讀取天花板類型標記，預覽或寫回房間參數（預設：天花板塗層）以更新粉刷明細表。",
         inputSchema: {
@@ -68,6 +237,63 @@ export const roomTools: Tool[] = [
                     default: "largestOverlap",
                 },
             },
+        },
+    },
+    {
+        name: "remap_room_finish_codes",
+        description: "Batch-remap room finish code parameters in one Revit transaction. Designed for painting/finish schedules: split values by '+', replace exact code tokens such as F11 -> F10 without touching F1 inside F11, and let room schedules update from the changed room parameters. Defaults to dryRun=true.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                mapping: {
+                    type: "object",
+                    additionalProperties: { type: "string" },
+                    description: "Required code mapping, e.g. { \"F11\": \"F10\", \"W4\": \"W3\" }.",
+                },
+                fields: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Room parameter names to update. Defaults to 樓板塗層, 踢腳, 牆面塗層, 天花板塗層.",
+                },
+                apply: {
+                    type: "boolean",
+                    description: "Set true to write changes to Revit. When omitted, the tool previews only.",
+                    default: false,
+                },
+                dryRun: {
+                    type: "boolean",
+                    description: "When true, preview planned changes without writing. Defaults to true unless apply=true.",
+                    default: true,
+                },
+                level: {
+                    type: "string",
+                    description: "Optional level name or unique partial name filter.",
+                },
+                roomName: {
+                    type: "string",
+                    description: "Optional room name contains filter.",
+                },
+                roomNumber: {
+                    type: "string",
+                    description: "Optional room number contains filter.",
+                },
+                roomIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "Optional explicit Room ElementId list. Overrides all-room collection before filters are applied.",
+                },
+                includeUnplaced: {
+                    type: "boolean",
+                    description: "Whether unplaced or zero-area rooms should be included.",
+                    default: false,
+                },
+                maxChangedRooms: {
+                    type: "number",
+                    description: "Maximum changed room detail rows returned in the response. Summary counts are always complete.",
+                    default: 200,
+                },
+            },
+            required: ["mapping"],
         },
     },
     {

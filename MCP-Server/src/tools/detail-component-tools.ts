@@ -107,4 +107,56 @@ export const detailComponentTools: Tool[] = [
             },
         },
     },
+    {
+        name: "sync_material_board_family_types",
+        description: "Synchronize family types for AE-材料版 from 材料表對照.csv. Matches existing types by Type Mark/標記 or type-name prefix, then updates type name to 材料編號-材料名稱, Description/描述 to 材料名稱, Type Mark/標記 to 材料編號, and writable @* type parameters to the matching material value. Defaults to dryRun=true.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                familyName: {
+                    type: "string",
+                    description: "Family name or unique partial family name.",
+                    default: "AE-材料版",
+                },
+                csvPath: {
+                    type: "string",
+                    description: "Path to 材料表對照.csv. Defaults to E:\\GitHub Library\\RevitMCP\\材料表對照.csv when available.",
+                },
+                apply: {
+                    type: "boolean",
+                    description: "Set true to write changes to Revit. When omitted, the tool previews only.",
+                    default: false,
+                },
+                dryRun: {
+                    type: "boolean",
+                    description: "When true, preview planned changes without writing. Defaults to true unless apply=true.",
+                    default: true,
+                },
+                createMissingTypes: {
+                    type: "boolean",
+                    description: "When true, missing material codes are created by duplicating the base type. Defaults to false.",
+                    default: false,
+                },
+                baseTypeName: {
+                    type: "string",
+                    description: "Optional existing AE-材料版 type name to duplicate when createMissingTypes=true.",
+                },
+                updateAtParameters: {
+                    type: "boolean",
+                    description: "Whether writable type parameters whose names start with @ should be updated.",
+                    default: true,
+                },
+                atParameterPrefix: {
+                    type: "string",
+                    description: "Prefix used to find material board type parameters.",
+                    default: "@",
+                },
+                atParameterNames: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Optional explicit @ parameter names to update. If omitted, all writable @* parameters are considered.",
+                },
+            },
+        },
+    },
 ];
