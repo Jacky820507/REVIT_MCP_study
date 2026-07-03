@@ -36,8 +36,17 @@ export const sheetTools: Tool[] = [
     },
     {
         name: "auto_renumber_sheets",
-        description: "Automatically repair sheet-number insertion conflicts such as -1/-2 suffixes.",
-        inputSchema: { type: "object", properties: {} },
+        description: "Automatically repair sheet-number insertion conflicts such as -1/-2 suffixes. Supports dryRun preview of planned moves before writing.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                dryRun: {
+                    type: "boolean",
+                    description: "true previews the planned sheet-number moves without writing to Revit.",
+                    default: false,
+                },
+            },
+        },
     },
     {
         name: "get_viewport_map",

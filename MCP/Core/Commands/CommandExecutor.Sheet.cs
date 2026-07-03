@@ -806,6 +806,7 @@ namespace RevitMCP.Core
         private object AutoRenumberSheets(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
+            bool dryRun = parameters?["dryRun"]?.Value<bool>() ?? false;
 
             // Phase 0: Emergency Recovery (Fix _MCPFIX)
             var fixSheets = new FilteredElementCollector(doc)
@@ -814,7 +815,7 @@ namespace RevitMCP.Core
                 .Where(s => s.SheetNumber.EndsWith("_MCPFIX"))
                 .ToList();
 
-            if (fixSheets.Count > 0)
+            if (fixSheets.Count > 0 && !dryRun)
             {
                 using (Transaction tFix = new Transaction(doc, "還原_MCPFIX"))
                 {
@@ -889,6 +890,33 @@ namespace RevitMCP.Core
             // 3. 執行變更
             finalMoves = OptimizeSheetOrder(doc, finalMoves);
 
+            List<object> plannedMoves = finalMoves
+                .Select(kvp =>
+                {
+                    var sheet = doc.GetElement(kvp.Key.ToElementId()) as ViewSheet;
+                    return new
+                    {
+                        ElementId = kvp.Key,
+                        OldNumber = sheet?.SheetNumber,
+                        NewNumber = kvp.Value,
+                        SheetName = sheet?.Name
+                    } as object;
+                })
+                .ToList();
+
+            if (dryRun)
+            {
+                return new
+                {
+                    Success = true,
+                    DryRun = true,
+                    ChangedCount = 0,
+                    InsertionsResolved = processedInsertions,
+                    PlannedMoves = plannedMoves,
+                    Message = $"dry-run 預覽：{processedInsertions} 張插入圖紙，共 {finalMoves.Count} 個編號將變更（未寫入）"
+                };
+            }
+
             int changedCount = 0;
             if (finalMoves.Count > 0)
             {
@@ -920,8 +948,11 @@ namespace RevitMCP.Core
                             if (elem != null)
                             {
                                 Parameter p = elem.get_Parameter(BuiltInParameter.SHEET_NUMBER);
-                                if (p != null) p.Set(kvp.Value);
-                                changedCount++;
+                                if (p != null)
+                                {
+                                    p.Set(kvp.Value);
+                                    changedCount++;
+                                }
                             }
                         }
                         t2.Commit();
@@ -934,8 +965,10 @@ namespace RevitMCP.Core
             return new
             {
                 Success = true,
+                DryRun = false,
                 ChangedCount = changedCount,
                 InsertionsResolved = processedInsertions,
+                PlannedMoves = plannedMoves,
                 Message = $"修復並更新完成：處理了 {processedInsertions} 張插入圖紙，共更新 {changedCount} 個編號"
             };
         }

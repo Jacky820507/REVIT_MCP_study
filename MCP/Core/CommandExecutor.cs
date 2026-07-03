@@ -2873,8 +2873,24 @@ namespace RevitMCP.Core
         private object OverrideElementGraphics(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;
-            IdType elementId = parameters["elementId"].Value<IdType>();
+            IdType? singleElementId = parameters["elementId"]?.Value<IdType>();
+            var elementIdsArray = parameters["elementIds"] as JArray;
             IdType? viewId = parameters["viewId"]?.Value<IdType>();
+
+            // 收集目標元素 ID（單一 elementId 或批次 elementIds，同一交易內套用）
+            List<IdType> targetIds = new List<IdType>();
+            if (singleElementId.HasValue)
+            {
+                targetIds.Add(singleElementId.Value);
+            }
+            if (elementIdsArray != null)
+            {
+                targetIds.AddRange(elementIdsArray.Select(id => id.Value<IdType>()));
+            }
+            if (targetIds.Count == 0)
+            {
+                throw new Exception("請提供 elementId 或 elementIds 至少一個元素 ID");
+            }
 
             // 取得視圖
             View view;
@@ -2889,10 +2905,12 @@ namespace RevitMCP.Core
                 view = _uiApp.ActiveUIDocument.ActiveView;
             }
 
-            // 取得元素
-            Element element = doc.GetElement(new ElementId(elementId));
-            if (element == null)
-                throw new Exception($"找不到元素 ID: {elementId}");
+            IdType elementId = targetIds[0];
+            List<IdType> missingIds = targetIds
+                .Where(id => doc.GetElement(new ElementId(id)) == null)
+                .ToList();
+            if (missingIds.Count == targetIds.Count)
+                throw new Exception($"找不到元素 ID: {string.Join(", ", missingIds)}");
 
             // 判斷使用切割樣式或表面樣式
             // patternMode: "auto" (自動根據視圖類型), "cut" (切割), "surface" (表面)
@@ -2984,8 +3002,14 @@ namespace RevitMCP.Core
                     overrideSettings.SetSurfaceTransparency(transparency);
                 }
 
-                // 應用覆寫
-                view.SetElementOverrides(new ElementId(elementId), overrideSettings);
+                // 應用覆寫（批次時同一交易內逐一套用）
+                int overriddenCount = 0;
+                foreach (IdType targetId in targetIds)
+                {
+                    if (doc.GetElement(new ElementId(targetId)) == null) continue;
+                    view.SetElementOverrides(new ElementId(targetId), overrideSettings);
+                    overriddenCount++;
+                }
 
                 trans.Commit();
 
@@ -2993,11 +3017,13 @@ namespace RevitMCP.Core
                 {
                     Success = true,
                     ElementId = elementId,
+                    Count = overriddenCount,
+                    MissingIds = missingIds,
                     ViewId = view.Id.GetIdValue(),
                     ViewType = view.ViewType.ToString(),
                     PatternMode = useCutPattern ? "Cut" : "Surface",
                     ViewName = view.Name,
-                    Message = $"已成功覆寫元素 {elementId} 在視圖 '{view.Name}' 的圖形顯示"
+                    Message = $"已成功覆寫 {overriddenCount} 個元素在視圖 '{view.Name}' 的圖形顯示"
                 };
             }
         }
@@ -3046,7 +3072,7 @@ namespace RevitMCP.Core
                 trans.Start();
 
                 int successCount = 0;
-                foreach (int elemId in elementIds)
+                foreach (IdType elemId in elementIds)
                 {
                     Element element = doc.GetElement(new ElementId(elemId));
                     if (element != null)
