@@ -283,10 +283,10 @@ namespace RevitMCP.Core
                     }
                     else
                     {
-                        HashSet<IdType> seedOriginalIdValues = seedOriginalElementIds
-                            .Where(IsValidElementId)
-                            .Select(id => id.GetIdValue())
-                            .ToHashSet();
+                        HashSet<IdType> seedOriginalIdValues = new HashSet<IdType>(
+                            seedOriginalElementIds
+                                .Where(IsValidElementId)
+                                .Select(id => id.GetIdValue()));
                         List<ElementId> duplicatedSeedComponentIds = CollectLegendComponentIds(doc, legendView)
                             .Where(id => seedOriginalIdValues.Contains(id.GetIdValue()))
                             .ToList();
@@ -507,12 +507,13 @@ namespace RevitMCP.Core
 
         private string BuildUniqueLegendName(Document doc, string baseName)
         {
-            HashSet<string> existingNames = new FilteredElementCollector(doc)
-                .OfClass(typeof(View))
-                .Cast<View>()
-                .Select(v => v.Name)
-                .Where(n => !string.IsNullOrWhiteSpace(n))
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            HashSet<string> existingNames = new HashSet<string>(
+                new FilteredElementCollector(doc)
+                    .OfClass(typeof(View))
+                    .Cast<View>()
+                    .Select(v => v.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n)),
+                StringComparer.OrdinalIgnoreCase);
 
             if (!existingNames.Contains(baseName))
                 return baseName;
@@ -1029,9 +1030,9 @@ namespace RevitMCP.Core
             if (legendView == null || sourceComponentId == null || sourceComponentId == ElementId.InvalidElementId)
                 return ElementId.InvalidElementId;
 
-            HashSet<IdType> existingLegendComponentIds = CollectLegendComponentIds(doc, legendView)
-                .Select(id => id.GetIdValue())
-                .ToHashSet();
+            HashSet<IdType> existingLegendComponentIds = new HashSet<IdType>(
+                CollectLegendComponentIds(doc, legendView)
+                    .Select(id => id.GetIdValue()));
 
             ICollection<ElementId> copiedIds = ElementTransformUtils.CopyElement(doc, sourceComponentId, translation);
 

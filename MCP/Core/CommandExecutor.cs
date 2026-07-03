@@ -156,6 +156,22 @@ namespace RevitMCP.Core
                     case "get_rooms_by_level":
                         result = GetRoomsByLevel(parameters);
                         break;
+
+                    case "analyze_tall_partition_rooms":
+                        result = AnalyzeTallPartitionRooms(parameters);
+                        break;
+
+                    case "get_room_door_counts":
+                        result = GetRoomDoorCounts(parameters);
+                        break;
+
+                    case "get_room_window_counts":
+                        result = GetRoomWindowCounts(parameters);
+                        break;
+
+                    case "renumber_rooms_by_level":
+                        result = RenumberRoomsByLevel(parameters);
+                        break;
                     
                     case "get_all_views":
                         result = GetAllViews(parameters);
@@ -261,6 +277,10 @@ namespace RevitMCP.Core
                         result = SyncRoomCeilingFinishFromCeilings(parameters);
                         break;
 
+                    case "remap_room_finish_codes":
+                        result = RemapRoomFinishCodes(parameters);
+                        break;
+
                     case "check_sanitary_fixture_requirements":
                         result = CheckSanitaryFixtureRequirements(parameters);
                         break;
@@ -325,6 +345,9 @@ namespace RevitMCP.Core
                     case "create_filled_region":
                         result = CreateFilledRegion(parameters);
                         break;
+                    case "create_room_filled_regions":
+                        result = CreateRoomFilledRegions(parameters);
+                        break;
                     case "create_text_note":
                         result = CreateTextNote(parameters);
                         break;
@@ -362,6 +385,22 @@ namespace RevitMCP.Core
                         result = ChangeElementType(parameters);
                         break;
 
+                    case "align_beams_top_to_floor_bottom":
+                        result = AlignBeamsTopToFloorBottom(parameters);
+                        break;
+                    case "align_columns_top_to_floor_bottom":
+                        result = AlignColumnsTopToFloorBottom(parameters);
+                        break;
+                    case "get_structural_framing_types":
+                        result = GetStructuralFramingTypes(parameters);
+                        break;
+                    case "create_structural_framing":
+                        result = CreateStructuralFraming(parameters);
+                        break;
+                    case "sync_ifc_structural_to_native":
+                        result = SyncIfcStructuralToNative(parameters);
+                        break;
+
                     case "get_all_sheets":
                         result = GetAllSheets();
                         break;
@@ -373,6 +412,18 @@ namespace RevitMCP.Core
                         break;
                     case "get_viewport_map":
                         result = GetViewportMap();
+                        break;
+                    case "get_sheet_viewport_details":
+                        result = GetSheetViewportDetails(parameters);
+                        break;
+                    case "copy_sheet_viewports":
+                        result = CopySheetViewports(parameters);
+                        break;
+                    case "get_viewport_types":
+                        result = GetViewportTypes(parameters);
+                        break;
+                    case "sync_viewport_types_by_view_scale":
+                        result = SyncViewportTypesByViewScale(parameters);
                         break;
                     case "auto_renumber_sheets":
                         result = AutoRenumberSheets(parameters);
@@ -388,6 +439,27 @@ namespace RevitMCP.Core
                     case "calculate_grid_bounds":
                         result = CalculateGridBounds(parameters);
                         break;
+                    case "get_view_crop_box":
+                        result = GetViewCropBox(parameters);
+                        break;
+                    case "copy_view_crop_box":
+                        result = CopyViewCropBox(parameters);
+                        break;
+                    case "duplicate_views_with_detailing":
+                        result = DuplicateViewsWithDetailing(parameters);
+                        break;
+                    case "get_view_grid_details":
+                        result = GetViewGridDetails(parameters);
+                        break;
+                    case "sync_grid_extents_between_views":
+                        result = SyncGridExtentsBetweenViews(parameters);
+                        break;
+                    case "list_scope_boxes":
+                        result = ListScopeBoxes();
+                        break;
+                    case "assign_scope_box_to_views":
+                        result = AssignScopeBoxToViews(parameters);
+                        break;
                     case "create_dependent_views":
                         result = CreateDependentViews(parameters);
                         break;
@@ -397,6 +469,9 @@ namespace RevitMCP.Core
 
                     case "get_detail_components":
                         result = GetDetailComponents(parameters);
+                        break;
+                    case "calculate_selected_detail_line_perimeter":
+                        result = CalculateSelectedDetailLinePerimeter(parameters);
                         break;
                     case "sync_detail_component_numbers":
                         result = SyncDetailComponentNumbers();
@@ -418,6 +493,20 @@ namespace RevitMCP.Core
                         break;
                     case "list_family_symbols":
                         result = ListFamilySymbols(parameters);
+                        break;
+
+                    case "sync_material_board_family_types":
+                        result = SyncMaterialBoardFamilyTypes(parameters);
+                        break;
+                    case "update_material_board_family_types_by_id":
+                        result = UpdateMaterialBoardFamilyTypesById(parameters);
+                        break;
+
+                    case "calculate_exterior_wall_scaffold_perimeter":
+                        result = CalculateExteriorWallScaffoldPerimeter(parameters);
+                        break;
+                    case "calculate_room_scaffold_perimeters":
+                        result = CalculateRoomScaffoldPerimeters(parameters);
                         break;
 
                     case "trace_stair_geometry":

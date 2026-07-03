@@ -630,11 +630,11 @@ namespace RevitMCP.Core
 
         private string EnsureUniqueLegendName(Document doc, string baseName)
         {
-            var existing = new FilteredElementCollector(doc)
-                .OfClass(typeof(View))
-                .Cast<View>()
-                .Select(v => v.Name)
-                .ToHashSet();
+            var existing = new HashSet<string>(
+                new FilteredElementCollector(doc)
+                    .OfClass(typeof(View))
+                    .Cast<View>()
+                    .Select(v => v.Name));
 
             if (!existing.Contains(baseName)) return baseName;
             return $"{baseName}_{DateTime.Now:HHmmss}";

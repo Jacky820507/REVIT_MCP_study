@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Architecture;
@@ -16,6 +17,215 @@ namespace RevitMCP.Core
     public partial class CommandExecutor
     {
         private const double FeetToMm = 304.8;
+
+        private object RemapRoomFinishCodes(JObject parameters)
+        {
+            Stopwatch sw = Stopwatch.StartNew();
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            var mapping = ParseFinishCodeMapping(parameters["mapping"] as JObject);
+            if (mapping.Count == 0)
+            {
+                throw new ArgumentException("remap_room_finish_codes requires a non-empty mapping object, e.g. { \"F11\": \"F10\" }.");
+            }
+
+            List<string> fields = (parameters["fields"] as JArray)?
+                .Select(v => v.Value<string>())
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()
+                ?? new List<string>
+                {
+                    "樓板塗層",
+                    "踢腳",
+                    "牆面塗層",
+                    "天花板塗層"
+                };
+
+            bool dryRun = parameters["dryRun"]?.Value<bool>() ?? !(parameters["apply"]?.Value<bool>() ?? false);
+            bool includeUnplaced = parameters["includeUnplaced"]?.Value<bool>() ?? false;
+            int maxChangedRooms = parameters["maxChangedRooms"]?.Value<int>() ?? 200;
+            if (maxChangedRooms < 0)
+            {
+                maxChangedRooms = 0;
+            }
+
+            string levelName = parameters["level"]?.Value<string>();
+            string roomName = parameters["roomName"]?.Value<string>();
+            string roomNumber = parameters["roomNumber"]?.Value<string>();
+            var roomIds = (parameters["roomIds"] as JArray)?
+                .Select(v => v.Value<IdType>())
+                .Where(id => id != 0)
+                .ToList();
+
+            List<Room> rooms = ResolveRoomsForFinishCodeRemap(doc, roomIds, levelName, roomName, roomNumber, includeUnplaced);
+            var plans = new List<FinishCodeRemapRoomPlan>();
+            var missingParameters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var readOnlyParameters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var nonTextParameters = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var usedMappingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (Room room in rooms)
+            {
+                var roomPlan = new FinishCodeRemapRoomPlan
+                {
+                    Room = room,
+                    RoomId = room.Id.GetIdValue(),
+                    RoomNumber = room.Number,
+                    RoomName = room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() ?? room.Name ?? "",
+                    Level = doc.GetElement(room.LevelId)?.Name ?? ""
+                };
+
+                foreach (string field in fields)
+                {
+                    Parameter param = room.LookupParameter(field);
+                    if (param == null)
+                    {
+                        IncrementFinishCodeCounter(missingParameters, field);
+                        continue;
+                    }
+
+                    if (param.IsReadOnly)
+                    {
+                        IncrementFinishCodeCounter(readOnlyParameters, field);
+                        continue;
+                    }
+
+                    string oldValue = param.AsString() ?? param.AsValueString() ?? "";
+                    string newValue = RemapFinishCodeValue(oldValue, mapping, usedMappingKeys);
+                    if (newValue == oldValue)
+                    {
+                        continue;
+                    }
+
+                    if (!CanSetStringLikeParameter(param))
+                    {
+                        IncrementFinishCodeCounter(nonTextParameters, field);
+                        continue;
+                    }
+
+                    roomPlan.Changes.Add(new FinishCodeRemapFieldChange
+                    {
+                        Field = field,
+                        OldValue = oldValue,
+                        NewValue = newValue
+                    });
+                }
+
+                if (roomPlan.Changes.Count > 0)
+                {
+                    plans.Add(roomPlan);
+                }
+            }
+
+            var failures = new List<object>();
+            int appliedChanges = 0;
+
+            if (!dryRun && plans.Count > 0)
+            {
+                using (Transaction trans = new Transaction(doc, "Remap room finish codes"))
+                {
+                    trans.Start();
+
+                    foreach (FinishCodeRemapRoomPlan plan in plans)
+                    {
+                        foreach (FinishCodeRemapFieldChange change in plan.Changes)
+                        {
+                            Parameter param = plan.Room.LookupParameter(change.Field);
+                            if (param == null || param.IsReadOnly)
+                            {
+                                failures.Add(new
+                                {
+                                    plan.RoomId,
+                                    plan.RoomNumber,
+                                    change.Field,
+                                    Error = param == null ? "Missing parameter" : "Read-only parameter"
+                                });
+                                continue;
+                            }
+
+                            try
+                            {
+                                if (SetStringLikeParameter(param, change.NewValue))
+                                {
+                                    appliedChanges++;
+                                }
+                                else
+                                {
+                                    failures.Add(new
+                                    {
+                                        plan.RoomId,
+                                        plan.RoomNumber,
+                                        change.Field,
+                                        change.OldValue,
+                                        change.NewValue,
+                                        Error = "Revit returned false while setting the parameter."
+                                    });
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                failures.Add(new
+                                {
+                                    plan.RoomId,
+                                    plan.RoomNumber,
+                                    change.Field,
+                                    change.OldValue,
+                                    change.NewValue,
+                                    Error = ex.Message
+                                });
+                            }
+                        }
+                    }
+
+                    if (failures.Count > 0)
+                    {
+                        trans.RollBack();
+                        throw new Exception("Finish code remap failed and was rolled back: " + JArray.FromObject(failures).ToString());
+                    }
+
+                    trans.Commit();
+                }
+            }
+
+            sw.Stop();
+
+            return new
+            {
+                Success = true,
+                Applied = !dryRun,
+                DryRun = dryRun,
+                Fields = fields,
+                MappingCount = mapping.Count,
+                TotalRooms = rooms.Count,
+                ChangedRooms = plans.Count,
+                PlannedChanges = plans.Sum(p => p.Changes.Count),
+                AppliedChanges = dryRun ? 0 : appliedChanges,
+                UnusedMappings = mapping.Keys
+                    .Where(key => !usedMappingKeys.Contains(key))
+                    .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
+                MissingParameters = missingParameters.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                ReadOnlyParameters = readOnlyParameters.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                NonTextParameters = nonTextParameters.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                DurationMs = sw.ElapsedMilliseconds,
+                Truncated = plans.Count > maxChangedRooms,
+                Rooms = plans.Take(maxChangedRooms).Select(plan => new
+                {
+                    ElementId = plan.RoomId,
+                    Number = plan.RoomNumber,
+                    Name = plan.RoomName,
+                    plan.Level,
+                    Changes = plan.Changes.Select(change => new
+                    {
+                        change.Field,
+                        change.OldValue,
+                        change.NewValue
+                    }).ToList()
+                }).ToList()
+            };
+        }
 
         private object SyncRoomCeilingFinishFromCeilings(JObject parameters)
         {
@@ -354,6 +564,133 @@ namespace RevitMCP.Core
             }
         }
 
+        private static Dictionary<string, string> ParseFinishCodeMapping(JObject mappingObject)
+        {
+            var mapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (mappingObject == null)
+            {
+                return mapping;
+            }
+
+            foreach (JProperty property in mappingObject.Properties())
+            {
+                string from = property.Name?.Trim();
+                string to = property.Value?.Value<string>()?.Trim();
+                if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
+                {
+                    continue;
+                }
+
+                mapping[from] = to;
+            }
+
+            return mapping;
+        }
+
+        private List<Room> ResolveRoomsForFinishCodeRemap(
+            Document doc,
+            List<IdType> roomIds,
+            string levelName,
+            string roomName,
+            string roomNumber,
+            bool includeUnplaced)
+        {
+            IEnumerable<Room> query;
+
+            if (roomIds != null && roomIds.Count > 0)
+            {
+                query = roomIds
+                    .Select(id => doc.GetElement(id.ToElementId()) as Room)
+                    .Where(room => room != null);
+            }
+            else
+            {
+                query = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_Rooms)
+                    .WhereElementIsNotElementType()
+                    .Cast<Room>();
+            }
+
+            if (!includeUnplaced)
+            {
+                query = query.Where(room => room.Area > 0);
+            }
+
+            if (!string.IsNullOrWhiteSpace(levelName))
+            {
+                Level level = FindLevel(doc, levelName, false);
+                query = query.Where(room => room.LevelId == level.Id);
+            }
+
+            if (!string.IsNullOrWhiteSpace(roomName))
+            {
+                query = query.Where(room =>
+                    ((room.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() ?? room.Name ?? "")
+                        .IndexOf(roomName, StringComparison.OrdinalIgnoreCase) >= 0));
+            }
+
+            if (!string.IsNullOrWhiteSpace(roomNumber))
+            {
+                query = query.Where(room =>
+                    ((room.Number ?? "").IndexOf(roomNumber, StringComparison.OrdinalIgnoreCase) >= 0));
+            }
+
+            return query
+                .OrderBy(room => doc.GetElement(room.LevelId)?.Name)
+                .ThenBy(room => room.Number)
+                .ThenBy(room => room.Id.GetIdValue())
+                .ToList();
+        }
+
+        private static string RemapFinishCodeValue(
+            string value,
+            Dictionary<string, string> mapping,
+            HashSet<string> usedMappingKeys)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value ?? "";
+            }
+
+            string[] tokens = value.Split('+');
+            bool changed = false;
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                string token = tokens[i].Trim();
+                if (mapping.TryGetValue(token, out string replacement))
+                {
+                    tokens[i] = replacement;
+                    usedMappingKeys.Add(token);
+                    changed = true;
+                }
+                else
+                {
+                    tokens[i] = token;
+                }
+            }
+
+            return changed ? string.Join("+", tokens) : value;
+        }
+
+        private static bool CanSetStringLikeParameter(Parameter param)
+        {
+            return param.StorageType == StorageType.String ||
+                   param.StorageType == StorageType.Integer ||
+                   param.StorageType == StorageType.Double;
+        }
+
+        private static void IncrementFinishCodeCounter(Dictionary<string, int> counters, string key)
+        {
+            if (counters.ContainsKey(key))
+            {
+                counters[key]++;
+            }
+            else
+            {
+                counters[key] = 1;
+            }
+        }
+
         private class RoomCeilingFinishResult
         {
             public IdType RoomId { get; set; }
@@ -378,6 +715,23 @@ namespace RevitMCP.Core
             public double OverlapAreaM2 { get; set; }
             public double InsideSampleRatio { get; set; }
             public double Score { get; set; }
+        }
+
+        private class FinishCodeRemapRoomPlan
+        {
+            public Room Room { get; set; }
+            public IdType RoomId { get; set; }
+            public string RoomNumber { get; set; }
+            public string RoomName { get; set; }
+            public string Level { get; set; }
+            public List<FinishCodeRemapFieldChange> Changes { get; set; } = new List<FinishCodeRemapFieldChange>();
+        }
+
+        private class FinishCodeRemapFieldChange
+        {
+            public string Field { get; set; }
+            public string OldValue { get; set; }
+            public string NewValue { get; set; }
         }
     }
 }
