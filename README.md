@@ -2,28 +2,23 @@
 
 # Revit MCP - AI-Powered Revit Control
 
-<div align="right">
+English | [繁體中文](README.zh-TW.md)
 
-[English](README.en.md) | [看繁體中文點我](README.md)
+Revit MCP lets AI clients call Autodesk Revit tools through the Model Context Protocol (MCP). The MCP server forwards tool calls to a local Revit add-in, and the add-in executes the corresponding Revit API workflow.
 
-</div>
+- Demo video: [Revit MCP - AI-Powered BIM Workflow Demonstration](https://youtu.be/YpAYF-GxrhA)
+- Knowledge site: <https://shuotao.github.io/REVIT_MCP_study/>
+- Default WebSocket port: `8964`
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Revit-2022--2026-blue" alt="Revit 2022-2026">
-  <img src="https://img.shields.io/badge/Node.js-LTS-green" alt="Node.js">
-  <img src="https://img.shields.io/badge/.NET-4.8%20%7C%208.0-purple" alt=".NET 4.8 | 8.0">
-  <img src="https://img.shields.io/badge/MCP-1.0-orange" alt="MCP Protocol">
-</p>
+## Current Project Counts
 
-透過 Model Context Protocol (MCP) 讓 AI 語言模型直接控制 Autodesk Revit，實現 AI 驅動的 BIM 工作流程。
-
-| 項目 | 數量 | 來源 |
+| Item | Count | Source |
 |---|---:|---|
-| Runtime MCP tools | 139 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
-| Domain SOP files | 67 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
-| Claude skills | 30 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 146 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
+| Domain SOP files | 61 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
+| Claude skills | 42 | `.claude/skills/*/SKILL.md` |
 
-**🎥 示範影片：[Revit MCP - AI 驅動的 BIM 工作流程示範](https://youtu.be/YpAYF-GxrhA)**
+When these numbers change, update `CLAUDE.md`, `README.zh-TW.md`, this file, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and run:
 
 **📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 67 Domain + 30 Skill + 139 Tool 視覺化索引
 
@@ -167,32 +162,44 @@ REVIT-MCP/
 └── README.md
 ```
 
-## 🔧 系統需求
+## Architecture
 
-| 項目 | 需求 |
-|------|------|
-| **作業系統** | Windows 10 或更新版本 |
-| **Revit** | Autodesk Revit 2022 / 2023 / 2024 / 2025 / 2026 |
-| **.NET** | .NET Framework 4.8 (Revit 2022–2024) / .NET 8 (Revit 2025–2026) |
-| **Node.js** | LTS 版本 (20.x 或更新) |
+```text
+AI Client
+  Claude Desktop / Claude Code / Gemini CLI / VS Code Copilot / Antigravity
+        |
+        | stdio
+        v
+MCP Server
+  Node.js / TypeScript
+  MCP-Server/build/index.js
+        |
+        | WebSocket ws://localhost:8964
+        v
+Revit Add-in
+  C# / Revit API
+  MCP/Application.cs
+  MCP/Core/SocketService.cs
+  MCP/Core/ExternalEventManager.cs
+        |
+        v
+Autodesk Revit
+```
 
->  **重要提醒**：此教學以 Revit 2022 為例，但適用於 2022、2023、2024、2025、2026 版本。  
-> 安裝時請根據您的 Revit 版本調整資料夾名稱（見下方各步驟的版本對照表）。
-> Revit 2025/2026 使用 .NET 8，請確保已安裝對應的 .NET SDK。
+External AI clients do not need an API key inside this repository. Their account and authorization are managed by the AI client itself. Only an embedded Revit chat feature that directly calls an AI API would need an API key.
 
-##  透過 Git Clone 的首次設定
+## Requirements
 
-如果您是透過 `git clone` 取得此專案，**必須先完成以下步驟**，否則 MCP Server 無法運作：
+| Item | Requirement |
+|---|---|
+| OS | Windows 10 or later |
+| Revit | Autodesk Revit 2022, 2023, 2024, 2025, 2026 |
+| .NET | .NET Framework 4.8 for Revit 2022-2024; .NET 8 for Revit 2025-2026 |
+| Node.js | LTS, preferably 20.x or later |
 
-> [!IMPORTANT]
-> 以下檔案**不包含在 Git 儲存庫中**（被 `.gitignore` 排除）：
-> - `MCP-Server/build/` - MCP Server 編譯輸出
-> - `MCP-Server/node_modules/` - Node.js 相依套件
-> - `MCP/bin/` - Revit Add-in 編譯輸出
+## One-Click Setup
 
-### 必要步驟
-
-#### 1️⃣ 安裝 Node.js（如果尚未安裝）
+Recommended for new users:
 
 ```powershell
 # 檢查是否已安裝
@@ -201,34 +208,33 @@ node --version
 # 如果沒有安裝，請前往 https://nodejs.org 下載 LTS 版本
 ```
 
-#### 2️⃣ 編譯 MCP Server
+For AI agents or non-interactive setup:
 
 ```powershell
 # 進入 MCP-Server 資料夾
 cd "您的專案路徑/MCP-Server"
 
-# 安裝相依套件
+The setup script checks prerequisites, installs dependencies, builds the MCP server, builds and deploys the Revit add-in, and helps configure common AI clients.
+
+## Manual Setup
+
+### 1. Build the MCP Server
+
+```powershell
+cd MCP-Server
 npm install
 
 # 編譯 TypeScript
 npm run build
 ```
 
-#### 3️⃣ 設定 AI 平台設定檔
+AI clients launch:
 
 設定檔中的路徑需要根據您的環境修改：
 
-- **Gemini CLI** (`MCP-Server/gemini_mcp_config.json`)：
-  ```json
-  "args": ["您的實際路徑/MCP-Server/build/index.js"]
-  ```
+### 2. Build the Revit Add-in
 
-- **Claude Desktop**：在應用程式中手動設定路徑
-
-- **VS Code / Antigravity** (`.vscode/mcp.json`)：
-  使用 `${workspaceFolder}` 變數，**無需修改**
-
-#### 4️⃣ 編譯 Revit Add-in
+Choose the configuration that matches your Revit version:
 
 ```powershell
 # 進入 MCP 專案資料夾
@@ -242,7 +248,7 @@ dotnet build -c Release.R25   # Revit 2025
 dotnet build -c Release.R26   # Revit 2026
 ```
 
->  **提示**：您也可以執行 `scripts/install-addon.ps1`，此腳本會自動偵測 Revit 版本、編譯並複製檔案到 Revit Addins 資料夾。
+Expected output:
 
 ---
 
@@ -479,75 +485,141 @@ MCP Server 需要 Node.js 才能執行。先檢查您是否已安裝：
 └─────────────────┘
 ```
 
-**特點：**
-- AI 應用程式已經內建 MCP 支援，不需要 API Key
-- MCP Server 只負責 Revit 工具的定義和通訊
-- 所有 API 金鑰都由 AI 應用程式自己管理（如 Claude Desktop 有自己的 API Key）
+Example for Revit 2024:
 
-### AI Client 切換與並用限制
-
-Revit 端 WebSocket 服務一次只接受一條 MCP 連線；後連上的 MCP Server 會取代先前連線。因此多個 AI Client 是「切換使用」而不是「同時並用」：
-
-1. 關閉目前使用的 AI Client（或停用其 MCP server）。
-2. 啟動另一個 AI Client，讓它的 MCP Server 連上 `localhost:8964` 後接手。
-3. 若連線狀態異常，於 Revit ribbon 重啟 MCP 服務即可重置。
-
----
-
-#### 內嵌方案（1 種）
-
-```
-┌────────────────────────────────┐
-│     Revit 應用程式             │
-├────────────────────────────────┤
-│  Revit Add-in with AI Chat     │
-│                                │
-│  ┌──────────────────────────┐  │
-│  │  Chat Window UI (WPF)    │  │
-│  └──────────────────────────┘  │
-│           │ 使用 API Key        │
-│  ┌────────▼──────────────────┐  │
-│  │  GeminiChatService        │  │
-│  │  (C# 直接呼叫 Gemini)     │  │
-│  └────────┬──────────────────┘  │
-│           │                     │
-└───────────┼─────────────────────┘
-            │ HTTP 請求到 Gemini API
-            │
-        ┌───▼──────┐
-        │ Gemini   │
-        │ API      │
-        └──────────┘
+```text
+MCP/bin/Release.R24/RevitMCP.dll
 ```
 
-**特點：**
-- 完全在 Revit 內部運行，無需啟動外部應用程式
-- 直接調用 Gemini API，需要 API Key
-- 使用者體驗最流暢（在 Revit 內直接對話）
+### 3. Deploy the Add-in
 
----
+Recommended:
 
-### 為什麼只有內嵌方案需要 API Key？
+```powershell
+.\scripts\install-addon.ps1
+```
 
-這是關鍵的差異：
+For manual deployment, place the `.addin` file and DLL under the matching Revit Addins directory, and keep the relative assembly path in `RevitMCP.addin`:
 
-| 方案 | 是否需要 API Key | 原因 |
-|------|------------------|------|
-| Claude Desktop |  不需要 | Claude Desktop 已綁定您的 Anthropic 帳戶和 API Key |
-| Gemini CLI |  不需要 | Gemini CLI 已綁定您的 Google 帳戶 |
-| VS Code Copilot |  不需要 | GitHub Copilot 已綁定您的 GitHub 帳戶和授權 |
-| Antigravity |  不需要 | Antigravity 已綁定您的 Google Cloud 帳戶 |
-| **內嵌 Chat（Gemini API）** | ** 需要** | 這是**直接**調用 Gemini API，不透過應用程式中介 |
+```xml
+<Assembly>RevitMCP\RevitMCP.dll</Assembly>
+```
 
-簡單說：
-- **外部 4 種方案**：AI 應用程式已經是「付費客戶」，你直接使用它
-- **內嵌方案**：你自己直接成為 Gemini API 的「付費客戶」，需要提供 API Key
+Do not create version-specific `.addin` files, and do not hardcode absolute DLL paths.
 
----
+## AI Client Configuration
+
+Project-level `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "revit-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["./MCP-Server/build/index.js"],
+      "env": {}
+    }
+  }
+}
+```
+
+VS Code config in `.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "revit-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/MCP-Server/build/index.js"],
+      "env": {}
+    }
+  }
+}
+```
+
+Other AI clients use the same concept: launch `MCP-Server/build/index.js` with `node`.
+
+Config template per client:
+
+| AI Client | Config location | Template |
+|---|---|---|
+| Claude Code | project root `.mcp.json` | built in, works out of the box |
+| Claude Desktop | `%APPDATA%\Claude\claude_desktop_config.json` | `MCP-Server/claude_desktop_config.json` |
+| Gemini CLI | `~/.gemini/settings.json` | `MCP-Server/gemini_mcp_config.json` |
+| VS Code Copilot | `.vscode/mcp.json` | built in |
+| Antigravity | UI settings | `Antigravity_MCP_Complete_Guide.md` |
+
+Replace `<YOUR_PROJECT_PATH>` in the templates with the actual project path on your machine.
+
+### Switching Between AI Clients
+
+The Revit-side WebSocket service accepts only one MCP connection at a time: a newly connected MCP server replaces the previous connection. Multiple AI clients are therefore used by switching, not concurrently:
+
+1. Close the current AI client (or disable its MCP server).
+2. Start the other AI client; once its MCP server connects to `localhost:8964`, it takes over.
+3. If the connection misbehaves, restart the MCP service from the Revit ribbon to reset it.
+
+## Startup Flow
+
+1. Start Revit.
+2. Open or create a Revit project.
+3. Enable the MCP service from the Revit ribbon.
+4. Confirm the Revit add-in is listening on `localhost:8964`.
+5. Start or restart the AI client so it loads the MCP server.
+6. Call Revit MCP tools from the AI client.
+
+If `localhost:8964` is unreachable, Revit may not be running, the MCP service may be off, the port may be occupied, or the AI client and Revit add-in may be using different port settings.
+
+## Project Structure
+
+```text
+REVIT_MCP/
+  MCP/                         Revit Add-in (C#)
+    Application.cs             Revit add-in entry point
+    RevitMCP.csproj            Single multi-version project
+    RevitMCP.addin             Single add-in manifest
+    Core/
+      SocketService.cs         Revit-side WebSocket server
+      ExternalEventManager.cs  UI-thread execution bridge
+      RevitCompatibility.cs    Revit 2022-2026 compatibility helpers
+      CommandExecutor.cs       Main command dispatcher
+      Commands/*.cs            Command modules
+  MCP-Server/                  MCP Server (Node.js / TypeScript)
+    src/index.ts               stdio MCP server entry
+    src/socket.ts              WebSocket client to Revit
+    src/tools/*.ts             MCP tool definitions
+  domain/                      Shared BIM SOPs; do not convert to English-only
+  .claude/                     AI commands and skills
+  docs/                        Human-facing docs and public knowledge site
+  scripts/                     Setup, deployment, QA/QC scripts
+  log/                         Append-only session and commit logs
+```
+
+## AI Docs and Human Docs
+
+| Type | Location | Rule |
+|---|---|---|
+| AI-only | `CLAUDE.md`, `.claude/commands/`, `.claude/skills/` | English-first to avoid mojibake |
+| Human-facing | `README.md`, `README.zh-TW.md`, `docs/`, `scripts/README.md` | Match the reader's language |
+| Shared | `domain/*.md`, `log/README.md` | Domain files must remain Chinese-readable and must not become English-only |
+| Historical | `docs/_archive/**`, old logs | Preserve by default |
+
+See [docs/DOCUMENT_AUDIENCE_INVENTORY.md](./docs/DOCUMENT_AUDIENCE_INVENTORY.md).
+
+## Domain, Skill, and Tool Responsibilities
+
+- `domain/*.md`: BIM SOPs, regulatory logic, and calculation methods. Shared by humans and AI.
+- `.claude/skills/*/SKILL.md`: AI workflow orchestration.
+- `MCP-Server/src/tools/*.ts`: MCP tool definitions and input schemas.
+- `MCP/Core/Commands/*.cs`: Revit API implementation.
+
+If a Domain file and a Skill disagree on method, the Domain file wins.
 
 ### MCP Server 在各方案中的角色
 
-無論用哪種方案，**MCP Server 的作用都一樣**：
+After documentation, tool, Domain, Skill, build, or deployment changes, run:
 
 ```
 MCP Server 的責任：
@@ -557,7 +629,7 @@ MCP Server 的責任：
 4. 返回執行結果給 AI 應用程式
 ```
 
-MCP Server **不直接**與任何 AI API 通訊，它只是一個「翻譯官」。
+Before deployment, run a full check:
 
 ---
 
@@ -954,37 +1026,35 @@ Antigravity 的一大特色是內建瀏覽器子代理程式，可讓 AI 直接�
 └─────────────────────────────────────┘
 ```
 
-### 開發步驟
+QA/QC checks:
 
-#### 步驟 1：取得 Gemini API Key
+- forbidden legacy files and paths
+- required file structure
+- README / CLAUDE / docs count alignment
+- Domain table forward and reverse coverage
+- local Markdown link rot
+- Domain frontmatter
+- document audience classification
+- mojibake risk in canonical docs
 
-1. **前往 Google AI Studio**
-   - 打開瀏覽器，訪問 https://aistudio.google.com/apikey
+## Troubleshooting
 
-2. **登入您的 Google 帳戶**
-   - 如果沒有，請建立一個
+### AI cannot find Revit tools
 
-3. **點擊「Create API Key」**
-   - 選擇「Create new secret key in new project」
-   - Google 會自動建立一個免費的 API Key
+Check:
 
-4. **複製 API Key**
-   - 會看到一個長的字串，例如：
-   ```
-   AIzaSyDx...xyz123abc
-   ```
-   - **務必妥善保管此 Key，不要分享給他人！**
+1. `npm run build` has been run in `MCP-Server`.
+2. The AI client's MCP config points to the correct `MCP-Server/build/index.js`.
+3. The AI client has been restarted or has reloaded MCP servers.
 
-#### 步驟 2：在 C# 中建立 AI 聊天服務
+### MCP Server cannot connect to Revit
 
-在 `MCP/Core/` 資料夾中建立新檔案 `GeminiChatService.cs`：
+Check:
 
-```csharp
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+1. Revit is running.
+2. The MCP service is enabled in the Revit ribbon.
+3. `localhost:8964` is not occupied.
+4. If HTTP.sys / PID 4 is holding the port, try:
 
 namespace RevitMCP.Core
 {
@@ -1063,44 +1133,39 @@ namespace RevitMCP.Core
 }
 ```
 
-#### 步驟 3：建立 WPF 對話視窗
+### Revit does not show the MCP Tools panel
 
-在 `MCP/Commands/` 中建立 `ChatCommand.cs`：
+Confirm the `.addin` file and DLL were deployed under the matching `%APPDATA%\Autodesk\Revit\Addins\{version}` directory, then restart Revit.
 
-```csharp
-using System;
-using Autodesk.Revit.UI;
-using RevitMCP.Core;
+## Important Rules
 
-namespace RevitMCP.Commands
-{
-    public class ChatCommand : IExternalCommand
-    {
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
-        {
-            try
-            {
-                // 從設定中讀取 API Key
-                var apiKey = System.Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-                
-                if (string.IsNullOrEmpty(apiKey))
-                {
-                    TaskDialog.Show("設定錯誤", 
-                        "請設定環境變數 GEMINI_API_KEY\n\n" +
-                        "在 Windows 中：\n" +
-                        "1. 按 Win + Pause\n" +
-                        "2. 進階系統設定\n" +
-                        "3. 環境變數\n" +
-                        "4. 新增：GEMINI_API_KEY = 您的 API Key");
-                    return Result.Failed;
-                }
+- Keep one `MCP/RevitMCP.csproj`.
+- Keep one `MCP/RevitMCP.addin`.
+- Do not create version-specific `.csproj` or `.addin` files.
+- Do not create nested `MCP/MCP/` directories.
+- Do not change `.addin` `<Assembly>` to an absolute path.
+- Do not convert Domain files to English-only.
+- Do not bypass the MCP server with hand-written WebSocket JSON.
+- For live Revit view, level, selection, or document state, AI must query live state in the current turn.
 
-                // 建立聊天服務
-                var chatService = new GeminiChatService(apiKey);
+## Document Navigation
 
-                // 開啟對話視窗
-                var chatWindow = new ChatWindow(chatService, commandData.Application);
-                chatWindow.Show();
+| Document | Purpose |
+|---|---|
+| [CLAUDE.md](./CLAUDE.md) | Main AI agent constitution and project map |
+| [AGENTS.md](./AGENTS.md) | Redirect to `CLAUDE.md` |
+| [GEMINI.md](./GEMINI.md) | Redirect to `CLAUDE.md` |
+| [README.zh-TW.md](./README.zh-TW.md) | Traditional Chinese README |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guide |
+| [CHANGELOG.md](./CHANGELOG.md) | Release history |
+| [domain/README.md](./domain/README.md) | Domain SOP catalog |
+| [domain/lessons.md](./domain/lessons.md) | Project lessons |
+| [.claude/skills/](./.claude/skills/) | AI skills |
+| [.claude/commands/](./.claude/commands/) | AI slash commands |
+| [scripts/README.md](./scripts/README.md) | Script documentation |
+| [docs/DOCUMENT_AUDIENCE_INVENTORY.md](./docs/DOCUMENT_AUDIENCE_INVENTORY.md) | Document audience inventory |
+| [docs/DOCS_STRUCTURE.md](./docs/DOCS_STRUCTURE.md) | Docs directory guide |
+| [log/README.md](./log/README.md) | Log append rules |
 
                 return Result.Succeeded;
             }

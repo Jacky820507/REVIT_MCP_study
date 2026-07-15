@@ -55,93 +55,92 @@ export const sheetTools: Tool[] = [
     },
     {
         name: "get_sheet_viewport_details",
-        description: "Read viewport placement details on one or more sheets, including box center, outline, detail number, rotation, viewport type, and label geometry.",
+        description: "取得指定圖紙上所有視埠的詳細資訊，包含中心點座標、邊界框（MinX/MinY/MaxX/MaxY）、寬度與高度（mm）。若不指定 sheetId，則使用當前作用視圖（必須是圖紙）。",
         inputSchema: {
             type: "object",
             properties: {
-                sheetNumber: { type: "string", description: "Single sheet number filter." },
-                sheetNumbers: { type: "array", items: { type: "string" }, description: "Sheet number filters." },
-                sheetName: { type: "string", description: "Single sheet name filter." },
-                sheetNames: { type: "array", items: { type: "string" }, description: "Sheet name filters." },
-                sheetId: { type: "number", description: "Optional sheet ElementId filter." },
+                sheetId: { type: "number", description: "圖紙的 Element ID（選填，不指定則使用當前作用圖紙）" },
             },
         },
     },
     {
-        name: "copy_sheet_viewports",
-        description: "Copy viewport placement from source sheets to target sheets. The target viewport box center is set to exactly match the source viewport center.",
+        name: "arrange_viewports_on_sheet",
+        description: "依指定順序排列圖紙上的視埠（僅限 DraftingView）。支援水平或垂直排列，邊緣對齊（edge-to-edge）。第一個視埠的位置作為錨點。可用 viewNames（view 名稱陣列）或 viewportIds（視埠 ID 陣列）指定順序，二擇一。",
         inputSchema: {
             type: "object",
             properties: {
-                items: {
-                    type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            sourceSheetNumber: { type: "string", description: "Source sheet number containing the reference viewport." },
-                            targetSheetNumber: { type: "string", description: "Target sheet number where targetViewId should be placed." },
-                            sourceSheetName: { type: "string", description: "Source sheet name containing the reference viewport. Used when sheet numbers may change." },
-                            targetSheetName: { type: "string", description: "Target sheet name where targetViewId should be placed. Used when sheet numbers may change." },
-                            sourceViewId: { type: "number", description: "Optional source viewport view ElementId. If omitted, the first FloorPlan viewport on the source sheet is used." },
-                            targetViewId: { type: "number", description: "Target view ElementId to place or move on the target sheet." },
-                        },
-                        required: ["targetViewId"],
-                    },
-                },
-                dryRun: { type: "boolean", description: "Preview without modifying the model.", default: false },
-                copyViewportType: { type: "boolean", description: "Copy viewport type from source viewport.", default: true },
-                copyRotation: { type: "boolean", description: "Copy viewport rotation from source viewport.", default: true },
-                copyDetailNumber: { type: "boolean", description: "Copy viewport detail number.", default: true },
-                copyLabel: { type: "boolean", description: "Copy viewport label offset and label line length.", default: true },
-                moveExisting: { type: "boolean", description: "Move existing target viewport if target view is already on the target sheet.", default: true },
-            },
-            required: ["items"],
-        },
-    },
-    {
-        name: "get_viewport_types",
-        description: "List viewport title types in the project, optionally filtered by type name.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                nameContains: { type: "string", description: "Optional substring filter for viewport type names." },
-            },
-        },
-    },
-    {
-        name: "sync_viewport_types_by_view_scale",
-        description: "For viewports on sheets, detect the placed view scale and switch FloorPlan/Elevation/Section viewport types to the matching scale title type. Falls back to a line-title type when no exact scale title exists.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                sheetNumber: { type: "string", description: "Optional single sheet number filter." },
-                sheetNumbers: { type: "array", items: { type: "string" }, description: "Optional sheet number filters." },
-                sheetName: { type: "string", description: "Optional single sheet name filter." },
-                sheetNames: { type: "array", items: { type: "string" }, description: "Optional sheet name filters." },
-                viewTypes: {
+                viewNames: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Placed view types to process. Defaults to ['FloorPlan', 'Elevation', 'Section'].",
+                    description: "依排列順序的 view 名稱陣列（與 viewportIds 二擇一）。工具會在圖紙上查找對應的 DraftingView viewport。",
                 },
-                exactPattern: {
+                viewportIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "依排列順序的視埠 ID 陣列（與 viewNames 二擇一）",
+                },
+                direction: {
                     type: "string",
-                    description: "Exact viewport type naming pattern. Supports {scale} and {doubleScale}.",
-                    default: "附圖號的有比例標題_A1({scale})A3({doubleScale})",
+                    enum: ["horizontal", "vertical"],
+                    description: "排列方向：horizontal（水平，預設）或 vertical（垂直）",
                 },
-                fallbackNameContains: {
+                gapMm: {
+                    type: "number",
+                    description: "視埠之間的間距（mm），預設 0（邊緣對齊）",
+                },
+                alignY: {
                     type: "string",
-                    description: "Fallback viewport type substring when no exact scale type is found.",
-                    default: "有線條的標題",
+                    enum: ["top", "center", "bottom"],
+                    description: "垂直對齊方式（水平排列時有效）：top / center（預設）/ bottom",
                 },
-                excludeViewTitleContains: {
-                    oneOf: [
-                        { type: "string" },
-                        { type: "array", items: { type: "string" } },
-                    ],
-                    description: "Skip viewports when the placed view name or Title on Sheet contains these keywords. Defaults to ['圖例'].",
-                    default: ["圖例"],
+                sheetId: {
+                    type: "number",
+                    description: "圖紙的 Element ID（選填，不指定則使用當前作用圖紙）",
                 },
-                dryRun: { type: "boolean", description: "Preview without modifying viewport types.", default: false },
+            },
+        },
+    },
+    {
+        name: "scale_drafting_view_width",
+        description: "縮放圖紙上所有 DraftingView 中表格的寬度（僅 X 軸），高度不變。以每個 view 的左邊緣為錨點，將所有 DetailCurve 和 TextNote 的 X 座標按比例縮放。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                scaleFactor: {
+                    type: "number",
+                    description: "寬度縮放比例（例如 0.9 表示縮小到 90%，1.1 表示放大到 110%）。預設 0.9",
+                },
+                viewNames: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "只處理指定名稱的 DraftingView（選填，不指定則處理圖紙上所有 DraftingView）",
+                },
+                sheetId: {
+                    type: "number",
+                    description: "圖紙的 Element ID（選填，不指定則使用當前作用圖紙）",
+                },
+            },
+        },
+    },
+    {
+        name: "scale_drafting_view_height",
+        description: "縮放圖紙上所有 DraftingView 中表格的行高（僅 Y 軸），寬度不變。以每個 view 的上邊緣為錨點，將所有 DetailCurve 和 TextNote 的 Y 座標按比例縮放。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                scaleFactor: {
+                    type: "number",
+                    description: "行高縮放比例（例如 1.1 表示放大到 110%，0.9 表示縮小到 90%）。預設 1.1",
+                },
+                viewNames: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "只處理指定名稱的 DraftingView（選填，不指定則處理圖紙上所有 DraftingView）",
+                },
+                sheetId: {
+                    type: "number",
+                    description: "圖紙的 Element ID（選填，不指定則使用當前作用圖紙）",
+                },
             },
         },
     },

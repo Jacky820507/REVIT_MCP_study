@@ -332,4 +332,54 @@ export const baseTools: Tool[] = [
             required: ["elementId"],
         },
     },
+    {
+        name: "adjust_section_datums",
+        description: "自動調整剖面視圖的網格線 (Grids) 與樓層線 (Levels) 2D 範圍與氣泡顯示。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                viewIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "要調整的剖面視圖或剖面標記的 Element ID 列表"
+                }
+            },
+            required: ["viewIds"]
+        }
+    },
+    {
+        name: "analyze_floor_slopes",
+        description: "分析樓板頂面排水坡度：以 Solid→PlanarFace 法向量與 Z 軸夾角計算每片朝上頂面的坡度百分比，回傳每片樓板的 Min/Max 坡度，並可回寫至指定參數（預設 Comments）。未指定 elementIds 時自動收集 Function=Exterior 的樓板。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementIds: {
+                    type: "array",
+                    items: { type: "number" },
+                    description: "要分析的樓板 Element ID 陣列；省略則自動收集所有 Function=Exterior 樓板"
+                },
+                paramName: {
+                    type: "string",
+                    description: "坡度回寫的目標參數名稱，預設 Comments"
+                }
+            }
+        }
+    },
+    {
+        name: "list_categories",
+        description: "列舉專案中所有品類 (Category) 及其 CategoryType (Model / Annotation / Internal / AnalyticalModel / Invalid)。回傳每個品類的 Name、CategoryType、Id、子品類數量，並附各 CategoryType 的統計。唯讀查詢。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                categoryType: {
+                    type: "string",
+                    description: "只列出指定 CategoryType 的品類 (Model / Annotation / Internal / AnalyticalModel / Invalid)；省略則全部列出。"
+                },
+                includeSubcategories: {
+                    type: "boolean",
+                    description: "是否連同各品類的子品類名稱一併回傳 (預設 false，僅回傳子品類數量)。"
+                }
+            }
+        }
+    }
 ];

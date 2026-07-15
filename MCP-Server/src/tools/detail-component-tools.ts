@@ -108,55 +108,20 @@ export const detailComponentTools: Tool[] = [
         },
     },
     {
-        name: "sync_material_board_family_types",
-        description: "Synchronize family types for AE-材料版 from 材料表對照.csv. Matches existing types by Type Mark/標記 or type-name prefix, then updates type name to 材料編號-材料名稱, Description/描述 to 材料名稱, Type Mark/標記 to 材料編號, and writable @* type parameters to the matching material value. Defaults to dryRun=true.",
+        name: "dedup_detail_elements_in_view",
+        description: "找出當前視圖（或指定視圖）中重複的 detail element（同 Type + 位置量化後相同），保留 Detail Group 內的副本，刪除 group 外的副本。涵蓋 DetailComponent / DetailCurve / FilledRegion / TextNote / Dimension。只認 Detail Group（OST_IOSDetailGroups），不認 Model Group。預設 dryRun=true 只列清單；確認後設 dryRun=false 才實際刪除。邊界情形（全部都在 group 中、或全部都不在 group 中）會回報但不動。",
         inputSchema: {
             type: "object",
             properties: {
-                familyName: {
-                    type: "string",
-                    description: "Family name or unique partial family name.",
-                    default: "AE-材料版",
-                },
-                csvPath: {
-                    type: "string",
-                    description: "Path to 材料表對照.csv. Defaults to E:\\GitHub Library\\RevitMCP\\材料表對照.csv when available.",
-                },
-                apply: {
-                    type: "boolean",
-                    description: "Set true to write changes to Revit. When omitted, the tool previews only.",
-                    default: false,
-                },
-                dryRun: {
-                    type: "boolean",
-                    description: "When true, preview planned changes without writing. Defaults to true unless apply=true.",
-                    default: true,
-                },
-                createMissingTypes: {
-                    type: "boolean",
-                    description: "When true, missing material codes are created by duplicating the base type. Defaults to false.",
-                    default: false,
-                },
-                baseTypeName: {
-                    type: "string",
-                    description: "Optional existing AE-材料版 type name to duplicate when createMissingTypes=true.",
-                },
-                updateAtParameters: {
-                    type: "boolean",
-                    description: "Whether writable type parameters whose names start with @ should be updated.",
-                    default: true,
-                },
-                atParameterPrefix: {
-                    type: "string",
-                    description: "Prefix used to find material board type parameters.",
-                    default: "@",
-                },
-                atParameterNames: {
+                viewId: { type: "number", description: "目標視圖 ID（選填，預設使用當前 active view）" },
+                categories: {
                     type: "array",
-                    items: { type: "string" },
-                    description: "Optional explicit @ parameter names to update. If omitted, all writable @* parameters are considered.",
+                    items: { type: "string", enum: ["All", "DetailComponent", "DetailCurve", "FilledRegion", "TextNote", "Dimension"] },
+                    description: "處理的類別清單（選填，預設 ['All']）"
                 },
-            },
-        },
+                tolerance: { type: "number", description: "位置比對容差（公釐），預設 1.0", default: 1.0 },
+                dryRun: { type: "boolean", description: "true=只列清單不刪除（預設）；false=實際刪除 group 外的重複副本", default: true }
+            }
+        }
     },
 ];

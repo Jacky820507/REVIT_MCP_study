@@ -68,212 +68,111 @@ export const visualizationTools: Tool[] = [
         },
     },
     {
-        name: "calculate_grid_bounds",
-        description: "根據網格名稱與偏移量計算邊界框 (Bounding Box)。常用於自動化視圖裁剪。",
+        name: "set_category_visibility",
+        description: "在指定視圖中隱藏或顯示整個類別（同時影響主模型與連結模型）。使用 View.SetCategoryHidden() API。",
         inputSchema: {
             type: "object",
             properties: {
-                x_grids: { type: "array", items: { type: "string" }, description: "X 軸網格名稱清單" },
-                y_grids: { type: "array", items: { type: "string" }, description: "Y 軸網格名稱清單" },
-                offset_mm: { type: "number", description: "邊界偏移量 (mm)", default: 1000 },
+                category: { type: "string", description: "類別名稱（如 Planting, Furniture, Doors, 或 OST_Planting）" },
+                hidden: { type: "boolean", description: "true = 隱藏, false = 顯示", default: true },
+                viewId: { type: "number", description: "視圖 ID（若不指定則使用當前視圖）" },
+            },
+            required: ["category"],
+        },
+    },
+    {
+        name: "hide_elements",
+        description: "在指定視圖中隱藏元素。使用 View.HideElements() API，支援單一或批次操作。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elementId: { type: "number", description: "要隱藏的單一元素 ID" },
+                elementIds: { type: "array", items: { type: "number" }, description: "批次隱藏的元素 ID 陣列" },
+                viewId: { type: "number", description: "視圖 ID（若不指定則使用當前視圖）" },
             },
         },
     },
     {
-        name: "create_dependent_views",
-        description: "依據指定的母視圖與 BoundingBox 建立並裁切從屬視圖 (Dependent View)。",
+        name: "unhide_elements",
+        description: "在指定視圖中取消隱藏元素。使用 View.UnhideElements() API，支援單一或批次操作。",
         inputSchema: {
             type: "object",
             properties: {
-                parentViewIds: { type: "array", items: { type: "number" }, description: "母視圖 ID 清單" },
-                min: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number" },
-                        y: { type: "number" },
-                        z: { type: "number" },
-                    },
-                    required: ["x", "y", "z"],
+                elementId: { type: "number", description: "要取消隱藏的單一元素 ID" },
+                elementIds: { type: "array", items: { type: "number" }, description: "批次取消隱藏的元素 ID 陣列" },
+                viewId: { type: "number", description: "視圖 ID（若不指定則使用當前視圖）" },
+            },
+        },
+    },
+    {
+        name: "get_types_by_category",
+        description: "查詢指定類別中所有元素類型及其目前材質資訊。回傳每個 Type 的 ID、名稱、族群、實例數量、目前材質。用於在批次修改材質前，讓使用者確認要修改哪些類型。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                category: {
+                    type: "string",
+                    description: "類別名稱：Walls, Floors, Columns, StructuralFraming",
                 },
-                max: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number" },
-                        y: { type: "number" },
-                        z: { type: "number" },
-                    },
-                    required: ["x", "y", "z"],
+                excludeCurtainWalls: {
+                    type: "boolean",
+                    description: "是否排除帷幕牆（預設 true，僅對 Walls 類別有效）",
+                    default: true,
                 },
-                suffixName: { type: "string", description: "視圖名稱後綴 (如 '-1')。若不指定則自動流水號。" },
             },
-            required: ["parentViewIds", "min", "max"],
+            required: ["category"],
         },
     },
     {
-        name: "create_grid_cropped_views_batch",
-        description: "批次視圖裁剪工具 — 一次性根據多個網格交點建立並裁剪多個母視圖的從屬視圖。",
+        name: "assign_existing_material",
+        description: "將既有材質（透過名稱查找）套用到指定的 Type。不建立新材質。用於復原或批次指派既有材質（例如把 9 個柱子從 'White_MCP' 改回 '鋼 AISI 1015'）。",
         inputSchema: {
             type: "object",
             properties: {
-                parentViewIds: { type: "array", items: { type: "number" }, description: "母視圖 ID 清單" },
-                x_grid_names: { type: "array", items: { type: "string" }, description: "X 軸網格名稱清單（如 ['B8', 'B13']）" },
-                y_grid_names: { type: "array", items: { type: "string" }, description: "Y 軸網格名稱清單（如 ['BA', 'BE']）" },
-                offset_mm: { type: "number", description: "邊界偏移量 (mm)", default: 1000 },
-            },
-            required: ["parentViewIds", "x_grid_names", "y_grid_names"],
-        },
-    },
-    {
-        name: "create_dimension_by_ray",
-        description: "在 3D 視圖中透過射線偵測自動建立尺寸標註。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                faceIndex: { type: "number", description: "面索引", default: 1 },
-                offset_mm: { type: "number", description: "標註偏移量 (mm)", default: 500 },
-            },
-        },
-    },
-    {
-        name: "create_dimension_by_bounding_box",
-        description: "根據房間的邊界框建立對齊的尺寸標註。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                roomId: { type: "number", description: "房間 Element ID" },
-            },
-            required: ["roomId"],
-        },
-    },
-    {
-        name: "create_detail_lines",
-        description: "在目前視圖中批次建立詳圖線段。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                lines: {
+                typeIds: {
                     type: "array",
-                    items: {
-                        type: "object",
-                        properties: {
-                            startX: { type: "number" },
-                            startY: { type: "number" },
-                            startZ: { type: "number" },
-                            endX: { type: "number" },
-                            endY: { type: "number" },
-                            endZ: { type: "number" },
-                        },
-                        required: ["startX", "startY", "startZ", "endX", "endY", "endZ"],
-                    },
+                    items: { type: "number" },
+                    description: "要套用材質的 Type Element ID 陣列",
                 },
-                styleId: { type: "number", description: "線型樣式 ID (選填)" },
+                materialName: {
+                    type: "string",
+                    description: "既有材質名稱（必須已存在於專案中）",
+                },
             },
-            required: ["lines"],
+            required: ["typeIds", "materialName"],
         },
     },
     {
-        name: "trace_stair_geometry",
-        description: "追蹤樓梯幾何，並自動偵測被遮擋的踏步邊緣（用於剖面圖隱藏線視覺化）。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "convert_drafting_to_model_pattern",
-        description: "將使用者在目前的 Revit 視圖中「選取」的填滿範圍 (Filled Region)，從「製圖樣式」安全地轉換為「模型樣式」。會自動依據視圖比例尺放大/縮小線段間距。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "auto_convert_rotated_viewport_patterns",
-        description: "自動掃描全專案中「圖紙上有旋轉過」的剖面圖，並將其中的製圖樣式填滿範圍全部轉換為模型樣式。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "measure_clearance",
-        description: "測量指定起點向特定方向的淨空高度（射線偵測）。可以用於檢查停車位、走道等的淨空高度。",
+        name: "batch_set_material",
+        description: "批次修改指定 Type 的材質（複製原材質模式）。為每個 Type 的原材質建立複本 '{原名}_{suffix}'，只修改複本的 Appearance Asset（diffuse color），保留 Graphics 顏色與原材質其他屬性。影響 Enscape/V-Ray 等渲染引擎，但平面圖切割填充和 Revit Shaded 3D 維持原材質外觀。牆/樓板只修改 CompoundStructure 最外層（Layer 0），其他層保留。已含 suffix 的材質會被冪等跳過。",
         inputSchema: {
             type: "object",
             properties: {
-                origin: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number", description: "起點 X (mm)" },
-                        y: { type: "number", description: "起點 Y (mm)" },
-                        z: { type: "number", description: "起點 Z (mm)" },
-                    },
-                    required: ["x", "y", "z"],
-                },
-                direction: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number", description: "方向 X" },
-                        y: { type: "number", description: "方向 Y" },
-                        z: { type: "number", description: "方向 Z" },
-                    },
-                    required: ["x", "y", "z"],
-                },
-            },
-            required: ["origin", "direction"],
-        },
-    },
-    {
-        name: "create_rc_filled_region",
-        description: "在指定的 2D 視圖中，自動找尋被剖斷或投影的 RC(系統牆、結構柱、樓板)，產生對應的 Filled Region 貼紙以作為單一視覺塗黑/塗灰表現。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                filledRegionTypeName: { 
-                    type: "string", 
-                    description: "欲套用的 FilledRegionType 名稱", 
-                    default: "深灰色" 
-                },
-            },
-        },
-    },
-    {
-        name: "create_dependent_view_matchlines",
-        description: "在母視圖上自動根據其從屬視圖的裁切邊界繪製分模界線（Matchlines）並標註相鄰圖紙號碼。具備 MATCHLINE_AUTO 標記自動更新/清除舊線功能。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                primaryViewId: { 
-                    type: "number", 
-                    description: "母視圖的 Element ID。若不填則預設為目前 Active View。" 
-                },
-                lineStyleName: { 
-                    type: "string", 
-                    description: "欲套用的線型名稱", 
-                    default: "粗虛線" 
-                },
-                textStyleName: { 
-                    type: "string", 
-                    description: "標記使用的文字樣式名稱", 
-                    default: "微軟正黑體 3.5 mm" 
-                },
-            },
-        },
-    },
-    {
-        name: "detect_sheet_matchlines",
-        description: "偵測指定圖紙上已存在的銜接線與銜接文字，並回傳該圖紙上放置視圖與檢測到的元素清單。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                sheetNumbers: {
+                typeIds: {
                     type: "array",
-                    items: { type: "string" },
-                    description: "要偵測的圖紙號碼列表。"
+                    items: { type: "number" },
+                    description: "要修改材質的 Type Element ID 陣列（從 get_types_by_category 取得）",
                 },
-                lineStyleName: { 
-                    type: "string", 
-                    description: "偵測銜接線使用的線型名稱", 
-                    default: "粗虛線" 
+                color: {
+                    type: "object",
+                    description: "目標 Appearance diffuse 顏色 RGB (0-255)",
+                    properties: {
+                        r: { type: "number", minimum: 0, maximum: 255 },
+                        g: { type: "number", minimum: 0, maximum: 255 },
+                        b: { type: "number", minimum: 0, maximum: 255 },
+                    },
                 },
-                textStyleName: { 
-                    type: "string", 
-                    description: "偵測銜接文字使用的文字樣式名稱", 
-                    default: "微軟正黑體 3.5 mm" 
+                materialName: {
+                    type: "string",
+                    description: "材質名稱 suffix（後綴）。例如 '護眼白_MCP' 會把原材質 '鋼 AISI 1015' 複製成 '鋼 AISI 1015_護眼白_MCP'。預設 'White_MCP'。",
+                    default: "White_MCP",
+                },
+                roughness: {
+                    type: "number",
+                    description: "Appearance roughness（選填）。0.0=鏡面反射，1.0=完全啞光。若值 > 1 會被當成百分比（除以 100）。不設則維持原值。建議白模用 1.0 避免金屬感反光。",
                 },
             },
-            required: ["sheetNumbers"],
+            required: ["typeIds", "color"],
         },
     },
 ];
