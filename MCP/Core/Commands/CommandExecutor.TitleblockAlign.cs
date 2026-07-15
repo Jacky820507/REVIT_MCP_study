@@ -196,14 +196,6 @@ namespace RevitMCP.Core
             };
         }
 
-        private ViewSheet FindSheetByNumber(Document doc, string sheetNumber)
-        {
-            return new FilteredElementCollector(doc)
-                .OfCategory(BuiltInCategory.OST_Sheets)
-                .Cast<ViewSheet>()
-                .FirstOrDefault(s => s.SheetNumber == sheetNumber);
-        }
-
         private Element GetFirstTitleblock(Document doc, ViewSheet sheet)
         {
             return new FilteredElementCollector(doc, sheet.Id)

@@ -2843,7 +2843,7 @@ namespace RevitMCP.Core
                         double val = (p.StorageType == StorageType.Double) ? p.AsDouble() : p.AsInteger();
                         
                         // 轉換為 mm (如果適用)
-#if REVIT2024_OR_GREATER
+#if REVIT2022_OR_GREATER
                         if (p.Definition.GetDataType() == SpecTypeId.Length) val *= 304.8;
 #else
                         // Revit 2020 預設為 Internal Units (feet)，長度類需轉 mm
