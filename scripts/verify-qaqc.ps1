@@ -280,6 +280,9 @@ if (Test-Path $csproj) {
     $content = Read-FileText $csproj
     Write-Check "Nice3point.Revit.Sdk reference" ($content -match "Nice3point\.Revit\.Sdk") "Missing SDK reference"
     Write-Check "DeployAddin disabled" ($content -match "<DeployAddin>false</DeployAddin>") "DeployAddin must be false (Nice3point SDK 會自動產生 RevitMCP.{version}.addin 與手動 addin 衝突)"
+    # 本 fork 專用：Jacky 的主要環境是 Revit 2020，Release.R20 是 fork-only 組態。
+    # 上游 csproj 沒有它，合併時容易被無聲移除，這一條就是不讓它悄悄消失。
+    Write-Check "Release.R20 config (fork: Revit 2020 primary)" ($content -match "Release\.R20") "Missing Revit 2020 config - this fork targets Revit 2020 first"
     Write-Check "Release.R22 config" ($content -match "Release\.R22") "Missing Revit 2022 config"
     Write-Check "Release.R24 config" ($content -match "Release\.R24") "Missing Revit 2024 config"
     Write-Check "Release.R25 config" ($content -match "Release\.R25") "Missing Revit 2025 config"

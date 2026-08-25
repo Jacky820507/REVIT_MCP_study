@@ -35,13 +35,13 @@ Questions or want to show what you built? → **[Discussions](https://github.com
 
 | Item | Count | Source |
 |---|---:|---|
-| Runtime MCP tools | 185 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
-| Domain SOP files | 83 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
-| Claude skills | 62 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 193 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
+| Domain SOP files | 87 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
+| Claude skills | 66 | `.claude/skills/*/SKILL.md` |
 
 When these numbers change, update `CLAUDE.md`, `README.zh-TW.md`, this file, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and run:
 
-**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 83 Domain + 62 Skill + 185 Tool 視覺化索引
+**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 87 Domain + 62 Skill + 185 Tool 視覺化索引
 
 ---
 

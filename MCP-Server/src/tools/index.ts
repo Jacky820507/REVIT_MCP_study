@@ -114,6 +114,14 @@ const UNIMPLEMENTED_ON_THIS_FORK = new Set<string>([
 const VERSION_GATED_TOOLS: Record<string, number> = {
     grade_toposolid_to_floors: 2024, // Toposolid 是 Revit 2024+ 的 API 型別
     align_floor_shape_line_to_cad: 2024, // Subelement / DeleteSubelement API
+    // 以下為 2026-08-25 合併 upstream 時帶入的工具：實作使用 ForgeTypeId /
+    // SpecTypeId / UnitTypeId，皆為 Revit 2021 才引入的 API。本 fork 只有
+    // Release.R20 與 R22+ 兩種組態，因此門檻標 2022（C# 端守衛同值）。
+    set_project_units: 2022,
+    get_mep_segments_and_sizes: 2022,
+    get_mep_settings: 2022,
+    get_mep_size_usage: 2022,
+    curate_mep_sizes: 2022,
 };
 
 /**

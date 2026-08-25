@@ -1,3 +1,10 @@
+// ---------------------------------------------------------------------------------
+// Revit 2020 相容閘門（本 fork 專用）
+// 本檔使用 UnitTypeId（Revit 2021+），並依賴 CommandExecutor.MepSettings.cs 的
+// ToMm / EnumerateDuctSizes helper —— 該檔同樣只在 2022+ 編譯。
+// 對應工具登記於 MCP-Server/src/tools/index.ts 的 VERSION_GATED_TOOLS。
+// ---------------------------------------------------------------------------------
+#if REVIT2022_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -700,3 +707,4 @@ namespace RevitMCP.Core
         #endregion
     }
 }
+#endif

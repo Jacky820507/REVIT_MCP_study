@@ -1,3 +1,11 @@
+// ---------------------------------------------------------------------------------
+// Revit 2020 相容閘門（本 fork 專用）
+// 本檔使用 ForgeTypeId / SpecTypeId / UnitTypeId —— 皆為 Revit 2021 才引入的 API，
+// 在 Release.R20 組態下整段不編譯。對應工具已登記在 MCP-Server/src/tools/index.ts
+// 的 VERSION_GATED_TOOLS，部署到舊版 Revit 時設 REVIT_VERSION 即可不註冊，
+// 避免 AI 看得到一支必定拋例外的工具。verify-qaqc Phase 9-1b 會雙向核對。
+// ---------------------------------------------------------------------------------
+#if REVIT2022_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -555,3 +563,4 @@ namespace RevitMCP.Core
         #endregion
     }
 }
+#endif

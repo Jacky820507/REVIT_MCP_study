@@ -17,6 +17,19 @@ namespace RevitMCP.Core
     {
         private static IdType? LastCurtainElevationDimensionTypeId;
 
+        // 上游把 ApplyDimensionType 定義在 CommandExecutor.DoorWindowLegend.cs；本 fork 的
+        // DoorWindowLegend.cs 是自有版本、沒有這個 helper。為了不動既有檔案，就近補在這裡。
+        private void ApplyDimensionType(Dimension dimension, DimensionType dimensionType)
+        {
+            if (dimension != null && dimensionType != null &&
+                (dimension.DimensionType == null ||
+                 dimension.DimensionType.Id.GetIdValue() != dimensionType.Id.GetIdValue()))
+            {
+                dimension.ChangeTypeId(dimensionType.Id);
+            }
+        }
+
+
         private object DiagnoseCurtainWallElevationDimensions(JObject parameters)
         {
             Document doc = _uiApp.ActiveUIDocument.Document;

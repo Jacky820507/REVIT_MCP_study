@@ -3184,8 +3184,9 @@ namespace RevitMCP.Core
         {
             try
             {
-                HashSet<ElementId> allTemplateParams = template.GetTemplateParameterIds().ToHashSet();
-                HashSet<ElementId> nonControlled = template.GetNonControlledTemplateParameterIds().ToHashSet();
+                // ToHashSet() 需 netstandard2.1；Revit 2020 走 net472，改用建構式以維持跨版本相容。
+                HashSet<ElementId> allTemplateParams = new HashSet<ElementId>(template.GetTemplateParameterIds());
+                HashSet<ElementId> nonControlled = new HashSet<ElementId>(template.GetNonControlledTemplateParameterIds());
 
                 foreach (BuiltInParameter bip in Enum.GetValues(typeof(BuiltInParameter)))
                 {

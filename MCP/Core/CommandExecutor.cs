@@ -92,6 +92,32 @@ namespace RevitMCP.Core
                         result = GetProjectInfo();
                         break;
 
+                    // ForgeTypeId / SpecTypeId 為 Revit 2021+ API，Release.R20 不編譯。
+                    // 對應 VERSION_GATED_TOOLS（MCP-Server/src/tools/index.ts）。
+#if REVIT2022_OR_GREATER
+                    case "set_project_units":
+                        result = SetProjectUnits(parameters);
+                        break;
+
+                    case "get_mep_segments_and_sizes":
+                        result = GetMepSegmentsAndSizes(parameters);
+                        break;
+
+                    case "get_mep_settings":
+                        result = GetMepSettings(parameters);
+                        break;
+#endif
+
+#if REVIT2022_OR_GREATER
+                    case "get_mep_size_usage":
+                        result = GetMepSizeUsage(parameters);
+                        break;
+
+                    case "curate_mep_sizes":
+                        result = CurateMepSizes(parameters);
+                        break;
+#endif
+
                     
                     case "create_floor":
                         result = CreateFloor(parameters);
@@ -377,6 +403,10 @@ namespace RevitMCP.Core
                     case "create_curtain_panel_type":
                         result = CreateCurtainPanelType(parameters);
                         break;
+
+                    case "diagnose_curtain_wall_elevation_dimensions":
+                        result = DiagnoseCurtainWallElevationDimensions(parameters);
+                        break;
                     case "apply_panel_pattern":
                         result = ApplyPanelPattern(parameters);
                         break;
@@ -503,6 +533,10 @@ namespace RevitMCP.Core
                         break;
                     case "create_dimension_by_bounding_box":
                         result = CreateDimensionByBoundingBox(parameters);
+                        break;
+
+                    case "auto_dimension_walls":
+                        result = AutoDimensionWalls(parameters);
                         break;
 
                     case "calculate_grid_bounds":
