@@ -117,7 +117,7 @@ export const scaffoldTools: Tool[] = [
     },
     {
         name: "calculate_room_scaffold_perimeters",
-        description: "Indoor scaffold takeoff mode. Reads placed Revit Rooms and classifies them into general scaffold, interior finish scaffold, or excluded rooms. General scaffold for non-stair/elevator rooms is measured by perimeter x height. Interior finish scaffold for stair/elevator rooms is measured by length x width x height.",
+        description: "Indoor scaffold takeoff mode. Reads placed Revit Rooms and classifies them into general scaffold, interior finish scaffold, or excluded rooms. General scaffold for non-stair/elevator rooms is measured by perimeter x height. Interior finish scaffold for stair/elevator rooms is measured by minimum-area oriented boundary extents length x width x height.",
         inputSchema: {
             type: "object",
             properties: {
@@ -152,7 +152,7 @@ export const scaffoldTools: Tool[] = [
                 excludeKeywords: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Room name/number keywords excluded from general scaffold. Defaults include outdoor platforms, terraces, balconies, pipe shafts, and water tanks.",
+                    description: "Room name/number keywords excluded from general scaffold. Defaults include outdoor/roof platforms, terraces, balconies, pipe shafts, water tanks, and void/open-to-below rooms.",
                 },
                 excludeLevels: {
                     type: "array",

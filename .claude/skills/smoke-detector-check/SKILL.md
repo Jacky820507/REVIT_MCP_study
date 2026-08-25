@@ -24,15 +24,14 @@ metadata:
 
 1. **確認視圖** — 呼叫 `get_active_view`，確認目前為平面視圖。
 
-2. **執行核心腳本**
-   ```
-   cd MCP-Server && node scripts/checkSmokeDetector.js
-   ```
+2. **執行檢核** — 呼叫 `analyze_smoke_detectors`。回傳每個探測器對五條規則的判定。
 
-3. **讀取並回報**
-   - 讀取 `MCP-Server/scripts/smoke_detector_report.md`
-   - 回報 PASS / FAIL / WARN 數量摘要
+3. **視覺化** — 把步驟 2 的回傳原封不動交給 `visualize_detector_results` 的 `results` 參數上色。
+
+4. **讀取並回報**
+   - 直接依步驟 2 的回傳彙整 PASS / FAIL / WARN 數量摘要
    - 提醒使用者查看 Revit 中的顏色標示（綠=通過、紅=違規、橙=缺資料警告）
+   - 使用者要書面報告時再另外寫檔，路徑由使用者指定
 
 ## 五條法規（依 domain/smoke-detector-check.md）
 
@@ -46,16 +45,14 @@ metadata:
 
 ## 自訂關鍵字
 
-若出風口或探測器的 Family 名稱不含預設關鍵字，可傳入覆蓋：
+若出風口或探測器的 Family 名稱不含預設關鍵字，用 `analyze_smoke_detectors` 的兩個參數覆蓋：
 
+```json
+{ "outletKeywords": ["冷風機", "FCU"], "detectorKeywords": ["偵煙"] }
 ```
-node scripts/checkSmokeDetector.js --outletKeywords "冷風機,FCU" --detectorKeywords "偵煙"
-```
-
-（目前腳本直接送固定關鍵字；若需自訂，修改腳本的 `Parameters` 物件）
 
 ## Notes
 
 - 出風口無法找到時，條件1 標為 WARN（橙色）而非 FAIL，需人工確認。
 - 區格涵蓋（條件4）是以房間為單位統計，樑高度判定閾值為 600mm。
-- 報告儲存於 `MCP-Server/scripts/smoke_detector_report.md`。
+- 2026-08-03 起 `checkSmokeDetector.js` 已移除——它只是 `analyze_smoke_detectors` + `visualize_detector_results` 兩個已註冊工具的串接加寫檔。

@@ -16,6 +16,7 @@ import clr
 from pyrevit import forms, HOST_APP
 
 _executor = None
+_json_api = None
 
 
 class MCPBridgeError(Exception):
@@ -56,20 +57,55 @@ def _get_executor():
     return _executor
 
 
+def _get_json_api():
+    """取得「RevitMCP.dll 實際綁定的那一份」Newtonsoft.Json 的 JObject.Parse
+    與 JsonConvert.SerializeObject。
+
+    ⚠️ 不能用 clr.AddReference('Newtonsoft.Json')：pyRevit 環境可能載入
+    不同版本的 Newtonsoft.Json，Python 端建出的 JObject 在 C# 端
+    `request.Parameters as JObject` 跨組件轉型會失敗、整包參數靜默變空
+    （症狀：帶參數的按鈕一律報 Parameter 'xxx' is required）。
+    """
+    global _json_api
+    if _json_api is None:
+        import System
+        from System.Reflection import Assembly
+        from RevitMCP.Core import CommandExecutor
+
+        mcp_asm = clr.GetClrType(CommandExecutor).Assembly
+        newtonsoft_name = None
+        for ref in mcp_asm.GetReferencedAssemblies():
+            if ref.Name == 'Newtonsoft.Json':
+                newtonsoft_name = ref
+                break
+        if newtonsoft_name is None:
+            raise MCPBridgeError(u'RevitMCP.dll 未參考 Newtonsoft.Json，橋接無法建構參數')
+        newtonsoft = Assembly.Load(newtonsoft_name)
+
+        str_type = clr.GetClrType(System.String)
+        obj_type = clr.GetClrType(System.Object)
+        parse = newtonsoft.GetType('Newtonsoft.Json.Linq.JObject') \
+                          .GetMethod('Parse', System.Array[System.Type]([str_type]))
+        serialize = newtonsoft.GetType('Newtonsoft.Json.JsonConvert') \
+                              .GetMethod('SerializeObject', System.Array[System.Type]([obj_type]))
+        _json_api = (parse, serialize)
+    return _json_api
+
+
 def run(command, params=None):
     """執行一個 RevitMCP 命令，回傳 Data（dict/list/純值）。
 
     失敗時丟出 MCPBridgeError，訊息為 C# 端的 Error 字串。
     """
     _ensure_assembly()
-    clr.AddReference('Newtonsoft.Json')
+    import System
     from RevitMCP.Models import RevitCommandRequest
-    from Newtonsoft.Json.Linq import JObject
-    from Newtonsoft.Json import JsonConvert
+    parse, serialize = _get_json_api()
 
     req = RevitCommandRequest()
     req.CommandName = command
-    req.Parameters = JObject.Parse(json.dumps(params or {}))
+    req.Parameters = parse.Invoke(
+        None, System.Array[System.Object]([json.dumps(params or {})]))
     req.RequestId = 'pyrevit-button'
 
     resp = _get_executor().ExecuteCommand(req)
@@ -77,7 +113,8 @@ def run(command, params=None):
         raise MCPBridgeError(u'{}: {}'.format(command, resp.Error))
     if resp.Data is None:
         return None
-    return json.loads(JsonConvert.SerializeObject(resp.Data))
+    return json.loads(serialize.Invoke(
+        None, System.Array[System.Object]([resp.Data])))
 
 
 def brief(data, max_lines=18):

@@ -15,17 +15,89 @@ namespace RevitMCP.Models
         [JsonProperty("method")]
         public string CommandName { get; set; }
 
+        [JsonProperty("CommandName")]
+        private string CommandNamePascal
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(CommandName))
+                {
+                    CommandName = value;
+                }
+            }
+        }
+
+        [JsonProperty("commandName")]
+        private string CommandNameCamel
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(CommandName))
+                {
+                    CommandName = value;
+                }
+            }
+        }
+
         /// <summary>
         /// 命令參數（JSON 字串）
         /// </summary>
         [JsonProperty("params")]
         public object Parameters { get; set; }
 
+        [JsonProperty("Parameters")]
+        private object ParametersPascal
+        {
+            set
+            {
+                if (Parameters == null)
+                {
+                    Parameters = value;
+                }
+            }
+        }
+
+        [JsonProperty("parameters")]
+        private object ParametersCamel
+        {
+            set
+            {
+                if (Parameters == null)
+                {
+                    Parameters = value;
+                }
+            }
+        }
+
         /// <summary>
         /// 請求 ID（用於追蹤回應）
         /// </summary>
         [JsonProperty("id")]
         public string RequestId { get; set; }
+
+        [JsonProperty("RequestId")]
+        private string RequestIdPascal
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(RequestId))
+                {
+                    RequestId = value;
+                }
+            }
+        }
+
+        [JsonProperty("requestId")]
+        private string RequestIdCamel
+        {
+            set
+            {
+                if (string.IsNullOrEmpty(RequestId))
+                {
+                    RequestId = value;
+                }
+            }
+        }
     }
 
     /// <summary>

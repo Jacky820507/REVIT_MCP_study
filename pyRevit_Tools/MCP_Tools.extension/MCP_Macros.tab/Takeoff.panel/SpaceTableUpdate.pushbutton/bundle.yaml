@@ -1,0 +1,2 @@
+title: "空間表 Excel"
+tooltip: "先選 host／連結模型與各自樓層；可選主要 Excel 並以 dry-run＋備份更新「01空間表」，未選主檔則匯出含數量明細、公式摘要與稽核的獨立活頁簿。周長使用 GetBoundarySegments(Finish) 加總所有 boundary loops。"

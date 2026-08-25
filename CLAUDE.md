@@ -27,15 +27,48 @@ Revit Add-in (C#)
 
 There is also an optional embedded-chat direction where a Revit WPF window can call an AI API directly. That embedded option is separate from the MCP stdio server path.
 
+## Runtime: IronPython 2.7 (pyRevit scripts)
+
+Every `.py` under `pyRevit_Tools/MCP_Tools.extension/` and `dist/RcVolume.extension/` — **including `lib/`** — runs on pyRevit's IronPython 2.7 engine, not CPython 3. Code that looks correct and passes an offline check under Python 3 will still crash at runtime inside Revit.
+
+Never use these in that tree:
+
+| Forbidden | Since | Use instead |
+|---|---|---|
+| f-strings — `f"{x}"` | 3.6 | `"{}".format(x)` or `%` |
+| `max(..., default=)` / `min(..., default=)` | 3.4 | Check for an empty sequence first |
+| Bare `super()` | 3.0 | `super(ClassName, self)` |
+| `os.makedirs(..., exist_ok=True)` | 3.2 | `if not os.path.exists(p): os.makedirs(p)` |
+| `pathlib` | 3.4 | `os.path` |
+| `subprocess.run` | 3.5 | `subprocess.call` / `subprocess.check_output` |
+| `nonlocal` | 3.0 | Wrap the state in a mutable container |
+| `yield from` | 3.3 | `for x in it: yield x` |
+| `async` / `await` | 3.5 | Not supported at all — rewrite synchronously |
+| Dict unpacking — `{**a, **b}` | 3.5 | `d = dict(a); d.update(b)` |
+| `typing`, `enum`, `dataclasses`, `asyncio`, `statistics`, `concurrent.futures` | 3.x | Remove, or use a 2.7 equivalent |
+| Return annotations — `def f() -> str:` | 3.0 | Put the type in the docstring |
+
+**`lib/` must be 2/3 dual-compatible.** Its modules are imported both by the IronPython 2.7 runtime and by the CPython 3 pytest suite in `pyRevit_Tools/tests/`. That is why `lib/` is inside the ban rather than exempt from it — and `lib/` is also the highest blast radius in the tree (`takeoff_entry.py` is imported by 9 buttons, `mcp_bridge.py` by 12).
+
+Exemptions:
+
+- A file carrying a `#! python3` directive within its first 5 lines runs under CPython 3 and is exempt.
+- `pyRevit_Tools/tests/` and `pyRevit_Tools/tools/` are CPython 3 and are exempt.
+- A single line can be exempted with a trailing `# ironpython-guard: ignore` comment.
+
+A `PostToolUse` hook (`~/.claude/scripts/ironpython-guard-hook.ps1`) enforces this automatically. Note what it can and cannot do: `PostToolUse` fires *after* the write lands on disk, so the hook does not prevent bad code from being written — it fails the step and feeds the violation back so it must be corrected before work continues. If someone runs the pyRevit button in that window, the bad code can still execute. So treat the hook as a backstop, not a substitute for writing 2.7-safe code the first time. After editing anything in these trees, state explicitly that the change is IronPython-2.7 safe.
+
+Path note: `MCP_Tools.extension` is reachable by two paths — the real source at `pyRevit_Tools/MCP_Tools.extension/`, and a directory junction at `%APPDATA%\pyRevit\Extensions\MCP_Tools.extension`. Editing through either path writes into this repository.
+
 ## Current Source-of-Truth Counts
 
 These counts must be derived from source, not copied by memory.
 
 | Item | Current Count | Source of Truth |
 |---|---:|---|
-| Runtime MCP tools | 146 | `registerRevitTools()` from `MCP-Server/src/tools/index.ts` |
-| Domain SOP files | 61 | `domain/*.md` except `domain/README.md`, plus `domain/references/*.md` |
-| Claude skills | 42 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 185 | `registerRevitTools()` from `MCP-Server/src/tools/index.ts` |
+| Domain SOP files | 83 | `domain/*.md` except `domain/README.md`, plus `domain/references/*.md` |
+| Claude skills | 62 | `.claude/skills/*/SKILL.md` |
 
 When these numbers change, update `CLAUDE.md`, `README.md`, `README.zh-TW.md`, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and any public site copy that makes grand-total claims. Then run `scripts/verify-qaqc.ps1 -SkipBuild -SkipDeploy`.
 
@@ -106,7 +139,7 @@ Deploy with `scripts/install-addon.ps1` or the `/deploy-addon` skill.
 | `MCP-Server/src/socket.ts` | WebSocket client to Revit |
 | `MCP-Server/src/tools/index.ts` | Tool module registry and `MCP_PROFILE` filtering |
 | `MCP-Server/src/tools/revit-tools.ts` | Execution bridge from tool name to Revit command |
-| `bridge/python/skills/ezdxf_worker.py` | Optional Python subprocess (spawned by `DwgColumnExecutor`) that reads DXF/DWG text for column-number mapping (`dwg-column-import` mode C). Needs system Python + `ezdxf`; DWG additionally needs ODA File Converter. Deployed to `%APPDATA%\RevitMCP` by `install-addon.ps1`. |
+| `bridge/python/skills/ezdxf_worker.py` | Optional Python subprocess (spawned by `DwgBeamExecutor`) that reads DXF/DWG text for member-number mapping. Needs system Python + `ezdxf`; DWG additionally needs ODA File Converter. Deployed to `%APPDATA%\RevitMCP` by `install-addon.ps1`. NOTE: `DwgColumnExecutor` does not exist in this fork, so the `dwg-column-import` path (`create_columns_from_dwg`, `get_dwg_column_layers`, `preview_dwg_columns`) is unavailable here — those tools are in `UNIMPLEMENTED_ON_THIS_FORK`. The beam path (`create_beams_from_dwg`, `get_dwg_beam_layers`, `preview_dwg_beams`) works. |
 | `scripts/verify-qaqc.ps1` | Repository QA/QC gate |
 | `docs/DOCUMENT_AUDIENCE_INVENTORY.md` | Canonical AI/human/shared document classification |
 | `.claude-plugin/marketplace.json` | Plugin marketplace manifest — packages shareable skills (currently `hj-pr-proposal`) as installable plugins for `/plugin marketplace add` → `/plugin install`. |
@@ -226,10 +259,13 @@ Read the matching file before applying a workflow or calculation.
 
 | Trigger Keywords | File |
 |---|---|
+| Agile BIM, 規格模型, 示意模型, 細部模型, 房間牆門關係, 批次參數, model governance, specification model, room-wall-door audit | `domain/agile-bim-model-governance.md` |
 | building code, code compliance, FAR, floor area, fire compartment, egress, stair width, corridor width | `domain/references/building-code-tw.md` |
+| model integrity, Taiwan building-code QA, REVIT_112, 法規模型完整性, preflight | `domain/taiwan-building-code-model-integrity.md` |
 | auto dimension, ray cast, dimension workflow | `domain/auto-dimension-workflow.md` |
 | corridor, escape route, egress route, corridor analysis | `domain/corridor-analysis-protocol.md` |
 | curtain wall, panel pattern, curtain panel | `domain/curtain-wall-pattern.md` |
+| curtain wall elevation, 帷幕立面, 帷幕表, create_curtain_wall_elevations | `domain/curtain-wall-elevation-workflow.md` |
 | daylight, daylight area, natural lighting | `domain/daylight-area-check.md` |
 | dependent view, crop, grid crop, view split | `domain/dependent-view-crop-workflow.md` |
 | dwg, cad, 柱匯入, 圖層建柱, 批次建柱, column from dwg, 柱號對應, 柱名稱對應, textLayerName | `domain/dwg-column-import.md` |
@@ -253,17 +289,23 @@ Read the matching file before applying a workflow or calculation.
 | finish legend, room finish legend | `domain/finish-legend-creation.md` |
 | fire rating, fireproofing | `domain/fire-rating-check.md` |
 | floor area, FAR review, gross floor area | `domain/floor-area-review.md` |
+| 專有部分, 共用部分, 約定專用, 約定共用, 大公, 小公, 公設比, 面積類型, Area Type, exclusive/shared area | `domain/exclusive-shared-area-classification.md` |
+| floor level ordering, 樓層排序, B1F, R1F, RF, Excel floor order | `domain/floor-level-ordering.md` |
 | floor slope, drainage slope, slab slope, 樓板坡度, 排水坡度, 洩水 | `domain/floor-slope-analysis.md` |
 | IFC, structural sync, imported structural framing | `domain/ifc-structural-sync.md` |
 | mechanical part, assembly, BIP, mechanical documentation | `domain/mechanical-part-doc.md` |
-| MEP clash, CSA clash, penetration, beam penetration | `domain/mep-csa-clash-detection.md` |
+| markdown encoding, mojibake, UTF-8, 亂碼, 編碼毀損 | `domain/markdown-encoding-hygiene.md` |
+| MEP clash, CSA clash, 管線碰撞, clash detection | `domain/mep-csa-clash-detection.md` |
 | MEP extension, pyRevit MEP guide | `domain/mep-extension-guide.md` |
+| pyRevit button, pushbutton, bundle.yaml, availability, active-doc, 可用性指令載入失敗, MCP 巨集按鈕 | `domain/pyrevit-button-development.md` |
 | parking numbering, auto parking numbering | `domain/parking-auto-numbering.md` |
 | parking clearance, vehicle clearance, 210cm | `domain/parking-clearance-check.md` |
 | parking count, parking space review | `domain/parking-space-review.md` |
 | PDF export, DCC, PDFExportOptions | `domain/pdf-export-comparison.md` |
 | fill pattern, Revit fill pattern conversion | `domain/revit-fill-pattern-conversion.md` |
 | partition takeoff, partition quantity | `domain/revit-partition-takeoff.md` |
+| quantity takeoff, 數量計算, 輕隔間 Excel, 踢腳 Excel, 內牆粉刷 Excel, 天花 Excel, 空間表更新 Excel, auditable Excel | `domain/quantity-takeoff-excel.md` |
+| Revit Excel workbook update, 更新既有 Excel, 保護公式, Excel COM, dry-run | `domain/revit-excel-workbook-update.md` |
 | room boundary, room boundary model | `domain/room-boundary.md` |
 | room height, 房間高度, upper limit, limit offset | `domain/room-height-limit.md` |
 | room numbering, automatic room numbering | `domain/room-numbering-workflow.md` |
@@ -285,6 +327,7 @@ Read the matching file before applying a workflow or calculation.
 | 降樑, 梁貼齊樓板底, 樑貼齊樓板底, beam top to floor bottom, slab underside, 起始樓層偏移, 結束樓層偏移, UB-通用樑 | `domain/beam-slab-alignment.md` |
 | IFC native sync, sync_ifc_structural_to_native, IFC 轉原生, replaceExisting | `domain/ifc-structural-native-sync.md` |
 | 施工架, 框式施工架, 室外施工架, 室內施工架, 外部施工架周長, frame scaffold, scaffold with protection facilities, room perimeter x height | `domain/scaffold-takeoff.md` |
+| 空間表, 預算空間表, 01空間表, 房間周長面積, 預算 Excel, room space table, space table sync | `domain/room-space-table-sync.md` |
 | 高隔間, 輕隔間高度指標, tall partition, partition height index | `domain/tall-partition-index-workflow.md` |
 | 門檻, 門檻開口, threshold opening, threshold takeoff | `domain/threshold-opening-takeoff.md` |
 | 視埠類型, 視圖比例, viewport type, view scale, title type | `domain/viewport-type-scale-sync.md` |
@@ -308,7 +351,12 @@ Meta and governance domain files:
 
 ## Skills
 
-The canonical skill catalog is the .claude/skills/ directory itself (42 skills; count table above is the gate).
+The canonical skill catalog is the `.claude/skills/` directory itself (62 skills; count table above is the gate).
+
+`.claude/skills/` is the ONLY skill directory. On 2026-08-03 the parallel `.agents/skills/` (32) and untracked
+`.agent/skills/` (9) trees were merged into it and removed — three copies of the same skills had drifted into
+contradicting each other, which is a prompt-conflict source with no upside. Do not recreate either directory;
+QA/QC Phase 1-1 fails if they reappear.
 
 Use the smallest relevant skill set. If a skill and a domain file conflict on the method, the domain file wins.
 
@@ -327,6 +375,19 @@ Shareable skills are packaged as installable plugins via `.claude-plugin/marketp
 - `fire-safety`
 
 Use `full` unless a constrained client context explicitly needs a smaller tool surface.
+
+## Tool Availability Gates
+
+Two mechanisms keep the advertised tool list honest. A tool that is advertised but can only throw is worse
+than a missing one: the model calls it, gets an exception, and may fill the gap with invented values.
+
+| Gate | Where | Meaning |
+|---|---|---|
+| `UNIMPLEMENTED_ON_THIS_FORK` | `MCP-Server/src/tools/index.ts` | No Revit-side `case` exists in this fork at all. Never registered. Remove a name once its C# command lands. |
+| `VERSION_GATED_TOOLS` + `REVIT_VERSION` env | `MCP-Server/src/tools/index.ts` | The C# `case` is inside `#if REVIT20xx_OR_GREATER`, so older builds strip it. Set `REVIT_VERSION=<year>` on the MCP server to withhold those tools for that deployment. Unset means register everything. |
+
+Both are enforced by `scripts/verify-qaqc.ps1` Phase 9, which derives the truth from the C# source (including
+preprocessor nesting) and checks it in both directions. Never edit either list without re-running Phase 9.
 
 ## AI Client Configuration
 

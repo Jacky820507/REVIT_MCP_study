@@ -1,0 +1,68 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="自動清除房間"
+    Width="720"
+    Height="640"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="預設已勾選「未涵蓋房間」（未放置＋未封閉）。冗餘房間會列出但不預設勾選——同一區域裡哪一個才是要留的，只有你知道。刪除房間會連同編號、名稱與所有參數一起消失。"
+                   TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="狀態" VerticalAlignment="Center"
+                       Margin="0,0,8,0"/>
+            <ComboBox x:Name="stateCombo" Grid.Column="1" Height="26"
+                      SelectionChanged="filter_changed"/>
+            <TextBlock Grid.Column="2" Text="搜尋編號／名稱"
+                       VerticalAlignment="Center" Margin="16,0,8,0"/>
+            <TextBox x:Name="searchText" Grid.Column="3" Height="26"
+                     TextChanged="filter_changed"/>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="selectUncoveredButton" Content="只勾選未涵蓋房間"
+                    Width="150" Height="26" Margin="0,0,8,0"
+                    Click="select_uncovered_clicked"/>
+            <Button x:Name="selectAllButton" Content="勾選目前顯示的"
+                    Width="130" Height="26" Margin="0,0,8,0"
+                    Click="select_shown_clicked"/>
+            <Button x:Name="clearAllButton" Content="全部取消勾選"
+                    Width="120" Height="26" Click="clear_all_clicked"/>
+        </StackPanel>
+
+        <Border Grid.Row="3" BorderBrush="#CCCCCC" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="roomList" Margin="8"/>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock x:Name="statusText" Grid.Row="4" Margin="0,8,0,8"
+                   Text=""/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button x:Name="cancelButton" Content="取消" Width="100"
+                    Height="30" Margin="0,0,8,0" Click="cancel_clicked"/>
+            <Button x:Name="okButton" Content="預覽並刪除" Width="120"
+                    Height="30" Click="ok_clicked"/>
+        </StackPanel>
+    </Grid>
+</Window>

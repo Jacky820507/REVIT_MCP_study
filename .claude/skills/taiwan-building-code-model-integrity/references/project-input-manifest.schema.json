@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://revitmcp.local/schemas/taiwan-building-code-project-input-manifest-0.2.0.json",
+  "title": "台灣建築法規專案輸入與模型比對 Manifest",
+  "description": "保存使用者提供的專案輸入、標準化結果、證據與 live Revit 比對狀態；不代表現行法規合規。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "inputs"],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.2.0"
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "auditRunId": { "type": ["string", "null"] },
+        "checkedAtUtc": { "type": ["string", "null"] },
+        "toolName": { "type": ["string", "null"] },
+        "toolVersion": { "type": ["string", "null"] },
+        "rulePackId": { "type": ["string", "null"] },
+        "rulePackVersion": { "type": ["string", "null"] },
+        "documentTitle": { "type": ["string", "null"] },
+        "revitVersion": { "type": ["string", "null"] },
+        "gateStatus": { "type": ["string", "null"] }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "jurisdiction": { "type": ["string", "null"] },
+        "parcel": { "type": ["string", "null"] },
+        "buildingUse": { "type": ["string", "null"] },
+        "applicationDate": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/inputRecord"
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "label"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "official-document",
+            "approved-project-document",
+            "user-provided-document",
+            "user-statement",
+            "model-derived",
+            "not-provided"
+          ]
+        },
+        "label": { "type": "string" },
+        "pathOrUrl": { "type": ["string", "null"] },
+        "page": { "type": ["integer", "null"], "minimum": 1 },
+        "issuedDate": { "type": ["string", "null"] },
+        "effectiveDate": { "type": ["string", "null"] },
+        "sha256": { "type": ["string", "null"] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string" },
+        "pathOrUrl": { "type": ["string", "null"] },
+        "page": { "type": ["integer", "null"], "minimum": 1 },
+        "quoteOrNote": { "type": ["string", "null"] }
+      }
+    },
+    "inputRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fieldKey",
+        "parameterName",
+        "scope",
+        "rawValue",
+        "decision",
+        "reason",
+        "source"
+      ],
+      "properties": {
+        "fieldKey": { "type": "string" },
+        "label": { "type": ["string", "null"] },
+        "parameterName": { "type": ["string", "null"] },
+        "scope": { "type": ["string", "null"] },
+        "rawValue": { "type": ["string", "number", "boolean", "null"] },
+        "normalizedValue": { "type": ["string", "number", "boolean", "null"] },
+        "unit": { "type": ["string", "null"] },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "ACCEPT",
+            "NORMALIZED",
+            "DERIVED",
+            "REVIEW",
+            "CONFLICT",
+            "MISSING",
+            "REJECT"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["confirmed", "review", "blocked"]
+        },
+        "reason": { "type": "string" },
+        "source": { "$ref": "#/$defs/source" },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" }
+        },
+        "modelComparison": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "not-compared",
+                "MATCH",
+                "MISMATCH",
+                "MISSING_IN_MODEL",
+                "EMPTY_IN_MODEL",
+                "PLACEHOLDER_EMPTY",
+                "NAME_MATCH_ONLY",
+                "NO_AREA_INSTANCES",
+                "INSUFFICIENT_FOR_CALCULATION",
+                "UNREADABLE",
+                "NOT_WRITABLE",
+                "REVIEW"
+              ]
+            },
+            "actualValue": { "type": ["string", "number", "boolean", "null"] },
+            "rawToolValue": { "type": ["string", "number", "boolean", "null"] },
+            "normalizedToolValue": { "type": ["string", "number", "boolean", "null"] },
+            "emptySentinelMatched": { "type": ["boolean", "null"] },
+            "storageType": { "type": ["string", "null"] },
+            "isReadOnly": { "type": ["boolean", "null"] },
+            "reason": { "type": ["string", "null"] },
+            "findingId": { "type": ["string", "null"] },
+            "ruleId": { "type": ["string", "null"] },
+            "auditRunId": { "type": ["string", "null"] },
+            "auditTimestamp": { "type": ["string", "null"] },
+            "parameterElementId": { "type": ["integer", "string", "null"] },
+            "elementId": { "type": ["integer", "string", "null"] },
+            "viewId": { "type": ["integer", "string", "null"] },
+            "areaInstancesCount": { "type": ["integer", "null"] },
+            "sampleElementIds": {
+              "type": ["array", "null"],
+              "items": { "type": ["integer", "string"] }
+            },
+            "reviewerVerdict": { "type": ["string", "null"] },
+            "reviewerReason": { "type": ["string", "null"] }
+          }
+        }
+      }
+    }
+  }
+}

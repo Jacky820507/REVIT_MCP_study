@@ -10,10 +10,9 @@ metadata:
   references: []
   related:
     - lessons.md
-    - user-specified-runtime-parameters.md
     - session-context-guard.md
   referenced_by:
-    - room-numbering
+    - "room-numbering"
   tags: [room-numbering, renumber, rooms, Revit, batch, dry-run, 房間編號, 重新排序]
 ---
 
@@ -128,4 +127,3 @@ get_rooms_by_level({
 
 - `domain/lessons.md`
 - `domain/session-context-guard.md`
-- `domain/user-specified-runtime-parameters.md`

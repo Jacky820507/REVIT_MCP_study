@@ -24,12 +24,15 @@ description: "Revit StructuralFraming 樑頂貼齊樓板底工作流程。當使
 
 ```json
 {
-  "floorSelectionMode": "dominant_area_by_beam",
+  "floorSelectionMode": "auto_by_beam",
   "beamSampleCount": 9,
   "toleranceMm": 5,
   "maxSearchDistanceMm": 3000,
   "maxDeltaMm": 1000,
-  "requireBothEnds": true
+  "requireBothEnds": true,
+  "alignWhenTopAboveFloorBottom": true,
+  "disallowJoinsBeforeAlign": true,
+  "postAlignGeometryCorrection": true
 }
 ```
 

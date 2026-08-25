@@ -15,9 +15,9 @@ This inventory defines which project documents are for AI agents, human readers,
 
 | Item | Count | Source |
 |---|---:|---|
-| Runtime MCP tools | 146 | `registerRevitTools()` |
-| Domain SOP files | 61 | `domain/*.md` except README, plus `domain/references/*.md` |
-| Claude skills | 42 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 185 | `registerRevitTools()` |
+| Domain SOP files | 83 | `domain/*.md` except README, plus `domain/references/*.md` |
+| Claude skills | 62 | `.claude/skills/*/SKILL.md` |
 
 ## AI-Only Documents
 
@@ -63,6 +63,7 @@ These must remain understandable by both sides.
 | `Antigravity_MCP_Complete_Guide.md` | Antigravity users | Manual MCP setup for Antigravity client |
 | `docs/UPDATE-PULL-GUIDE.md`, `docs/branch-index.md` | users and maintainers | Update flow and branch overview |
 | `docs/claude-code-cheatsheet.html`, `docs/karpathy-gist-zh-tw.html` | readers | Reference pages |
+| `docs/tool-chain-audit-2026-08-03.md` | maintainers | Tool-chain reachability audit and the follow-up work orders; Traditional Chinese |
 | other `docs/*.md` topic guides | mixed | Per-topic guides (agent handoff, guard rails, architecture, slope analysis, docs structure); classify individually if promoted to canonical |
 | root-level Chinese notes (`HJPLUS *.md`, `[好學生筆記]*.md`) | community readers | Event notes and adoption guides |
 

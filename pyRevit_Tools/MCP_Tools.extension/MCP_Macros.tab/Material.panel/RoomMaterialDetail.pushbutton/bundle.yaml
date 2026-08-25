@@ -1,0 +1,3 @@
+title: "房間材質明細"
+tooltip: "唯讀計算房間邊界材質與面積，可亮顯來源元素並匯出 Excel；不修改 Revit 模型。"
+author: "RevitMCP"

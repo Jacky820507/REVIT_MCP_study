@@ -375,6 +375,10 @@ namespace RevitMCP.Core
         /// </summary>
         private object MoveViewportTitles(JObject parameters)
         {
+#if !REVIT2022_OR_GREATER
+            // Viewport.LabelOffset API 於 Revit 2022 新增，2020 無法移動標題
+            throw new Exception("move_viewport_titles 需要 Revit 2022 以上（Viewport.LabelOffset API），目前的 Revit 版本不支援此工具");
+#endif
             Document doc = _uiApp.ActiveUIDocument.Document;
 
             string mode = parameters["mode"]?.Value<string>() ?? "below-view-center";
@@ -415,7 +419,11 @@ namespace RevitMCP.Core
                         }
 
                         XYZ currentBoxCenter = vp.GetBoxCenter();
+#if REVIT2022_OR_GREATER
                         XYZ currentLabelOffset = vp.LabelOffset ?? XYZ.Zero;
+#else
+                        XYZ currentLabelOffset = XYZ.Zero;   // 2020 無 LabelOffset，入口已擋，此處僅為編譯
+#endif
 
                         // 取得 current label center (in sheet coords)
                         XYZ currentLabelCenter = null;
@@ -499,7 +507,9 @@ namespace RevitMCP.Core
 
                         if (!dryRun)
                         {
+#if REVIT2022_OR_GREATER
                             vp.LabelOffset = newLabelOffset;
+#endif
                         }
 
                         object oldCenterMm = currentLabelCenter != null

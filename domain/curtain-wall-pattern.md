@@ -66,11 +66,7 @@ node scripts/curtain_preview_server.js
 伺服器將運行於 `http://localhost:10001` 並提供 `curtain_wall_preview_v3.html`。
 
 ### 步驟 2：取得帷幕牆資訊並推播
-在 Revit 中選取帷幕牆後執行：
-```powershell
-node scripts/test_curtain_wall.js
-```
-此步驟會輸出預覽所需的 JSON 資料（未來可更新為自動發送 `POST` 到伺服器）。
+在 Revit 中選取帷幕牆後，呼叫 MCP 工具 `get_curtain_wall_info`（必要時搭配 `get_curtain_panel_types` 確認既有面板類型），把回傳的 JSON 提供給預覽頁。
 
 ### 步驟 3：網頁視覺化設計
 開啟瀏覽器，在預覽界面進行：
@@ -79,11 +75,10 @@ node scripts/test_curtain_wall.js
 - 點擊 **「確認套用」** 儲存結果。
 
 ### 步驟 4：套用設計回 Revit
-執行腳本將網頁設計結果寫回 Revit：
-```powershell
-node scripts/apply_curtain_pattern.js
-```
-腳本會自動檢查是否需要建立新類型，並執行批次更換面板。
+依步驟 3 的結果，先用 `create_curtain_panel_type` 建立缺少的面板類型（同名時它會更新既有類型的顏色而不是重複建立），再用 `apply_panel_pattern` 批次更換面板。
+
+> 2026-08-03 起 `test_curtain_wall.js` 與 `apply_curtain_pattern.js` 已移除——它們呼叫的四個指令都已經是註冊工具。
+> 預覽伺服器與 HTML 保留，因為那是給人看的瀏覽器 UI，不是 Revit 指令的包裝。
 
 ---
 
@@ -105,8 +100,8 @@ node scripts/apply_curtain_pattern.js
 |:----|:----|
 | `MCP/Core/CommandExecutor.cs` | C# 工具底層實作 |
 | `MCP-Server/src/tools/revit-tools.ts` | MCP 工具定義與通訊層 |
-| `MCP-Server/scripts/curtain_preview_server.js` | 預覽伺服器 |
+| `MCP-Server/scripts/curtain_preview_server.js` | 預覽伺服器（唯一保留的腳本：它服務瀏覽器 UI，不是 Revit 指令包裝） |
 | `MCP-Server/scripts/curtain_wall_preview_v3.html` | 預覽工具 UI |
-| `MCP-Server/scripts/test_curtain_wall.js` | 取得帷幕牆資訊腳本 |
-| `MCP-Server/scripts/apply_curtain_pattern.js` | 套用排列模式腳本 |
 | `MCP-Server/scripts/curtain_pattern_result.json` | 使用者設定結果 |
+| MCP 工具 `get_curtain_wall_info` / `get_curtain_panel_types` | 取得帷幕牆與面板類型資訊 |
+| MCP 工具 `create_curtain_panel_type` / `apply_panel_pattern` | 建立類型、套用排列模式 |

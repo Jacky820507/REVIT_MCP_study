@@ -108,6 +108,80 @@ export const detailComponentTools: Tool[] = [
         },
     },
     {
+        name: "get_detail_component_families",
+        description: "List detail component and generic annotation families with their string-typed type parameters (name, read-only flag, sample value). Use this to let a user pick which family and which parameters hold the sheet number and sheet name before running sync_detail_component_sheet_fields.",
+        inputSchema: { type: "object", properties: {} },
+    },
+    {
+        name: "sync_detail_component_sheet_fields",
+        description: "Cross-check and fix the sheet-number/sheet-name parameter pair on detail header family types against actual project sheets. matchBy=sheetNumber trusts the sheet-number parameter and fixes the sheet-name parameter; matchBy=sheetName does the reverse. By default also renames each matched type to '{sheetNumber}-{sheetName}-{detailName}' (detail name read from detailNameParameter; skipped when empty or when the target name already exists). Reports ok / update / empty_key / not_matched / ambiguous (duplicate sheet names) / target_unwritable per type, plus rename / name_ok / rename_conflict / no_detail_name. Defaults to dryRun=true.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                familyName: { type: "string", description: "Detail header family name (exact match preferred, falls back to contains)." },
+                matchBy: { type: "string", enum: ["sheetNumber", "sheetName"], description: "Which parameter is trusted as the lookup key." },
+                sheetNumberParameter: { type: "string", description: "Type parameter name that holds the sheet number, e.g. 詳圖圖號." },
+                sheetNameParameter: { type: "string", description: "Type parameter name that holds the sheet name, e.g. 圖說名稱." },
+                renameTypes: { type: "boolean", description: "Also rename matched types to {sheetNumber}-{sheetName}-{detailName}.", default: true },
+                detailNameParameter: { type: "string", description: "Type parameter holding the detail name used in the rename rule.", default: "詳圖名稱" },
+                dryRun: { type: "boolean", description: "true previews planned fixes without writing.", default: true },
+            },
+            required: ["familyName", "matchBy", "sheetNumberParameter", "sheetNameParameter"],
+        },
+    },
+    {
+        name: "sync_material_board_family_types",
+        description: "Synchronize family types for AE-材料版 from 材料表對照.csv. Matches existing types by Type Mark/標記 or type-name prefix, then updates type name to 材料編號-材料名稱, Description/描述 to 材料名稱, Type Mark/標記 to 材料編號, and writable @* type parameters to the matching material value. Defaults to dryRun=true.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                familyName: {
+                    type: "string",
+                    description: "Family name or unique partial family name.",
+                    default: "AE-材料版",
+                },
+                csvPath: {
+                    type: "string",
+                    description: "Path to 材料表對照.csv. Defaults to E:\\GitHub Library\\RevitMCP\\材料表對照.csv when available.",
+                },
+                apply: {
+                    type: "boolean",
+                    description: "Set true to write changes to Revit. When omitted, the tool previews only.",
+                    default: false,
+                },
+                dryRun: {
+                    type: "boolean",
+                    description: "When true, preview planned changes without writing. Defaults to true unless apply=true.",
+                    default: true,
+                },
+                createMissingTypes: {
+                    type: "boolean",
+                    description: "When true, missing material codes are created by duplicating the base type. Defaults to false.",
+                    default: false,
+                },
+                baseTypeName: {
+                    type: "string",
+                    description: "Optional existing AE-材料版 type name to duplicate when createMissingTypes=true.",
+                },
+                updateAtParameters: {
+                    type: "boolean",
+                    description: "Whether writable type parameters whose names start with @ should be updated.",
+                    default: true,
+                },
+                atParameterPrefix: {
+                    type: "string",
+                    description: "Prefix used to find material board type parameters.",
+                    default: "@",
+                },
+                atParameterNames: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Optional explicit @ parameter names to update. If omitted, all writable @* parameters are considered.",
+                },
+            },
+        },
+    },
+    {
         name: "dedup_detail_elements_in_view",
         description: "找出當前視圖（或指定視圖）中重複的 detail element（同 Type + 位置量化後相同），保留 Detail Group 內的副本，刪除 group 外的副本。涵蓋 DetailComponent / DetailCurve / FilledRegion / TextNote / Dimension。只認 Detail Group（OST_IOSDetailGroups），不認 Model Group。預設 dryRun=true 只列清單；確認後設 dryRun=false 才實際刪除。邊界情形（全部都在 group 中、或全部都不在 group 中）會回報但不動。",
         inputSchema: {

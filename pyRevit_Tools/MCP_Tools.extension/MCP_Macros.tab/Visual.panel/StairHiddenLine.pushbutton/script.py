@@ -38,7 +38,8 @@ try:
         if picked:
             style = pool[names.index(picked)]
             r = mcp.run('create_detail_lines', {
-                'viewId': view.get('Id'),
+                # get_active_view 回傳欄位是 ElementId（不是 Id）
+                'viewId': view.get('ElementId') or view.get('Id'),
                 'styleId': style.get('Id'),
                 'lines': lines})
             forms.alert(mcp.brief(r), title=u'樓梯隱藏線')

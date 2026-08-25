@@ -281,12 +281,17 @@ namespace RevitMCP.Core
             {
                 "\u6236\u5916\u5e73\u53f0",
                 "\u6236\u5916\u5e73\u81fa",
+                "\u5ba4\u5916\u5e73\u53f0",
+                "\u5ba4\u5916\u5e73\u81fa",
+                "\u5c4b\u9802\u5e73\u53f0",
+                "\u5c4b\u9802\u5e73\u81fa",
                 "\u9732\u81fa",
                 "\u9732\u53f0",
                 "\u967d\u53f0",
                 "\u967d\u81fa",
                 "\u7ba1\u9053\u9593",
-                "\u6c34\u7bb1"
+                "\u6c34\u7bb1",
+                "\u6311\u7a7a"
             });
             var excludeLevels = GetStringListParameter(parameters, "excludeLevels", new List<string> { "FN", "TF" });
 
@@ -333,7 +338,7 @@ namespace RevitMCP.Core
             return new
             {
                 Mode = "room_scaffold_perimeters",
-                LengthBasis = "general rooms use room boundary segments at finish location; interior finish scaffold uses room length x width x height",
+                LengthBasis = "general rooms use room boundary segments at finish location; interior finish scaffold uses oriented room boundary extents length x width x height",
                 Parameters = new
                 {
                     Level = resolvedLevelName,
@@ -355,7 +360,7 @@ namespace RevitMCP.Core
                 {
                     GeneralScaffold = new
                     {
-                        Name = "\u65bd\u5de5\u67b6(\u542b\u9632\u8b77\u8a2d\u65bd)",
+                        Name = "\u5ba4\u5167\u65bd\u5de5\u67b6(\u542b\u9632\u8b77\u63aa\u65bd)",
                         Formula = "\u5468\u9577 x \u9ad8",
                         RoomCount = validRooms.Count(room => room.CategoryKey == "general_scaffold"),
                         QuantitySqM = scaffoldHeightMm > 0 ? Math.Round(generalFeet * FeetToMillimeters * scaffoldHeightMm / 1000000.0, 3) : (double?)null,
@@ -493,15 +498,61 @@ namespace RevitMCP.Core
                 return;
             }
 
-            double minX = boundaryPoints.Min(point => point.X);
-            double maxX = boundaryPoints.Max(point => point.X);
-            double minY = boundaryPoints.Min(point => point.Y);
-            double maxY = boundaryPoints.Max(point => point.Y);
-            double xSpan = Math.Max(0.0, maxX - minX);
-            double ySpan = Math.Max(0.0, maxY - minY);
+            var angles = new List<double> { 0.0 };
+            for (int index = 0; index < boundaryPoints.Count - 1; index++)
+            {
+                XYZ start = boundaryPoints[index];
+                XYZ end = boundaryPoints[index + 1];
+                double dx = end.X - start.X;
+                double dy = end.Y - start.Y;
+                if (Math.Sqrt(dx * dx + dy * dy) <= 1e-9)
+                    continue;
 
-            result.LengthFeet = Math.Max(xSpan, ySpan);
-            result.WidthFeet = Math.Min(xSpan, ySpan);
+                double angle = Math.Atan2(dy, dx);
+                while (angle < 0.0)
+                    angle += Math.PI / 2.0;
+                while (angle >= Math.PI / 2.0)
+                    angle -= Math.PI / 2.0;
+                angles.Add(angle);
+            }
+
+            double bestArea = double.MaxValue;
+            double bestLength = 0.0;
+            double bestWidth = 0.0;
+            foreach (double angle in angles
+                .GroupBy(value => Math.Round(value, 6))
+                .Select(group => group.First()))
+            {
+                double cos = Math.Cos(angle);
+                double sin = Math.Sin(angle);
+                double minU = double.MaxValue;
+                double maxU = double.MinValue;
+                double minV = double.MaxValue;
+                double maxV = double.MinValue;
+                foreach (XYZ point in boundaryPoints)
+                {
+                    double u = point.X * cos + point.Y * sin;
+                    double v = -point.X * sin + point.Y * cos;
+                    minU = Math.Min(minU, u);
+                    maxU = Math.Max(maxU, u);
+                    minV = Math.Min(minV, v);
+                    maxV = Math.Max(maxV, v);
+                }
+
+                double spanU = Math.Max(0.0, maxU - minU);
+                double spanV = Math.Max(0.0, maxV - minV);
+                double area = spanU * spanV;
+                if (area < bestArea)
+                {
+                    bestArea = area;
+                    bestLength = Math.Max(spanU, spanV);
+                    bestWidth = Math.Min(spanU, spanV);
+                }
+            }
+
+            result.LengthFeet = bestLength;
+            result.WidthFeet = bestWidth;
+            result.PlanDimensionBasis = "minimum_area_oriented_boundary_extents";
             if (result.LengthFeet <= 0.0 || result.WidthFeet <= 0.0)
                 result.Warnings.Add("Room length/width could not be derived from boundary extents.");
         }
@@ -569,7 +620,7 @@ namespace RevitMCP.Core
             else
             {
                 result.CategoryKey = "general_scaffold";
-                result.CategoryName = "\u65bd\u5de5\u67b6(\u542b\u9632\u8b77\u8a2d\u65bd)";
+                result.CategoryName = "\u5ba4\u5167\u65bd\u5de5\u67b6(\u542b\u9632\u8b77\u63aa\u65bd)";
             }
         }
 
@@ -631,6 +682,7 @@ namespace RevitMCP.Core
                 PerimeterM = RoundM(room.BoundaryPerimeterFeet),
                 LengthM = Math.Round(room.LengthFeet * FeetToMillimeters / 1000.0, 3),
                 WidthM = Math.Round(room.WidthFeet * FeetToMillimeters / 1000.0, 3),
+                PlanDimensionBasis = room.PlanDimensionBasis,
                 HeightM = room.HeightMm > 0 ? Math.Round(room.HeightMm / 1000.0, 3) : (double?)null,
                 GeneralScaffoldQuantitySqM = room.CategoryKey == "general_scaffold" && room.HeightMm > 0
                     ? Math.Round(room.BoundaryPerimeterFeet * FeetToMillimeters * room.HeightMm / 1000000.0, 3)
@@ -1238,6 +1290,7 @@ namespace RevitMCP.Core
             public double BoundaryPerimeterFeet { get; set; }
             public double LengthFeet { get; set; }
             public double WidthFeet { get; set; }
+            public string PlanDimensionBasis { get; set; }
             public double HeightMm { get; set; }
             public double InteriorFinishVolumeM3 { get; set; }
             public List<string> Warnings { get; set; }

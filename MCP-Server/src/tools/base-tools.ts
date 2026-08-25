@@ -18,6 +18,24 @@ export const baseTools: Tool[] = [
         inputSchema: { type: "object", properties: {} },
     },
     {
+        name: "create_level",
+        description: "在 Revit 中建立一個新的樓層 (Level)。指定標高（公釐）與可選名稱；若名稱已存在 Revit 會自動附加尾號。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                elevation: {
+                    type: "number",
+                    description: "樓層標高（公釐，會自動轉成 Revit 內部單位 feet）",
+                },
+                name: {
+                    type: "string",
+                    description: "樓層名稱（選填，例如 '3F'、'RF'）。未填則使用 Revit 預設名稱",
+                },
+            },
+            required: ["elevation"],
+        },
+    },
+    {
         name: "get_element_info",
         description: "取得指定元素的詳細資訊，包括參數、幾何資訊等。",
         inputSchema: {
@@ -53,59 +71,8 @@ export const baseTools: Tool[] = [
         },
     },
     {
-        name: "rename_element",
-        description: "修改 Revit 元素的名稱。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                elementId: { type: "number", description: "元素 ID" },
-                newName: { type: "string", description: "新的名稱" },
-            },
-            required: ["elementId", "newName"],
-        },
-    },
-    {
-        name: "get_element_location",
-        description: "取得 Revit 元素的座標中心點 (XYZ)。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                elementId: { type: "number", description: "元素 ID" },
-            },
-            required: ["elementId"],
-        },
-    },
-    {
-        name: "measure_clearance",
-        description: "在指定起點與方向進行射線碰撞檢測，回傳淨高距離。常用於停車位上方樑柱避讓檢測。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                origin: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number", description: "起點 X (mm)" },
-                        y: { type: "number", description: "起點 Y (mm)" },
-                        z: { type: "number", description: "起點 Z (mm)" },
-                    },
-                    required: ["x", "y", "z"],
-                },
-                direction: {
-                    type: "object",
-                    properties: {
-                        x: { type: "number", description: "方向 X" },
-                        y: { type: "number", description: "方向 Y" },
-                        z: { type: "number", description: "方向 Z" },
-                    },
-                    required: ["x", "y", "z"],
-                },
-            },
-            required: ["origin", "direction"],
-        },
-    },
-    {
         name: "get_selected_elements",
-        description: "取得使用者目前在 Revit 中選取的所有元素的基本資訊（ID、名稱、品類）。",
+        description: "取得使用者目前在 Revit 中選取的所有元素的基本資訊（ID、名稱、品類）。若是視圖或剖面標記，會一併回傳 Origin (X,Y,Z) 供空間排序使用。",
         inputSchema: { type: "object", properties: {} },
     },
 
@@ -135,6 +102,18 @@ export const baseTools: Tool[] = [
                 viewId: { type: "number", description: "要切換的視圖 Element ID" },
             },
             required: ["viewId"],
+        },
+    },
+    {
+        name: "rename_view",
+        description: "重新命名指定的 Revit 視圖（包含剖面圖、平面圖等），此工具不受軟體語系本地化影響。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                viewId: { type: "number", description: "視圖的 Element ID" },
+                newName: { type: "string", description: "新的視圖名稱" },
+            },
+            required: ["viewId", "newName"],
         },
     },
     {
@@ -252,59 +231,6 @@ export const baseTools: Tool[] = [
             },
             required: ["category"],
         },
-    },
-    // === 圖紙與通用工具 ===
-    {
-        name: "get_viewport_map",
-        description: "取得所有視埠與圖紙的對應關係。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "get_wall_types",
-        description: "取得專案中所有的牆類型。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "change_element_type",
-        description: "變更元素的類型。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                elementId: { type: "number", description: "元素 ID" },
-                typeId: { type: "number", description: "目標類型 ID" },
-            },
-            required: ["elementId", "typeId"],
-        },
-    },
-    {
-        name: "get_titleblocks",
-        description: "取得所有可用的圖框類型。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "get_all_sheets",
-        description: "取得專案中所有的圖紙清單。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "auto_renumber_sheets",
-        description: "自動修復圖紙編號（處理 -1, -2 衝突並重新排序）。",
-        inputSchema: { type: "object", properties: {} },
-    },
-    {
-        name: "list_family_symbols",
-        description: "列出指定的族群類型（可依名稱篩選）。",
-        inputSchema: {
-            type: "object",
-            properties: {
-                filter: { type: "string", description: "篩選關鍵字" },
-            },
-        },
-    },
-    {
-        name: "get_line_styles",
-        description: "取得所有的線型樣式。",
-        inputSchema: { type: "object", properties: {} },
     },
     {
         name: "move_element",

@@ -33,7 +33,15 @@ export async function executeRevitTool(
 
     // 跨文件命令需要較長 timeout（開啟 .rvt 檔案較費時）
     const CROSS_DOC_COMMANDS = new Set(["read_source_file_sheets", "copy_sheets_from_file", "sync_sheet_parameters_from_source"]);
-    const timeoutMs = CROSS_DOC_COMMANDS.has(commandName) ? 120000 : 30000;
+    // 大量幾何配對／批次標註的命令也可能超過預設 30 秒：
+    // domain/matchline-automation.md 記錄 13 個從屬視圖的銜接線佈署約 20 秒，
+    // 從屬視圖更多時（配對是 O(n²)）很容易越過門檻。
+    const LONG_RUNNING_COMMANDS = new Set(["create_dependent_view_matchlines"]);
+    const timeoutMs = CROSS_DOC_COMMANDS.has(commandName)
+        ? 120000
+        : LONG_RUNNING_COMMANDS.has(commandName)
+            ? 120000
+            : 30000;
 
     // 發送命令到 Revit
     const response = await client.sendCommand(commandName, args, timeoutMs);

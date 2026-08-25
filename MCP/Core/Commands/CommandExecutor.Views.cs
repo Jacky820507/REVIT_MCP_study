@@ -17,14 +17,77 @@ namespace RevitMCP.Core
         private class DependentViewData
         {
             public View View;
-            public BoundingBoxXYZ Bbox;
             public string SheetLabel;
+            public double MinU;
+            public double MaxU;
+            public double MinV;
+            public double MaxV;
+
+            public double CenterU
+            {
+                get { return (MinU + MaxU) / 2.0; }
+            }
+
+            public double CenterV
+            {
+                get { return (MinV + MaxV) / 2.0; }
+            }
+        }
+
+        private enum MatchlineSide
+        {
+            West,
+            East,
+            South,
+            North
+        }
+
+        private class MatchlineSideClaim
+        {
+            public DependentViewData Source;
+            public DependentViewData Target;
+            public MatchlineSide Side;
+            public double MinAlong;
+            public double MaxAlong;
+            public double Boundary;
+            public double NormalDistance;
+            public double FacingDistance;
+        }
+
+        private class OwnedMatchlineSpan
+        {
+            public MatchlineSideClaim Claim;
+            public double MinAlong;
+            public double MaxAlong;
+        }
+
+        private class MutualMatchlineSpan
+        {
+            public DependentViewData View1;
+            public DependentViewData View2;
+            public bool IsVertical;
+            public double Boundary;
+            public double MinAlong;
+            public double MaxAlong;
         }
 
         private class MatchlineResult
         {
             public string View1;
             public string View2;
+        }
+
+        private class MatchlineCandidate
+        {
+            public DependentViewData View1;
+            public DependentViewData View2;
+            public Line Line;
+            public XYZ TextPos1;
+            public XYZ TextPos2;
+            public bool IsVertical;
+            public double MinAlong;
+            public double MaxAlong;
+            public string PairKey;
         }
 
         /// <summary>
@@ -56,26 +119,132 @@ namespace RevitMCP.Core
                 return new { Success = false, Message = "該視圖沒有任何叢屬視圖 (Dependent Views)。" };
             }
 
-            List<View> dependentViews = dependentViewIds.Select(id => doc.GetElement(id) as View).ToList();
+            List<View> dependentViews = dependentViewIds
+                .Select(id => doc.GetElement(id) as View)
+                .Where(view => view != null)
+                .ToList();
+            if (dependentViews.Count == 0)
+            {
+                return new { Success = false, Message = "找不到可用的叢屬視圖 (Dependent Views)。" };
+            }
 
-            // 尋找舊的銜接線：根據樣式名稱進行過濾 (因為 2020 版本的線條不一定支援 Comments 屬性)
-            var oldLines = new FilteredElementCollector(doc, primaryView.Id)
-                .OfCategory(BuiltInCategory.OST_Lines)
-                .WhereElementIsNotElementType()
-                .Cast<CurveElement>()
-                .Where(e => {
-                    var style = e.LineStyle as GraphicsStyle;
-                    return style != null && style.Name.Contains(lineStyleName);
-                })
-                .Select(e => e.Id)
+            // 尋找舊的銜接線：母視圖與所有從屬視圖都要掃描。
+            // 舊版本曾在錯誤視圖建立文字，只掃母視圖會讓那些文字永遠殘留。
+            var oldLineIds = new HashSet<ElementId>();
+            var oldTextIds = new HashSet<ElementId>();
+            var cleanupViews = new List<View> { primaryView };
+            cleanupViews.AddRange(dependentViews.Where(view => view.Id != primaryView.Id));
+
+            foreach (View cleanupView in cleanupViews)
+            {
+                var viewLines = new FilteredElementCollector(doc, cleanupView.Id)
+                    .OfCategory(BuiltInCategory.OST_Lines)
+                    .WhereElementIsNotElementType()
+                    .Cast<CurveElement>();
+
+                foreach (CurveElement element in viewLines)
+                {
+                    GraphicsStyle style = element.LineStyle as GraphicsStyle;
+                    if (style != null && style.Name.Contains(lineStyleName))
+                    {
+                        oldLineIds.Add(element.Id);
+                    }
+                }
+
+                var viewTexts = new FilteredElementCollector(doc, cleanupView.Id)
+                    .OfClass(typeof(TextNote))
+                    .Cast<TextNote>();
+
+                foreach (TextNote element in viewTexts)
+                {
+                    if (!string.IsNullOrEmpty(element.Text) && element.Text.Contains("銜接線"))
+                    {
+                        oldTextIds.Add(element.Id);
+                    }
+                }
+            }
+
+            List<ElementId> oldLines = oldLineIds.ToList();
+            List<ElementId> oldTexts = oldTextIds.ToList();
+
+            // 取得樣式；所有必要型式先在交易外驗證，避免失敗時先刪除舊標註。
+            GraphicsStyle lineStyle = new FilteredElementCollector(doc)
+                .OfClass(typeof(GraphicsStyle))
+                .Cast<GraphicsStyle>()
+                .FirstOrDefault(s => s.Name.Contains(lineStyleName));
+
+            TextNoteType textType = FindMatchlineTextNoteType(doc, textStyleName);
+            if (textType == null)
+            {
+                throw new Exception("模型中找不到可用的文字型式 (TextNoteType)，且無法取得 Revit 預設文字型式。請先在專案中建立一個文字註記型式後重試。");
+            }
+
+            BoundingBoxXYZ primaryCropBox = primaryView.CropBox;
+            if (primaryCropBox == null || primaryCropBox.Transform == null)
+            {
+                throw new Exception("母視圖沒有可用的 CropBox，無法計算銜接線位置。");
+            }
+
+            var viewData = new List<DependentViewData>();
+            Transform primaryTransform = primaryCropBox.Transform;
+            Transform primaryInverse = primaryTransform.Inverse;
+            foreach (View dv in dependentViews)
+            {
+                BoundingBoxXYZ bbox = dv.CropBox;
+                string sheetNum = GetSheetNumber(doc, dv.Id);
+                // 若無圖紙，則用視圖名稱
+                string label = string.IsNullOrEmpty(sheetNum) ? dv.Name : sheetNum;
+
+                DependentViewData normalizedView;
+                string normalizationError;
+                if (!TryNormalizeDependentCropBox(
+                    dv, bbox, label, primaryInverse,
+                    out normalizedView, out normalizationError))
+                {
+                    return new
+                    {
+                        Success = false,
+                        DeletedLines = 0,
+                        DeletedTexts = 0,
+                        CreatedMatchlines = 0,
+                        Message = normalizationError
+                    };
+                }
+
+                viewData.Add(normalizedView);
+            }
+
+            if (viewData.Count < 2)
+            {
+                return new { Success = false, Message = "可用的從屬視圖不足兩個，沒有可計算的銜接邊界。" };
+            }
+
+            // 先把四邊候選切成原子區段，再要求相對兩側互相選中最近鄰。
+            // 這會排除對角重疊與跨過中間視圖的配對，也能保留 T 形和一對多邊界。
+            double shortCurveTolerance = Math.Max(
+                doc.Application.ShortCurveTolerance, 1e-6);
+            List<MatchlineSideClaim> sideClaims = BuildMatchlineSideClaims(
+                viewData, 0.5, shortCurveTolerance);
+            List<MatchlineCandidate> adjacentCandidates = BuildMutualMatchlineCandidates(
+                sideClaims, primaryTransform, shortCurveTolerance)
+                .OrderBy(item => item.PairKey)
+                .ThenBy(item => item.MinAlong)
+                .ThenBy(item => item.MaxAlong)
+                .ThenBy(item => item.View1.SheetLabel)
+                .ThenBy(item => item.View2.SheetLabel)
                 .ToList();
 
-            var oldTexts = new FilteredElementCollector(doc, primaryView.Id)
-                .OfClass(typeof(TextNote))
-                .Cast<TextNote>()
-                .Where(e => !string.IsNullOrEmpty(e.Text) && e.Text.Contains("銜接線"))
-                .Select(e => e.Id)
-                .ToList();
+            if (adjacentCandidates.Count == 0)
+            {
+                return new
+                {
+                    Success = false,
+                    DeletedLines = 0,
+                    DeletedTexts = 0,
+                    CreatedMatchlines = 0,
+                    Message = "找不到可用的 CropBox 重疊帶或相鄰邊界；已保留既有銜接線，未刪除任何標註。"
+                };
+            }
 
             using (Transaction trans = new Transaction(doc, "建立叢屬視圖銜接線"))
             {
@@ -85,152 +254,42 @@ namespace RevitMCP.Core
                 foreach (var id in oldLines) doc.Delete(id);
                 foreach (var id in oldTexts) doc.Delete(id);
 
-                // 取得樣式
-                GraphicsStyle lineStyle = new FilteredElementCollector(doc)
-                    .OfClass(typeof(GraphicsStyle))
-                    .Cast<GraphicsStyle>()
-                    .FirstOrDefault(s => s.Name.Contains(lineStyleName));
-
-                TextNoteType textType = new FilteredElementCollector(doc)
-                    .OfClass(typeof(TextNoteType))
-                    .Cast<TextNoteType>()
-                    .FirstOrDefault(st => st.Name.Contains(textStyleName)) 
-                    ?? new FilteredElementCollector(doc).OfClass(typeof(TextNoteType)).Cast<TextNoteType>().FirstOrDefault();
-
-                var viewData = new List<DependentViewData>();
-                foreach (var dv in dependentViews)
-                {
-                    BoundingBoxXYZ bbox = dv.CropBox;
-                    string sheetNum = GetSheetNumber(doc, dv.Id);
-                    // 若無圖紙，則用視圖名稱
-                    string label = string.IsNullOrEmpty(sheetNum) ? dv.Name : sheetNum;
-                    viewData.Add(new DependentViewData { View = dv, Bbox = bbox, SheetLabel = label });
-                }
-
-                Transform transform = primaryView.CropBox.Transform;
                 List<MatchlineResult> results = new List<MatchlineResult>();
 
-                for (int i = 0; i < viewData.Count; i++)
+                TextNoteOptions opts = new TextNoteOptions { TypeId = textType.Id };
+                opts.HorizontalAlignment = HorizontalTextAlignment.Center;
+                opts.VerticalAlignment = VerticalTextAlignment.Middle;
+
+                foreach (MatchlineCandidate candidate in adjacentCandidates)
                 {
-                    for (int j = i + 1; j < viewData.Count; j++)
+                    // 繪製線條
+                    DetailCurve dc = doc.Create.NewDetailCurve(primaryView, candidate.Line);
+                    if (lineStyle != null) dc.LineStyle = lineStyle;
+                    SetComment(dc, "MATCHLINE_AUTO");
+
+                    // 每一組真正相鄰的視圖都固定建立兩側名稱，不再省略文字。
+                    TextNote tn1 = TextNote.Create(doc, primaryView.Id, candidate.TextPos1,
+                        $"銜接線 {candidate.View1.SheetLabel}", opts);
+                    SetComment(tn1, "MATCHLINE_AUTO");
+
+                    TextNote tn2 = TextNote.Create(doc, primaryView.Id, candidate.TextPos2,
+                        $"銜接線 {candidate.View2.SheetLabel}", opts);
+                    SetComment(tn2, "MATCHLINE_AUTO");
+
+                    if (candidate.IsVertical)
                     {
-                        var v1 = viewData[i];
-                        var v2 = viewData[j];
-
-                        // 判斷重疊
-                        double minX = Math.Max(v1.Bbox.Min.X, v2.Bbox.Min.X);
-                        double maxX = Math.Min(v1.Bbox.Max.X, v2.Bbox.Max.X);
-                        double minY = Math.Max(v1.Bbox.Min.Y, v2.Bbox.Min.Y);
-                        double maxY = Math.Min(v1.Bbox.Max.Y, v2.Bbox.Max.Y);
-
-                        double tol = 0.5; // 重疊容差 (feet)
-
-                        if (maxX >= minX - tol && maxY >= minY - tol)
-                        {
-                            double dx = maxX - minX;
-                            double dy = maxY - minY;
-
-                            Line matchLine = null;
-                            XYZ lineNormal = null;
-                            XYZ textPos1 = null;
-                            XYZ textPos2 = null;
-                            bool isVertical = false;
-
-                            // 調整偏移量 (feet)：從 1.5 稍微縮減到 1.2 讓文字靠近一點
-                            double finalOffset = 1.2;
-
-                            if (dx > dy)
-                            {
-                                // 水平銜接線
-                                double midY = (minY + maxY) / 2;
-                                XYZ p1 = transform.OfPoint(new XYZ(minX, midY, 0));
-                                XYZ p2 = transform.OfPoint(new XYZ(maxX, midY, 0));
-
-                                if (p1.DistanceTo(p2) > 1.0)
-                                {
-                                    matchLine = Line.CreateBound(p1, p2);
-                                    lineNormal = transform.BasisY;
-
-                                    double v1cY = (v1.Bbox.Min.Y + v1.Bbox.Max.Y) / 2;
-                                    double v2cY = (v2.Bbox.Min.Y + v2.Bbox.Max.Y) / 2;
-                                    XYZ midPt = p1.Add(p2).Divide(2);
-
-                                    if (v1cY > v2cY)
-                                    {
-                                        textPos1 = midPt.Add(lineNormal.Multiply(finalOffset));
-                                        textPos2 = midPt.Add(lineNormal.Multiply(-finalOffset));
-                                    }
-                                    else
-                                    {
-                                        textPos1 = midPt.Add(lineNormal.Multiply(-finalOffset));
-                                        textPos2 = midPt.Add(lineNormal.Multiply(finalOffset));
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // 垂直銜接線
-                                isVertical = true;
-                                double midX = (minX + maxX) / 2;
-                                XYZ p1 = transform.OfPoint(new XYZ(midX, minY, 0));
-                                XYZ p2 = transform.OfPoint(new XYZ(midX, maxY, 0));
-
-                                if (p1.DistanceTo(p2) > 1.0)
-                                {
-                                    matchLine = Line.CreateBound(p1, p2);
-                                    lineNormal = transform.BasisX;
-
-                                    double v1cX = (v1.Bbox.Min.X + v1.Bbox.Max.X) / 2;
-                                    double v2cX = (v2.Bbox.Min.X + v2.Bbox.Max.X) / 2;
-                                    XYZ midPt = p1.Add(p2).Divide(2);
-
-                                    if (v1cX > v2cX)
-                                    {
-                                        textPos1 = midPt.Add(lineNormal.Multiply(finalOffset));
-                                        textPos2 = midPt.Add(lineNormal.Multiply(-finalOffset));
-                                    }
-                                    else
-                                    {
-                                        textPos1 = midPt.Add(lineNormal.Multiply(-finalOffset));
-                                        textPos2 = midPt.Add(lineNormal.Multiply(finalOffset));
-                                    }
-                                }
-                            }
-
-                            if (matchLine != null)
-                            {
-                                // 繪製線條
-                                DetailCurve dc = doc.Create.NewDetailCurve(primaryView, matchLine);
-                                if (lineStyle != null) dc.LineStyle = lineStyle;
-                                SetComment(dc, "MATCHLINE_AUTO");
-
-                                // 繪製文字
-                                if (textType != null)
-                                {
-                                    TextNoteOptions opts = new TextNoteOptions { TypeId = textType.Id };
-                                    opts.HorizontalAlignment = HorizontalTextAlignment.Center;
-                                    opts.VerticalAlignment = VerticalTextAlignment.Middle;
-                                    
-                                    TextNote tn1 = TextNote.Create(doc, primaryView.Id, textPos1, $"銜接線 {v1.SheetLabel}", opts);
-                                    SetComment(tn1, "MATCHLINE_AUTO");
-                                    
-                                    TextNote tn2 = TextNote.Create(doc, primaryView.Id, textPos2, $"銜接線 {v2.SheetLabel}", opts);
-                                    SetComment(tn2, "MATCHLINE_AUTO");
-
-                                    if (isVertical)
-                                    {
-                                        // 垂直線時，文字需要旋轉 90 度與線條平行
-                                        Line axis1 = Line.CreateBound(textPos1, textPos1 + XYZ.BasisZ);
-                                        Line axis2 = Line.CreateBound(textPos2, textPos2 + XYZ.BasisZ);
-                                        ElementTransformUtils.RotateElement(doc, tn1.Id, axis1, Math.PI / 2);
-                                        ElementTransformUtils.RotateElement(doc, tn2.Id, axis2, Math.PI / 2);
-                                    }
-                                }
-
-                                results.Add(new MatchlineResult { View1 = v1.SheetLabel, View2 = v2.SheetLabel });
-                            }
-                        }
+                        // 垂直線時，文字需要旋轉 90 度與線條平行
+                        Line axis1 = Line.CreateBound(candidate.TextPos1, candidate.TextPos1 + XYZ.BasisZ);
+                        Line axis2 = Line.CreateBound(candidate.TextPos2, candidate.TextPos2 + XYZ.BasisZ);
+                        ElementTransformUtils.RotateElement(doc, tn1.Id, axis1, Math.PI / 2);
+                        ElementTransformUtils.RotateElement(doc, tn2.Id, axis2, Math.PI / 2);
                     }
+
+                    results.Add(new MatchlineResult
+                    {
+                        View1 = candidate.View1.SheetLabel,
+                        View2 = candidate.View2.SheetLabel
+                    });
                 }
 
                 trans.Commit();
@@ -241,10 +300,50 @@ namespace RevitMCP.Core
                     DeletedLines = oldLines.Count,
                     DeletedTexts = oldTexts.Count,
                     CreatedMatchlines = results.Count,
+                    CreatedTexts = results.Count * 2,
+                    SuppressedTextMatchlines = 0,
+                    SuppressedCrowdedTextMatchlines = 0,
+                    SuppressedGridTextMatchlines = 0,
                     Details = results,
-                    Message = $"成功清理了 {oldLines.Count} 條舊線與 {oldTexts.Count} 組文字，並繪製了 {results.Count} 條新切圖線。"
+                    Message = $"成功清理了 {oldLines.Count} 條舊線與 {oldTexts.Count} 組文字，並為 {results.Count} 組相鄰視圖建立銜接線與 {results.Count * 2} 組兩側文字。"
                 };
             }
+        }
+
+
+        /// <summary>
+        /// Resolve the requested text type without assuming that the class
+        /// collector is the only way to reach Revit's document default.
+        /// </summary>
+        private TextNoteType FindMatchlineTextNoteType(Document doc, string requestedName)
+        {
+            List<TextNoteType> textTypes = new FilteredElementCollector(doc)
+                .OfClass(typeof(TextNoteType))
+                .Cast<TextNoteType>()
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(requestedName))
+            {
+                TextNoteType requested = textTypes.FirstOrDefault(st =>
+                    !string.IsNullOrEmpty(st.Name) && st.Name.Contains(requestedName));
+                if (requested != null) return requested;
+            }
+
+            try
+            {
+                ElementId defaultId = doc.GetDefaultElementTypeId(ElementTypeGroup.TextNoteType);
+                if (defaultId != null && defaultId != ElementId.InvalidElementId)
+                {
+                    TextNoteType defaultType = doc.GetElement(defaultId) as TextNoteType;
+                    if (defaultType != null) return defaultType;
+                }
+            }
+            catch
+            {
+                // Fall through to the first collected type for older models.
+            }
+
+            return textTypes.FirstOrDefault();
         }
 
         private object DetectSheetMatchlines(JObject parameters)

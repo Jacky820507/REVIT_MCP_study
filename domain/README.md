@@ -7,10 +7,11 @@
 
 ## Domain ↔ Skill 對照表
 
-### 已有對應 Skill 的 Domain（24 個）
+### 已有對應 Skill 的 Domain（27 個）
 
 | Domain 文件 | 對應 Skill | 觸發關鍵字 |
 |------------|-----------|-----------|
+| `agile-bim-model-governance.md` | agile-bim-model-governance | Agile BIM、規格模型、房間牆門關係、性能分類、批次參數 |
 | `fire-rating-check.md` | fire-safety-check | 防火、耐燃、fire rating |
 | `corridor-analysis-protocol.md` | fire-safety-check | 走廊、逃生、corridor |
 | `exterior-wall-opening-check.md` | fire-safety-check | 外牆開口、鄰地距離、Article 45 |
@@ -32,9 +33,11 @@
 | `parking-space-review.md` | parking-check | 停車位、數量、法定車位 |
 | `wall-check.md` | wall-orientation-check | 牆壁方向、內外側 |
 | `dependent-view-crop-workflow.md` | dependent-view-crop | 從屬視圖、分區出圖 |
+| `pyrevit-button-development.md` | pyrevit-button-dev | pyRevit 按鈕、pushbutton、bundle.yaml、可用性指令載入失敗 |
 | `beam-slab-alignment.md` | beam-slab-alignment | 降樑、樓板底、起始樓層偏移、結束樓層偏移 |
 | `ifc-structural-native-sync.md` | ifc-structural-sync | IFC 結構同步、原生結構構架、結構柱、b/h、貼樓板底 |
 | `finish-schedule-governance.md` | finish-schedule-governance | 粉刷明細表、F/B/W/C、材料表對照、AE-材料版、finish code remap |
+| `quantity-takeoff-excel.md` | quantity-takeoff-excel | 數量計算、輕隔間 Excel、踢腳 Excel、內牆粉刷 Excel、天花 Excel、空間表 Excel、施工架 |
 
 ### 不需要成為 Skill 的 Domain（13 個，含 README）
 
@@ -60,7 +63,7 @@
 ## 貢獻新 Domain
 
 1. 建立 `domain/你的-workflow.md`
-2. 建立對應 Skill：`.agents/skills/你的-skill/SKILL.md`
+2. 建立對應 Skill：`.claude/skills/你的-skill/SKILL.md`（這是唯一的 Skill 目錄。2026-08-03 起 `.agents/skills/` 與 `.agent/skills/` 已合併進來並移除，不要再新增第二套）
 3. 提 PR，格式參考現有檔案
 
 詳見 `CONTRIBUTING.md` 和 `docs/architecture-v2-module-system.md`
@@ -71,4 +74,7 @@
 |------------|---------------|---------|
 | `viewport-type-scale-sync.md` | `sheet-management` | 依圖紙上已放置視圖的比例同步視埠標題類型，包含 dry-run 驗證與圖例/標題關鍵字排除。 |
 | `ifc-structural-native-sync.md` | `ifc-structural-sync` | 依 IFC linked model 建立原生 StructuralFraming / StructuralColumns，含 b/h 規則、貼樓板底與 replaceExisting 驗證流程。 |
-| `scaffold-takeoff.md` | `scaffold-takeoff` | 施工架數量計算規則：室外採手框周長，室內一般房間用周長乘高，樓梯/電梯類用長乘寬乘高；室外外周長可作地下室外牆防水毯周長來源，但高度需改用樓高或圖說指定防水高度。 |
+| `scaffold-takeoff.md` | `scaffold-takeoff` | 三類施工架與既有工項 Excel 更新規則：室外框式施工架採人工外周長×總高度，一般室內用 01空間表 Finish 周長×高，樓梯/電梯類用長×寬×高；含房間排除、逐房稽核、備份及其他面積公式鏈。 |
+| `quantity-takeoff-excel.md` | `quantity-takeoff-excel` | 共通數量 Excel 方法：Finish boundary、多圈周長、host-only 開口、天花板／樓板底淨高、材料代碼與可稽核公式。 |
+| `pyrevit-button-development.md` | `pyrevit-button-dev` | pyRevit MCP 巨集按鈕建立規則，避免 availability context 造成 ribbon 載入失敗。 |
+| `agile-bim-model-governance.md` | `agile-bim-model-governance` | 將示意→規格→細部模型、房間牆門關係、需求性能、dry-run 與 QA 串成受控工作流。 |

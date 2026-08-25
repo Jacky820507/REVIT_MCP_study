@@ -21,7 +21,10 @@ def classify(value):
 
 try:
     view = mcp.run('get_active_view')
-    view_id = view.get('Id')
+    # get_active_view 回傳欄位是 ElementId（不是 Id）；viewId 傳 null 會讓 C# 端炸掉
+    view_id = view.get('ElementId') or view.get('Id')
+    if view_id is None:
+        raise mcp.MCPBridgeError(u'get_active_view 未回傳視圖 ID：{}'.format(view))
     walls = mcp.run('query_elements',
                     {'category': 'Walls', 'viewId': view_id})
     elements = walls.get('Elements') or []
@@ -29,8 +32,9 @@ try:
         forms.alert(u'目前視圖沒有牆。', title=u'防火上色')
     else:
         pname = forms.ask_for_string(
-            default=u's_CW_防火防煙性能',
-            prompt=u'防火時效參數名稱（依專案樣板調整）',
+            default=u'防火等級',
+            prompt=u'防火時效參數名稱（實例或類型參數皆可，'
+                   u'預設讀牆類型內建「防火等級」；也可改用「備註」等自訂欄位）',
             title=u'防火上色')
         if pname:
             doc = revit.doc
@@ -41,7 +45,12 @@ try:
                 elem = doc.GetElement(DB.ElementId(int(eid)))
                 val = u''
                 if elem is not None:
+                    # 先找實例參數；找不到或空值時改找牆類型上的同名參數
                     p = elem.LookupParameter(pname)
+                    if not (p and p.AsString()):
+                        wtype = doc.GetElement(elem.GetTypeId())
+                        if wtype is not None:
+                            p = wtype.LookupParameter(pname) or p
                     if p and p.AsString():
                         val = p.AsString().strip()
                 key = classify(val)

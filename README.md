@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo.png" alt="Revit MCP" width="140" height="140">
+</div>
+
 <h2 align="center"><font color="#8B0000"> 友善提醒：本專案預設使用 Port: 8964，請確保該埠號未被佔用 </font></h2>
 
 # Revit MCP - AI-Powered Revit Control
@@ -10,17 +14,34 @@ Revit MCP lets AI clients call Autodesk Revit tools through the Model Context Pr
 - Knowledge site: <https://shuotao.github.io/REVIT_MCP_study/>
 - Default WebSocket port: `8964`
 
+## What is this?
+
+Talk to Revit in plain language. Ask your AI client to dimension a view, inspect model data, or run a BIM workflow, and Revit executes it through MCP tools backed by the project SOPs.
+
+**Who it's for:** BIM engineers and architects who want AI-assisted, standards-based Revit workflows. This fork is maintained with **Revit 2020 as the primary target** while retaining the repository's cross-version compatibility paths.
+
+## Quickstart (3 steps)
+
+1. **Build and install the Revit add-in.** For Jacky's primary environment, use the `Release.R20` configuration; see [Manual Setup](#manual-setup).
+2. **Point your AI client at the MCP server.** The server can run from this checkout or from the published npm package:
+   ```json
+   { "mcpServers": { "revit-mcp": { "command": "npx", "args": ["-y", "@shuotao/revit-mcp-server"] } } }
+   ```
+3. **Open Revit, enable the MCP service in the ribbon, and start asking.** Full setup: [AI Client Configuration](#ai-client-configuration).
+
+Questions or want to show what you built? → **[Discussions](https://github.com/shuotao/REVIT_MCP_study/discussions)**
+
 ## Current Project Counts
 
 | Item | Count | Source |
 |---|---:|---|
-| Runtime MCP tools | 146 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
-| Domain SOP files | 61 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
-| Claude skills | 42 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 185 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
+| Domain SOP files | 83 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
+| Claude skills | 62 | `.claude/skills/*/SKILL.md` |
 
 When these numbers change, update `CLAUDE.md`, `README.zh-TW.md`, this file, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and run:
 
-**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 67 Domain + 30 Skill + 139 Tool 視覺化索引
+**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 83 Domain + 62 Skill + 185 Tool 視覺化索引
 
 ---
 
@@ -36,7 +57,7 @@ When these numbers change, update `CLAUDE.md`, `README.zh-TW.md`, this file, `do
 > 
 > ```markdown
 > # Global Agent Rules
-> 1. Before executing any task, ALWAYS check the current workspace root for `GEMINI.md`, `CLAUDE.md`, or `.agents/rules/`.
+> 1. Before executing any task, ALWAYS check the current workspace root for `GEMINI.md`, `CLAUDE.md`, or `AGENTS.md`.
 > 2. If present, MUST READ them first. These project-level files act as your absolute constitution. 
 > 3. Their instructions and capability boundaries STRICTLY OVERRIDE any default behaviors or global rules.
 > ```
@@ -1480,12 +1501,10 @@ A: 確認 MCP Server 設定檔路徑正確，並重新啟動 AI 應用程式。
 
 如果您在安裝過程中遇到問題，請參考以下解法：
 
-### 1. 執行 .bat 批次檔時閃退或報錯
-- **症狀**：點擊 `install-addon.bat` 視窗一閃即逝，或顯示 `The system cannot find the path`。
-- **原因**：若您是透過 Git 在不同作業系統間同步（如 Mac 到 Windows），檔案的換行格式可能變成了 **LF**，但 Windows 批次檔需要 **CRLF**。
-- **解法**：
-  1. 放棄 `.bat`，改用 PowerShell 執行 `.ps1` 腳本。
-  2. 或者使用 VS Code 將檔案右下角的換行格式切換回 `CRLF` 並存檔。
+### 1. 找不到 install-addon.bat
+- **症狀**：舊文件或舊筆記提到雙擊 `install-addon.bat` 安裝，但專案裡找不到這個檔案。
+- **原因**：2026-08-03 起只保留唯一的安裝器 `scripts/install-addon.ps1`。舊的 `.bat` 指向已淘汰的建置輸出路徑，容易安裝到錯的 DLL。
+- **解法**：改用 PowerShell 執行 `.\scripts\install-addon.ps1`。
 
 ### 2. PowerShell 出現大量亂碼紅字
 - **症狀**：執行 `.ps1` 時出現問號亂碼（如 `?誘 蠟幅??`），導致安裝失敗。
@@ -1523,7 +1542,7 @@ MIT License
 | **專案文件** | |
 | [CHANGELOG.md](./CHANGELOG.md) | 版本變更日誌（v1.0.0 ~ v1.5.1） |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | 貢獻指南：如何提交工作流程與經驗規則 |
-| [README.en.md](./README.en.md) | English version of this README |
+| [README.zh-TW.md](./README.zh-TW.md) | Traditional Chinese version of this README |
 | **domain/** | |
 | [domain/README.md](./domain/README.md) | 領域知識目錄（AI 工作流程 SOP） |
 | [domain/lessons.md](./domain/lessons.md) | 開發經驗與避坑規則（由 `/lessons` 指令維護） |

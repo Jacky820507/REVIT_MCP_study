@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://revitmcp.local/schemas/taiwan-building-code-project-input-field-map-0.2.0.json",
+  "schemaVersion": "0.2.0",
+  "status": "operational-input-contract",
+  "description": "使用者提供的台灣建築法規專案資料到 Revit Law_* 參數的欄位映射；不包含現行法規數值。",
+  "sourcePolicy": {
+    "preferredKinds": [
+      "official-document",
+      "approved-project-document",
+      "user-provided-document",
+      "user-statement"
+    ],
+    "userStatementMayBeDraft": true,
+    "allowInferenceForLegalValue": false
+  },
+  "fields": [
+    {
+      "fieldKey": "site_area",
+      "label": "地籍基地面積",
+      "parameterName": "Law_地籍基地面積",
+      "scope": "ProjectInformation",
+      "valueType": "number",
+      "canonicalUnit": "m2",
+      "aliases": ["基地面積", "地籍基地面積", "基地面積(m²)", "基地面積平方公尺"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresUnitOrUnambiguousDocumentUnit": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可由建築物投影面積、樓地板面積或地圖目測反推地籍基地面積。"
+    },
+    {
+      "fieldKey": "legal_excavation_rate",
+      "label": "法定開挖率",
+      "parameterName": "Law_法定開挖率%",
+      "scope": "ProjectInformation",
+      "valueType": "number",
+      "canonicalUnit": "%",
+      "aliases": ["開挖率", "法定開挖率", "地下開挖率"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可僅由基地面積、地下室層數或建築用途推定法定值。"
+    },
+    {
+      "fieldKey": "legal_coverage_rate",
+      "label": "法定建蔽率",
+      "parameterName": "Law_法定建蔽率%",
+      "scope": "ProjectInformation",
+      "valueType": "number",
+      "canonicalUnit": "%",
+      "aliases": ["建蔽率", "法定建蔽率", "建蔽率上限"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可把實際建築面積除以基地面積的結果當成法定建蔽率。"
+    },
+    {
+      "fieldKey": "legal_floor_area_ratio",
+      "label": "法定容積率",
+      "parameterName": "Law_法定容積率%",
+      "scope": "ProjectInformation",
+      "valueType": "number",
+      "canonicalUnit": "%",
+      "aliases": ["容積率", "法定容積率", "基準容積率"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可把模型實際樓地板面積除以基地面積的結果當成法定容積率。"
+    },
+    {
+      "fieldKey": "mep_floor_area_bonus_rate",
+      "label": "機電設備容積乘積",
+      "parameterName": "Law_機電設備容積乘積%",
+      "scope": "ProjectInformation",
+      "valueType": "number",
+      "canonicalUnit": "%",
+      "aliases": ["機電設備容積乘積", "機電容積乘積", "機電設備容積"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "沒有明確適用依據時不可自行填寫 0。"
+    },
+    {
+      "fieldKey": "parking_rule",
+      "label": "停車檢討適用法規",
+      "parameterName": "Law_停車檢討適用法規",
+      "scope": "ProjectInformation",
+      "valueType": "string",
+      "canonicalUnit": null,
+      "aliases": ["停車法規", "停車檢討法規", "適用停車規定"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可只依建築用途名稱猜測適用法規；至少要記錄地區、用途或法規版本。"
+    },
+    {
+      "fieldKey": "public_building",
+      "label": "供公眾建築物",
+      "parameterName": "Law_供公眾建築物",
+      "scope": "ProjectInformation",
+      "valueType": "boolean",
+      "canonicalUnit": null,
+      "aliases": ["供公眾建築物", "公共建築物", "是否供公眾使用"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false,
+        "acceptedText": ["是", "否", "true", "false", "yes", "no", "1", "0"]
+      },
+      "prohibitedInference": "不可只依建築名稱或樓層數量推定是否屬供公眾建築物。"
+    },
+    {
+      "fieldKey": "fire_resistant_construction",
+      "label": "防火構造",
+      "parameterName": "Law_防火構造",
+      "scope": "ProjectInformation",
+      "valueType": "string",
+      "canonicalUnit": null,
+      "aliases": ["防火構造", "構造防火", "防火等級"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可只依結構系統名稱或牆體族群名稱推定整棟建築的法定防火構造。"
+    },
+    {
+      "fieldKey": "urban_planning_zone",
+      "label": "都市計畫區域",
+      "parameterName": "Law_都市計畫區域",
+      "scope": "ProjectInformation",
+      "valueType": "string",
+      "canonicalUnit": null,
+      "aliases": ["都市計畫區域", "使用分區", "土地使用分區", "都市計畫分區"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可只由地址或行政區名稱推定細部土地使用分區。"
+    },
+    {
+      "fieldKey": "area_use_group",
+      "label": "建管用途類組",
+      "parameterName": "Law_建管-用途類組",
+      "scope": "Areas",
+      "valueType": "string",
+      "canonicalUnit": null,
+      "aliases": ["建管用途類組", "用途類組", "Area用途類組"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可只由 Area 名稱、樓層或模型幾何推定建管用途類組；(無) 或其他佔位字串視為未填。"
+    },
+    {
+      "fieldKey": "area_legal_name",
+      "label": "技規法定名稱",
+      "parameterName": "Law_技規-法定名稱",
+      "scope": "Areas",
+      "valueType": "string",
+      "canonicalUnit": null,
+      "aliases": ["技規法定名稱", "法定名稱", "Area法定名稱"],
+      "acceptance": {
+        "requiresValue": true,
+        "requiresApplicableSource": true,
+        "allowDerived": false
+      },
+      "prohibitedInference": "不可只由 Area 面積、名稱或相鄰元素推定技規法定名稱；需保留對應規則或審查來源。"
+    }
+  ]
+}

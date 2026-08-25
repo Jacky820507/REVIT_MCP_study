@@ -80,7 +80,10 @@ namespace RevitMCP.Core
             int firstMethodMatches = 0;
             int secondMethodMatches = 0;
             int skippedBySafeguard = 0;
+            int changedCount = 0;
             var processedTypes = new HashSet<string>();
+            var updatedItems = new List<object>();
+            var skippedItems = new List<object>();
 
             // 1. 建立 ViewId → Sheet 對應表
             var viewToSheetMap = new Dictionary<IdType, ViewSheet>();
@@ -147,6 +150,13 @@ namespace RevitMCP.Core
                     if (matchMode == null)
                     {
                         skippedBySafeguard++;
+                        skippedItems.Add(new
+                        {
+                            Type = currentSymbol.Name,
+                            Family = currentSymbol.FamilyName,
+                            Sheet = sheetNumber,
+                            Reason = "類型名稱與圖紙號碼不符，安全跳過"
+                        });
                         continue;
                     }
 
@@ -158,15 +168,32 @@ namespace RevitMCP.Core
                         t.Start();
 
                         Parameter pTypeSheetNum = currentSymbol.LookupParameter("詳圖圖號");
+                        string oldSheetNumber = pTypeSheetNum?.AsString();
                         if (pTypeSheetNum != null && !pTypeSheetNum.IsReadOnly)
                             pTypeSheetNum.Set(sheetNumber);
 
                         Parameter pTypeSheetName = currentSymbol.LookupParameter("圖說名稱");
+                        string oldSheetName = pTypeSheetName?.AsString();
                         if (pTypeSheetName != null && !pTypeSheetName.IsReadOnly)
                             pTypeSheetName.Set(sheetName);
 
                         t.Commit();
                         updatedInstances++;
+
+                        bool changed =
+                            !string.Equals(oldSheetNumber ?? "", sheetNumber, StringComparison.Ordinal) ||
+                            !string.Equals(oldSheetName ?? "", sheetName, StringComparison.Ordinal);
+                        if (changed) changedCount++;
+                        updatedItems.Add(new
+                        {
+                            Type = currentSymbol.Name,
+                            Family = currentSymbol.FamilyName,
+                            Sheet = sheetNumber,
+                            SheetName = sheetName,
+                            OldSheetNumber = oldSheetNumber,
+                            OldSheetName = oldSheetName,
+                            Changed = changed
+                        });
                         if (matchMode == "type_name_starts_with_sheet_number")
                             firstMethodMatches++;
                         else if (matchMode == "sheet_number_starts_with_type_name_prefix")
@@ -181,11 +208,14 @@ namespace RevitMCP.Core
             {
                 Success = true,
                 UpdatedInstances = updatedInstances,
+                ChangedCount = changedCount,
                 TypesCreated = typesCreated,
                 FirstMethodMatches = firstMethodMatches,
                 SecondMethodMatches = secondMethodMatches,
                 SkippedBySafeguard = skippedBySafeguard,
-                Message = $"同步完成：更新了 {updatedInstances} 個標頭元件，建立了 {typesCreated} 個新類型。第一種作法 {firstMethodMatches} 筆，第二種作法 {secondMethodMatches} 筆，安全跳過 {skippedBySafeguard} 筆。"
+                UpdatedItems = updatedItems,
+                SkippedItems = skippedItems,
+                Message = $"同步完成：處理 {updatedInstances} 個標頭類型（實際變更 {changedCount}、原已一致 {updatedInstances - changedCount}），建立 {typesCreated} 個新類型，安全跳過 {skippedBySafeguard} 筆。"
             };
         }
 
@@ -1165,6 +1195,390 @@ namespace RevitMCP.Core
                 .ToList();
 
             return new { Success = true, Symbols = symbols };
+        }
+
+        /// <summary>
+        /// 列出詳圖元件/通用註解的家族清單與其文字類型參數（含範例值），供 UI 動態選擇。
+        /// </summary>
+        private object GetDetailComponentFamilies(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            var categories = new List<BuiltInCategory>
+            {
+                BuiltInCategory.OST_DetailComponents,
+                BuiltInCategory.OST_GenericAnnotation
+            };
+
+            var families = new Dictionary<string, DetailFamilyInfo>(StringComparer.Ordinal);
+            foreach (var cat in categories)
+            {
+                var symbols = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FamilySymbol))
+                    .OfCategory(cat)
+                    .Cast<FamilySymbol>();
+
+                foreach (var symbol in symbols)
+                {
+                    string familyName = symbol.FamilyName ?? "";
+                    if (string.IsNullOrWhiteSpace(familyName)) continue;
+
+                    if (!families.TryGetValue(familyName, out var info))
+                    {
+                        info = new DetailFamilyInfo
+                        {
+                            Name = familyName,
+                            Category = symbol.Category?.Name ?? ""
+                        };
+                        families[familyName] = info;
+                    }
+
+                    info.TypeCount++;
+
+                    foreach (Parameter p in symbol.Parameters)
+                    {
+                        if (p?.Definition == null) continue;
+                        if (p.StorageType != StorageType.String) continue;
+
+                        string pname = p.Definition.Name;
+                        if (!info.ParameterMap.TryGetValue(pname, out var pinfo))
+                        {
+                            pinfo = new DetailFamilyParameterInfo
+                            {
+                                Name = pname,
+                                IsReadOnly = p.IsReadOnly
+                            };
+                            info.ParameterMap[pname] = pinfo;
+                        }
+
+                        if (!p.IsReadOnly) pinfo.IsReadOnly = false;
+                        if (string.IsNullOrEmpty(pinfo.Sample))
+                        {
+                            string v = p.AsString();
+                            if (!string.IsNullOrWhiteSpace(v)) pinfo.Sample = v.Trim();
+                        }
+                    }
+                }
+            }
+
+            var result = families.Values
+                .OrderBy(f => f.Name, StringComparer.Ordinal)
+                .Select(f => new
+                {
+                    f.Name,
+                    f.TypeCount,
+                    f.Category,
+                    ParameterNames = f.ParameterMap.Values
+                        .OrderBy(p => p.Name, StringComparer.Ordinal)
+                        .Select(p => new { p.Name, p.IsReadOnly, Sample = p.Sample ?? "" })
+                        .ToList<object>()
+                })
+                .ToList<object>();
+
+            return new { Success = true, Count = result.Count, Families = result };
+        }
+
+        private class DetailFamilyInfo
+        {
+            public string Name { get; set; }
+            public string Category { get; set; }
+            public int TypeCount { get; set; }
+            public Dictionary<string, DetailFamilyParameterInfo> ParameterMap { get; } =
+                new Dictionary<string, DetailFamilyParameterInfo>(StringComparer.Ordinal);
+        }
+
+        private class DetailFamilyParameterInfo
+        {
+            public string Name { get; set; }
+            public bool IsReadOnly { get; set; }
+            public string Sample { get; set; }
+        }
+
+        /// <summary>
+        /// 依圖紙號碼或圖紙名稱為主鍵，檢核並修正詳圖標頭類型上的圖號/名稱參數對（雙向）。
+        /// 以圖紙號碼為主：用圖號參數值找圖紙 → 修正名稱參數；以圖紙名稱為主：反向。
+        /// </summary>
+        private object SyncDetailComponentSheetFields(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+
+            string familyName = parameters?["familyName"]?.Value<string>();
+            string matchBy = parameters?["matchBy"]?.Value<string>();
+            string sheetNumberParameter = parameters?["sheetNumberParameter"]?.Value<string>();
+            string sheetNameParameter = parameters?["sheetNameParameter"]?.Value<string>();
+            bool dryRun = parameters?["dryRun"]?.Value<bool>() ?? true;
+            bool renameTypes = parameters?["renameTypes"]?.Value<bool>() ?? true;
+            string detailNameParameter = parameters?["detailNameParameter"]?.Value<string>() ?? "詳圖名稱";
+
+            if (string.IsNullOrWhiteSpace(familyName))
+                throw new Exception("Parameter 'familyName' is required.");
+            bool byNumber = string.Equals(matchBy, "sheetNumber", StringComparison.OrdinalIgnoreCase);
+            bool byName = string.Equals(matchBy, "sheetName", StringComparison.OrdinalIgnoreCase);
+            if (!byNumber && !byName)
+                throw new Exception("Parameter 'matchBy' must be 'sheetNumber' or 'sheetName'.");
+            if (string.IsNullOrWhiteSpace(sheetNumberParameter))
+                throw new Exception("Parameter 'sheetNumberParameter' is required.");
+            if (string.IsNullOrWhiteSpace(sheetNameParameter))
+                throw new Exception("Parameter 'sheetNameParameter' is required.");
+
+            // 1. 掃描全部圖紙：號碼唯一、名稱可能重複
+            var sheets = new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewSheet))
+                .Cast<ViewSheet>()
+                .ToList();
+
+            var byNumberMap = new Dictionary<string, ViewSheet>(StringComparer.OrdinalIgnoreCase);
+            var byNameMap = new Dictionary<string, List<ViewSheet>>(StringComparer.Ordinal);
+            foreach (var sheet in sheets)
+            {
+                string num = NormalizeParameterKeyValue(sheet.SheetNumber);
+                if (num.Length > 0 && !byNumberMap.ContainsKey(num))
+                    byNumberMap[num] = sheet;
+
+                string name = NormalizeParameterKeyValue(sheet.Name);
+                if (name.Length > 0)
+                {
+                    if (!byNameMap.TryGetValue(name, out var list))
+                    {
+                        list = new List<ViewSheet>();
+                        byNameMap[name] = list;
+                    }
+                    list.Add(sheet);
+                }
+            }
+
+            // 2. 找家族類型：先精確、無則模糊
+            var allSymbols = new FilteredElementCollector(doc)
+                .OfClass(typeof(FamilySymbol))
+                .Cast<FamilySymbol>()
+                .ToList();
+
+            var symbols = allSymbols
+                .Where(s => string.Equals(s.FamilyName, familyName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (symbols.Count == 0)
+                symbols = allSymbols
+                    .Where(s => s.FamilyName != null &&
+                                s.FamilyName.IndexOf(familyName, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
+            if (symbols.Count == 0)
+                throw new Exception($"找不到家族: {familyName}");
+
+            string keyParameter = byNumber ? sheetNumberParameter : sheetNameParameter;
+            string targetParameter = byNumber ? sheetNameParameter : sheetNumberParameter;
+
+            int okCount = 0, updateCount = 0, emptyKeyCount = 0,
+                notMatchedCount = 0, ambiguousCount = 0, unwritableCount = 0,
+                renameCount = 0, renameConflictCount = 0;
+            var items = new List<object>();
+            var pendingWrites = new List<KeyValuePair<FamilySymbol, string>>();
+            var pendingRenames = new List<KeyValuePair<FamilySymbol, string>>();
+            var familyTypeNames = new HashSet<string>(symbols.Select(s => s.Name), StringComparer.Ordinal);
+            var claimedTypeNames = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var symbol in symbols.OrderBy(s => s.Name, StringComparer.Ordinal))
+            {
+                string keyValue = NormalizeParameterKeyValue(GetParameterValue(symbol, keyParameter));
+                string currentValue = NormalizeParameterKeyValue(GetParameterValue(symbol, targetParameter));
+
+                if (keyValue.Length == 0)
+                {
+                    emptyKeyCount++;
+                    items.Add(new
+                    {
+                        TypeName = symbol.Name,
+                        KeyValue = "",
+                        CurrentValue = currentValue,
+                        ExpectedValue = (string)null,
+                        SheetNumber = (string)null,
+                        SheetName = (string)null,
+                        Action = "empty_key"
+                    });
+                    continue;
+                }
+
+                ViewSheet matched = null;
+                List<ViewSheet> candidates = null;
+                if (byNumber)
+                {
+                    byNumberMap.TryGetValue(keyValue, out matched);
+                }
+                else if (byNameMap.TryGetValue(keyValue, out var list))
+                {
+                    if (list.Count == 1) matched = list[0];
+                    else candidates = list;
+                }
+
+                if (candidates != null)
+                {
+                    ambiguousCount++;
+                    items.Add(new
+                    {
+                        TypeName = symbol.Name,
+                        KeyValue = keyValue,
+                        CurrentValue = currentValue,
+                        ExpectedValue = (string)null,
+                        SheetNumber = (string)null,
+                        SheetName = (string)null,
+                        Action = "ambiguous",
+                        Candidates = candidates
+                            .Select(s => new { s.SheetNumber, SheetName = s.Name })
+                            .ToList<object>()
+                    });
+                    continue;
+                }
+
+                if (matched == null)
+                {
+                    notMatchedCount++;
+                    items.Add(new
+                    {
+                        TypeName = symbol.Name,
+                        KeyValue = keyValue,
+                        CurrentValue = currentValue,
+                        ExpectedValue = (string)null,
+                        SheetNumber = (string)null,
+                        SheetName = (string)null,
+                        Action = "not_matched"
+                    });
+                    continue;
+                }
+
+                string expected = NormalizeParameterKeyValue(byNumber ? matched.Name : matched.SheetNumber);
+
+                // 類型名稱同步評估（規則：圖紙號碼-圖紙名稱-詳圖名稱）
+                string detailNameValue = NormalizeParameterKeyValue(GetParameterValue(symbol, detailNameParameter));
+                string expectedTypeName = null;
+                string renameAction = renameTypes ? "no_detail_name" : "rename_disabled";
+                if (renameTypes && detailNameValue.Length > 0)
+                {
+                    expectedTypeName = BuildDetailComponentTypeName(
+                        matched.SheetNumber, matched.Name, detailNameValue);
+                    if (string.Equals(symbol.Name, expectedTypeName, StringComparison.Ordinal))
+                    {
+                        renameAction = "name_ok";
+                    }
+                    else if (familyTypeNames.Contains(expectedTypeName) ||
+                             claimedTypeNames.Contains(expectedTypeName))
+                    {
+                        renameAction = "rename_conflict";
+                        renameConflictCount++;
+                    }
+                    else
+                    {
+                        renameAction = dryRun ? "rename" : "renamed";
+                        claimedTypeNames.Add(expectedTypeName);
+                        renameCount++;
+                        if (!dryRun)
+                            pendingRenames.Add(new KeyValuePair<FamilySymbol, string>(symbol, expectedTypeName));
+                    }
+                }
+
+                if (string.Equals(currentValue, expected, StringComparison.Ordinal))
+                {
+                    okCount++;
+                    items.Add(new
+                    {
+                        TypeName = symbol.Name,
+                        KeyValue = keyValue,
+                        CurrentValue = currentValue,
+                        ExpectedValue = expected,
+                        SheetNumber = matched.SheetNumber,
+                        SheetName = matched.Name,
+                        DetailName = detailNameValue,
+                        ExpectedTypeName = expectedTypeName,
+                        RenameAction = renameAction,
+                        Action = "ok"
+                    });
+                    continue;
+                }
+
+                Parameter targetParam = symbol.LookupParameter(targetParameter);
+                if (targetParam == null || targetParam.IsReadOnly)
+                {
+                    unwritableCount++;
+                    items.Add(new
+                    {
+                        TypeName = symbol.Name,
+                        KeyValue = keyValue,
+                        CurrentValue = currentValue,
+                        ExpectedValue = expected,
+                        SheetNumber = matched.SheetNumber,
+                        SheetName = matched.Name,
+                        DetailName = detailNameValue,
+                        ExpectedTypeName = expectedTypeName,
+                        RenameAction = renameAction,
+                        Action = "target_unwritable"
+                    });
+                    continue;
+                }
+
+                updateCount++;
+                if (!dryRun)
+                    pendingWrites.Add(new KeyValuePair<FamilySymbol, string>(symbol, expected));
+                items.Add(new
+                {
+                    TypeName = symbol.Name,
+                    KeyValue = keyValue,
+                    CurrentValue = currentValue,
+                    ExpectedValue = expected,
+                    SheetNumber = matched.SheetNumber,
+                    SheetName = matched.Name,
+                    DetailName = detailNameValue,
+                    ExpectedTypeName = expectedTypeName,
+                    RenameAction = renameAction,
+                    Action = dryRun ? "update" : "updated"
+                });
+            }
+
+            if (!dryRun && (pendingWrites.Count > 0 || pendingRenames.Count > 0))
+            {
+                using (Transaction t = new Transaction(doc, "詳圖標頭圖紙欄位同步"))
+                {
+                    t.Start();
+                    foreach (var kvp in pendingWrites)
+                        SetWritableParameter(kvp.Key, targetParameter, kvp.Value);
+                    foreach (var kvp in pendingRenames)
+                    {
+                        try { kvp.Key.Name = kvp.Value; }
+                        catch (Exception ex)
+                        {
+                            Logger.Debug($"類型改名失敗 {kvp.Key.Name} → {kvp.Value}: {ex.Message}");
+                        }
+                    }
+                    t.Commit();
+                }
+            }
+
+            string modeLabel = byNumber
+                ? "以圖紙號碼為主（修正圖紙名稱）"
+                : "以圖紙名稱為主（修正圖紙號碼）";
+            return new
+            {
+                Success = true,
+                DryRun = dryRun,
+                MatchBy = byNumber ? "sheetNumber" : "sheetName",
+                FamilyName = familyName,
+                KeyParameter = keyParameter,
+                TargetParameter = targetParameter,
+                TypeCount = items.Count,
+                OkCount = okCount,
+                UpdatedCount = updateCount,
+                EmptyKeyCount = emptyKeyCount,
+                NotMatchedCount = notMatchedCount,
+                AmbiguousCount = ambiguousCount,
+                UnwritableCount = unwritableCount,
+                RenameTypes = renameTypes,
+                DetailNameParameter = detailNameParameter,
+                RenamedCount = renameCount,
+                RenameConflictCount = renameConflictCount,
+                Items = items,
+                Message = $"{modeLabel}：{items.Count} 個類型 — 參數一致 {okCount}、" +
+                          $"{(dryRun ? "需修正" : "已修正")} {updateCount}、" +
+                          $"類型{(dryRun ? "需改名" : "已改名")} {renameCount}、改名衝突 {renameConflictCount}、" +
+                          $"主鍵空值 {emptyKeyCount}、查無圖紙 {notMatchedCount}、名稱重複 {ambiguousCount}、不可寫入 {unwritableCount}" +
+                          (dryRun ? "（dry-run 未寫入）" : "")
+            };
         }
 
         #endregion

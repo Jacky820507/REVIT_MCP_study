@@ -1,0 +1,4 @@
+interface:
+  display_name: "樓層排序"
+  short_description: "統一 Revit/Excel 樓層排序：地下、地上、屋突。"
+  default_prompt: "請依 Revit 專案樓層實際名稱，套用地下層、地上層、屋突層的建築閱讀順序更新報表。"

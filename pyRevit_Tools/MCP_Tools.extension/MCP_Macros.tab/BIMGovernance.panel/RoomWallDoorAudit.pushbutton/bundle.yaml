@@ -1,0 +1,2 @@
+title: "房間關係\n盤點"
+tooltip: "唯讀盤點 Room 邊界牆、門窗 FromRoom/ToRoom 與 Host Wall 關係，輸出 confirmed、inferred、unresolved 證據狀態"

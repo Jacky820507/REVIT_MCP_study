@@ -1,0 +1,21 @@
+{
+  "targetParameter": "Door Specification",
+  "targetScope": "type",
+  "matchField": "type",
+  "mode": "fill_blank",
+  "includeCurtain": false,
+  "caseInsensitive": true,
+  "collapseWhitespace": true,
+  "rules": [
+    {
+      "id": "interior-door",
+      "match": "內門",
+      "value": "DOOR-INTERIOR"
+    },
+    {
+      "id": "exterior-door",
+      "match": "外門",
+      "value": "DOOR-EXTERIOR"
+    }
+  ]
+}

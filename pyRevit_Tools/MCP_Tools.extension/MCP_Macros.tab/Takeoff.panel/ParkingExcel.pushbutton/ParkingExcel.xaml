@@ -1,0 +1,94 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="停車位 Excel" Height="720" Width="780"
+    WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="115"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+
+    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,5,8,12" Text="Excel 路徑"/>
+    <TextBox x:Name="pathBox" Grid.Row="0" Grid.Column="1" Margin="0,0,8,12"
+             MinWidth="420" VerticalContentAlignment="Center"/>
+    <Button x:Name="browseButton" Grid.Row="0" Grid.Column="2" Margin="0,0,0,12"
+            Padding="14,5" Content="瀏覽…"/>
+
+    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,5,8,12" Text="Revit 樓層"/>
+    <ComboBox x:Name="levelCombo" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+              Margin="0,0,0,12" MinHeight="27"/>
+
+    <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,5,8,12" Text="資料來源模式"/>
+    <ComboBox x:Name="sourceModeCombo" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+              Margin="0,0,0,12" MinHeight="27">
+      <ComboBoxItem Content="自動偵測此樓層所有 Parking 類別" IsSelected="True"/>
+      <ComboBoxItem Content="使用下方選取的停車明細表"/>
+    </ComboBox>
+
+    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,5,8,12" Text="連結模型"/>
+    <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock x:Name="linkSummaryText" Grid.Column="0" Margin="0,5,8,0"
+                 Foreground="#666" Text="未選取連結模型（只計算主模型）"
+                 TextTrimming="CharacterEllipsis"/>
+      <Button x:Name="selectLinksButton" Grid.Column="1" Padding="14,5"
+              Content="選擇連結模型…"/>
+    </Grid>
+
+    <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,5,8,12" Text="停車明細表"/>
+    <Grid Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <StackPanel Grid.Column="0" Margin="0,0,8,0">
+        <TextBlock x:Name="scheduleSummaryText" Margin="0,4,0,0"
+                   Foreground="#666" Text="自動模式不使用明細表"
+                   TextTrimming="CharacterEllipsis"/>
+        <TextBlock x:Name="scheduleHintText" Margin="0,3,0,0" Foreground="#777"
+                   FontSize="11" Text="明細表模式會套用選取表的標註篩選。"/>
+      </StackPanel>
+      <Button x:Name="selectSchedulesButton" Grid.Column="1" Padding="14,5"
+              Content="選擇明細表…"/>
+    </Grid>
+
+    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,5,8,12" Text="輪檔／汽車位"/>
+    <ComboBox x:Name="multiplierCombo" Grid.Row="5" Grid.Column="1"
+              Margin="0,0,8,12" MinHeight="27">
+      <ComboBoxItem Content="1"/>
+      <ComboBoxItem Content="2" IsSelected="True"/>
+    </ComboBox>
+    <Button x:Name="previewButton" Grid.Row="5" Grid.Column="2" Margin="0,0,0,12"
+            Padding="18,5" Content="產生預覽"/>
+
+    <GroupBox Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3" Header="更新預覽">
+      <TextBox x:Name="previewBox" Margin="8" IsReadOnly="True"
+               VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+               TextWrapping="NoWrap" FontFamily="Consolas"/>
+    </GroupBox>
+
+    <StackPanel Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="3"
+                Margin="0,14,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
+      <TextBlock x:Name="statusText" Margin="0,7,16,0" Foreground="#666"
+                 Text="請先產生預覽。"/>
+      <Button x:Name="updateButton" IsEnabled="False" MinWidth="110"
+              Margin="0,0,8,0" Padding="14,6" Content="更新 Excel"/>
+      <Button x:Name="cancelButton" MinWidth="80" Padding="14,6" Content="取消"/>
+    </StackPanel>
+  </Grid>
+</Window>

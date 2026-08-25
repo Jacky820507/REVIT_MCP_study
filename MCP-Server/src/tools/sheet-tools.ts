@@ -36,7 +36,7 @@ export const sheetTools: Tool[] = [
     },
     {
         name: "auto_renumber_sheets",
-        description: "Automatically repair sheet-number insertion conflicts such as -1/-2 suffixes. Supports dryRun preview of planned moves before writing.",
+        description: "Automatically repair sheet numbering: resolves insertion suffixes (-1..-N, e.g. ARA-D04005-2 becomes ARA-D04006) and compacts skipped numbers within each series (e.g. ARA-D04009 right after ARA-D04005 moves up to the next consecutive number). Series are detected generically as prefix + trailing digits; jumps larger than blockGapThreshold are treated as intentional blocks and kept. Supports dryRun preview of planned moves before writing.",
         inputSchema: {
             type: "object",
             properties: {
@@ -44,6 +44,20 @@ export const sheetTools: Tool[] = [
                     type: "boolean",
                     description: "true previews the planned sheet-number moves without writing to Revit.",
                     default: false,
+                },
+                compactGaps: {
+                    type: "boolean",
+                    description: "false only resolves -N insertion suffixes and keeps skipped numbers as-is.",
+                    default: true,
+                },
+                blockGapThreshold: {
+                    type: "number",
+                    description: "Number jumps larger than this are treated as intentional block boundaries (e.g. D01xxx to D02xxx) and are not compacted.",
+                    default: 50,
+                },
+                prefixFilter: {
+                    type: "string",
+                    description: "Optional series prefix filter, e.g. 'ARA-D'. Only sheets whose detected prefix starts with this string are processed.",
                 },
             },
         },

@@ -1,0 +1,73 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="停車位編號"
+    Width="560"
+    Height="560"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
+                   Text="只會編排目前模型中的停車位，不會讀取 Revit 連結模型；左右與上下依目前平面視圖判定。"
+                   TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+        <TextBlock Grid.Row="1" Text="停車位類型" VerticalAlignment="Center"/>
+        <ComboBox x:Name="vehicleCombo" Grid.Row="1" Grid.Column="1"
+                  Height="28" Margin="0,4"/>
+
+        <TextBlock Grid.Row="2" Text="樓層" VerticalAlignment="Center"/>
+        <ComboBox x:Name="levelCombo" Grid.Row="2" Grid.Column="1"
+                  Height="28" Margin="0,4"/>
+
+        <TextBlock Grid.Row="3" Text="起始編號" VerticalAlignment="Center"/>
+        <TextBox x:Name="startNumberText" Grid.Row="3" Grid.Column="1"
+                 Height="28" Margin="0,4" Text="1" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="4" Text="寫入參數" VerticalAlignment="Center"/>
+        <TextBox x:Name="parameterText" Grid.Row="4" Grid.Column="1"
+                 Height="28" Margin="0,4" Text="備註" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="5" Text="排列方式" VerticalAlignment="Center"/>
+        <ComboBox x:Name="orderCombo" Grid.Row="5" Grid.Column="1"
+                  Height="28" Margin="0,4"/>
+
+        <TextBlock Grid.Row="6" Text="同排／同欄容差 (mm)" VerticalAlignment="Center"/>
+        <TextBox x:Name="toleranceText" Grid.Row="6" Grid.Column="1"
+                 Height="28" Margin="0,4" Text="1500" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="7" Text="起始 Element ID（選填）"
+                   VerticalAlignment="Center"/>
+        <TextBox x:Name="startElementText" Grid.Row="7" Grid.Column="1"
+                 Height="28" Margin="0,4" VerticalContentAlignment="Center"/>
+
+        <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Margin="0,14,0,0"
+                   Foreground="#555555" TextWrapping="Wrap"
+                   Text="蛇行模式會在相鄰排或欄反轉次方向。指定起始 Element ID 時，該停車位必須屬於所選樓層與車種；排序完成後會由它開始編號。"/>
+
+        <StackPanel Grid.Row="9" Grid.ColumnSpan="2" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button x:Name="cancelButton" Content="取消" Width="90" Height="32"
+                    Margin="0,0,8,0" Click="cancel_clicked"/>
+            <Button x:Name="previewButton" Content="預覽編號" Width="110" Height="32"
+                    IsDefault="True" Click="preview_clicked"/>
+        </StackPanel>
+    </Grid>
+</Window>

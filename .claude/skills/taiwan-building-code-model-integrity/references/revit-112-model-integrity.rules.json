@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "taiwan-building-code-model-integrity",
+  "version": "0.2.0",
+  "status": "operational-contract",
+  "description": "REVIT_112 模型資料完整性檢查的預設輸入；不包含現行法規數值，也不直接產生合規結論。",
+  "defaultAuditInputs": {
+    "requiredProjectParameters": [
+      "Law_地籍基地面積",
+      "Law_法定開挖率%",
+      "Law_法定建蔽率%",
+      "Law_法定容積率%",
+      "Law_機電設備容積乘積%",
+      "Law_停車檢討適用法規",
+      "Law_供公眾建築物",
+      "Law_防火構造",
+      "Law_都市計畫區域"
+    ],
+    "requiredAreaParameters": [
+      "Law_建管-用途類組",
+      "Law_技規-法定名稱"
+    ],
+    "requiredLevelNames": ["1FL", "RFL"],
+    "recommendedLevelNames": ["GL"],
+    "requiredCategories": [
+      "Walls",
+      "Floors",
+      "Doors",
+      "Windows",
+      "Columns",
+      "StructuralFraming",
+      "Stairs"
+    ],
+    "checkNamedViews": true,
+    "checkAreaPlanContent": true,
+    "requiredViewNameKeywords": [
+      "地籍套繪圖",
+      "綠化面積",
+      "開挖面積",
+      "防火區劃",
+      "樓地板面積"
+    ],
+    "includeElementSamples": false,
+    "maxElementSamples": 10
+  },
+  "evidence": [
+    {
+      "kind": "local-operational-source",
+      "path": "E:\\設計資料\\REVIT_112.pdf",
+      "sha256": "826F184E07A561C5E726EAB74999772D1ACB73C3B927FE9221182B0DB0263641",
+      "pages": [13, 14, 20, 22, 34, 41],
+      "authority": "not-legal-ssot"
+    },
+    {
+      "kind": "secondary-retrieval",
+      "url": "https://arkiteki.com/",
+      "authority": "navigation-and-cross-check-only"
+    },
+    {
+      "kind": "curated-knowledge",
+      "url": "https://github.com/Jacky820507/HJPLUS_Taiwan_Architect_KB",
+      "authority": "context-and-maintenance-aid-only"
+    },
+    {
+      "kind": "legal-ssot",
+      "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0070115",
+      "authority": "official-source-to-verify-per-check"
+    }
+  ],
+  "deferredChecks": [
+    {
+      "id": "ifc-export-profile",
+      "expectedContract": "IFC 2x3 Coordination View",
+      "status": "unknown-until-export-settings-are-read"
+    },
+    {
+      "id": "current-legal-numeric-compliance",
+      "status": "requires-current-official-rule-and-case-scope"
+    }
+  ]
+}

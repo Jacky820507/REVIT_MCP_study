@@ -1,0 +1,2 @@
+title: "踢腳 Excel"
+tooltip: "先選 host／連結模型與各自樓層；可選主要 Excel 並備份更新「踢腳數量計算」，未選主檔則原樣匯出含公式的獨立活頁簿。周長使用 GetBoundarySegments(Finish)，只扣除位於房間 boundary host 牆上的門開口。"

@@ -1,0 +1,3 @@
+title: "RC體積 Excel"
+tooltip: "依房間匯出 RC 牆體積計算 Excel：牆長×牆高×厚度扣除宿主開口，格式比照輕隔間 Excel，另附牆面清單稽核分頁。牆類型關鍵字（預設 RC／混凝土／CONCRETE）執行時可修改。"
+author: "Claude"

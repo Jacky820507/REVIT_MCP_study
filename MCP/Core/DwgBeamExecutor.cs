@@ -30,15 +30,12 @@ namespace RevitMCP.Core
 
         class LabelData { public string Text; public double X; public double Y; public double RawX; public double RawY; }
 
-        public static object GetDwgBeamLayers(Document doc)
+        public static object GetDwgBeamLayers(Document doc, ICollection<ElementId>? selectedElementIds = null)
         {
             var vp = doc.ActiveView as ViewPlan;
             if (vp == null) throw new Exception("請在平面視圖中執行");
 
-            var cads = new FilteredElementCollector(doc, vp.Id)
-                .OfClass(typeof(ImportInstance))
-                .Cast<ImportInstance>()
-                .ToList();
+            var cads = GetCadInstances(doc, vp, selectedElementIds);
             if (cads.Count == 0) throw new Exception("目前視圖中找不到任何 CAD 連結或匯入");
 
             var layerNames = new HashSet<string>();
@@ -81,7 +78,7 @@ namespace RevitMCP.Core
             };
         }
 
-        public static object PreviewDwgBeams(Document doc, JObject p)
+        public static object PreviewDwgBeams(Document doc, JObject p, ICollection<ElementId>? selectedElementIds = null)
         {
             var vp = doc.ActiveView as ViewPlan;
             if (vp == null) throw new Exception("請在平面視圖中執行");
@@ -89,7 +86,7 @@ namespace RevitMCP.Core
             string layerName = p["layerName"]?.Value<string>();
             if (string.IsNullOrEmpty(layerName)) throw new Exception("必須提供 layerName 參數");
 
-            var lines = CollectLayerLines(doc, vp, layerName);
+            var lines = CollectLayerLines(doc, vp, layerName, selectedElementIds);
             var beams = ExtractBeamCenterLines(lines);
 
             var xBeams = beams.Where(b => b.IsXAligned).ToList();
@@ -111,7 +108,7 @@ namespace RevitMCP.Core
             };
         }
 
-        public static object CreateBeamsFromDwg(Document doc, JObject p)
+        public static object CreateBeamsFromDwg(Document doc, JObject p, ICollection<ElementId>? selectedElementIds = null)
         {
             var vp = doc.ActiveView as ViewPlan;
             if (vp == null) throw new Exception("請在平面視圖中執行");
@@ -136,7 +133,7 @@ namespace RevitMCP.Core
             var bLv = vp.GenLevel;
             if (bLv == null) throw new Exception("無法取得基準樓層");
 
-            var lines = CollectLayerLines(doc, vp, layerName);
+            var lines = CollectLayerLines(doc, vp, layerName, selectedElementIds);
             if (lines.Count == 0) throw new Exception($"圖層「{layerName}」中找不到直線幾何");
 
             var beams = ExtractBeamCenterLines(lines);
@@ -169,8 +166,8 @@ namespace RevitMCP.Core
             {
                 try
                 {
-                    labelsX = string.IsNullOrEmpty(textLayerNameX) ? null : ReadLabelsFromCad(doc, vp, textLayerNameX, beams.Select(b => b.Center).ToList());
-                    labelsY = string.IsNullOrEmpty(textLayerNameY) ? null : ReadLabelsFromCad(doc, vp, textLayerNameY, beams.Select(b => b.Center).ToList());
+                    labelsX = string.IsNullOrEmpty(textLayerNameX) ? null : ReadLabelsFromCad(doc, vp, textLayerNameX, beams.Select(b => b.Center).ToList(), selectedElementIds);
+                    labelsY = string.IsNullOrEmpty(textLayerNameY) ? null : ReadLabelsFromCad(doc, vp, textLayerNameY, beams.Select(b => b.Center).ToList(), selectedElementIds);
                     labelStatus = (labelsX != null || labelsY != null) ? "ok" : "no_worker";
                     if (labelsX == null && labelsY == null)
                         labelWarning = "找不到 ezdxf_worker.py 或無法取得 CAD 檔案路徑";
@@ -302,40 +299,125 @@ namespace RevitMCP.Core
             };
         }
 
-        static List<Line> CollectLayerLines(Document doc, ViewPlan vp, string layerName)
+        static List<ImportInstance> GetCadInstances(
+            Document doc,
+            ViewPlan vp,
+            ICollection<ElementId>? selectedElementIds)
+        {
+            var allCads = new FilteredElementCollector(doc, vp.Id)
+                .OfClass(typeof(ImportInstance))
+                .Cast<ImportInstance>()
+                .ToList();
+
+            // If the user selected one or more CAD imports, keep the operation scoped
+            // to those imports. Fall back to all CADs when the selection contains no
+            // CAD element, preserving the original batch behavior.
+            if (selectedElementIds != null && selectedElementIds.Count > 0)
+            {
+                var selectedCads = allCads
+                    .Where(cad => selectedElementIds.Contains(cad.Id))
+                    .ToList();
+                if (selectedCads.Count > 0)
+                    return selectedCads;
+            }
+
+            return allCads;
+        }
+
+        static List<Line> CollectLayerLines(
+            Document doc,
+            ViewPlan vp,
+            string layerName,
+            ICollection<ElementId>? selectedElementIds)
         {
             var result = new List<Line>();
-            var cads = new FilteredElementCollector(doc, vp.Id)
-                .OfClass(typeof(ImportInstance)).Cast<ImportInstance>().ToList();
+            var cads = GetCadInstances(doc, vp, selectedElementIds);
             var opts = new Options { ComputeReferences = true, View = vp };
 
             foreach (var cad in cads)
             {
                 var ge = cad.get_Geometry(opts);
                 if (ge == null) continue;
+
+                // GetInstanceGeometry() already applies GeometryInstance.Transform,
+                // but ImportInstance.GetTotalTransform() also carries the True North
+                // adjustment. Read symbol geometry once and apply the CAD instance's
+                // total transform explicitly so the created Revit curves use the same
+                // coordinates as the displayed import, without double-transforming.
+                Transform cadTransform = cad.GetTotalTransform();
                 foreach (var go in ge)
                 {
                     var gi = go as GeometryInstance;
                     if (gi == null) continue;
-                    var ig = gi.GetInstanceGeometry();
-                    if (ig == null) continue;
-                    foreach (var obj in ig)
-                    {
-                        if (obj.GraphicsStyleId == ElementId.InvalidElementId) continue;
-                        var gs = doc.GetElement(obj.GraphicsStyleId) as GraphicsStyle;
-                        if (gs?.GraphicsStyleCategory?.Name == layerName)
-                        {
-                            if (obj is Line ln) result.Add(ln);
-                            else if (obj is PolyLine pl)
-                            {
-                                var pts = pl.GetCoordinates();
-                                for (int i = 0; i < pts.Count - 1; i++) result.Add(Line.CreateBound(pts[i], pts[i+1]));
-                            }
-                        }
-                    }
+                    var symbolGeometry = gi.GetSymbolGeometry();
+                    if (symbolGeometry == null) continue;
+                    CollectLayerLinesFromGeometry(doc, symbolGeometry, cadTransform, layerName, result);
                 }
             }
             return result;
+        }
+
+        static void CollectLayerLinesFromGeometry(
+            Document doc,
+            GeometryElement geometry,
+            Transform sourceToProject,
+            string layerName,
+            List<Line> result)
+        {
+            foreach (var obj in geometry)
+            {
+                var nested = obj as GeometryInstance;
+                if (nested != null)
+                {
+                    var nestedGeometry = nested.GetSymbolGeometry();
+                    if (nestedGeometry != null)
+                    {
+                        CollectLayerLinesFromGeometry(
+                            doc,
+                            nestedGeometry,
+                            sourceToProject.Multiply(nested.Transform),
+                            layerName,
+                            result);
+                    }
+                    continue;
+                }
+
+                if (obj.GraphicsStyleId == ElementId.InvalidElementId) continue;
+                var gs = doc.GetElement(obj.GraphicsStyleId) as GraphicsStyle;
+                if (gs?.GraphicsStyleCategory?.Name != layerName) continue;
+
+                try
+                {
+                    var line = obj as Line;
+                    if (line != null)
+                    {
+                        AddTransformedLine(result, sourceToProject, line.GetEndPoint(0), line.GetEndPoint(1));
+                        continue;
+                    }
+
+                    var polyline = obj as PolyLine;
+                    if (polyline == null) continue;
+
+                    var points = polyline.GetCoordinates();
+                    for (int i = 0; i < points.Count - 1; i++)
+                    {
+                        AddTransformedLine(result, sourceToProject, points[i], points[i + 1]);
+                    }
+                }
+                catch
+                {
+                    // Ignore malformed/zero-length CAD segments and keep importing
+                    // the remaining valid geometry from the selected layer.
+                }
+            }
+        }
+
+        static void AddTransformedLine(List<Line> result, Transform transform, XYZ start, XYZ end)
+        {
+            XYZ transformedStart = transform.OfPoint(start);
+            XYZ transformedEnd = transform.OfPoint(end);
+            if (transformedStart.DistanceTo(transformedEnd) <= 1e-9) return;
+            result.Add(Line.CreateBound(transformedStart, transformedEnd));
         }
 
         static List<BeamData> ExtractBeamCenterLines(List<Line> lines)
@@ -538,13 +620,17 @@ namespace RevitMCP.Core
             catch { return null; }
         }
 
-        static List<LabelData> ReadLabelsFromCad(Document doc, ViewPlan vp, string textLayerName, List<XYZ> refPts)
+        static List<LabelData> ReadLabelsFromCad(
+            Document doc,
+            ViewPlan vp,
+            string textLayerName,
+            List<XYZ> refPts,
+            ICollection<ElementId>? selectedElementIds)
         {
             string workerPath = FindWorkerScript();
             if (workerPath == null) return null;
 
-            var cads = new FilteredElementCollector(doc, vp.Id)
-                .OfClass(typeof(ImportInstance)).Cast<ImportInstance>().ToList();
+            var cads = GetCadInstances(doc, vp, selectedElementIds);
 
             double[] trialScales = { 1.0 / 304.8, 1.0 / 30.48, 1.0 / 0.3048, 1.0 / 25.4, 1.0 };
             var allLabels = new List<LabelData>();

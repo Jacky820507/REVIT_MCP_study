@@ -16,7 +16,7 @@ description: "剖面隱藏樓梯可視化：在剖面視圖中，自動為被側
 
 1. 在 Revit 中開啟目標**剖面視圖**
 2. `trace_stair_geometry` → 分析所有 `StairsRun` 元素：
-   - 篩選：僅處理「組合式」樓梯（檢查 `FamilyName` 是否含 "assembled" 或 "combined"）
+   - 篩選：僅處理「組合式」樓梯（`MCP/Core/Commands/CommandExecutor.Stairs.cs` 實際檢查 `FamilyName` 是否含 `組合` 或 `Assembled`；`combined` 不會命中任何族群）
    - 提取 3D 幾何邊緣
    - 計算相對於剖切面的深度
    - 排除前景樓梯（minDepth ≤ 0.05 ft）
@@ -46,12 +46,13 @@ description: "剖面隱藏樓梯可視化：在剖面視圖中，自動為被側
 
 使用 `get_line_styles` 確認你的專案中的正確 ID。
 
-## Troubleshooting & Performance
-
-> [!IMPORTANT]
-> **WebSocket Timeout (30s)**: 如果發現 `get_active_view` 或執行指令時卡住 30 秒才報錯，通常是因為多個 AI 用戶端（如 VS Code + Terminal）同時連入。
-> **Fix**: 確保 RevitMCP 增益集已更新至並行連線版本（2026-03-20 更新），這能處理多重請求路由而不造成衝突。
-
 ## Reference
 
-詳見 `domain/stair-hidden-line-workflow.md` 與 `GEMINI.md` (2026-03-20)。
+## Troubleshooting
+
+**`get_active_view` 或其他指令卡住約 30 秒才報錯**：多半是同時開了兩個 MCP 用戶端（例如 VS Code 與終端機）。
+Revit 端的 `MCP/Core/SocketService.cs` 一次只保留一條 MCP 連線，後連的會頂掉先連的，而 MCP server 又會自動重連，
+於是兩邊互踢造成逾時。**這不是可以靠更新增益集解決的併發問題**——正確做法是同一時間只讓一個 AI 用戶端連線，
+必要時從 Revit ribbon 重啟 MCP 服務。詳見 CLAUDE.md 的 Single-Connection Limitation。
+
+詳見 `domain/stair-hidden-line-workflow.md`。

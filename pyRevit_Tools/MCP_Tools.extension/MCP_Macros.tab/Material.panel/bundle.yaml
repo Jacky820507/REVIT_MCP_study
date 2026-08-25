@@ -1,0 +1,6 @@
+title: "材質工具"
+layout:
+  - MaterialReverseLookup
+  - MaterialBatchEditor
+  - RoomMaterialDetail
+

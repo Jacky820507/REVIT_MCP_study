@@ -1,0 +1,21 @@
+{
+  "targetParameter": "Wall Performance",
+  "targetScope": "instance",
+  "matchField": "function",
+  "mode": "fill_blank",
+  "includeCurtain": false,
+  "caseInsensitive": true,
+  "collapseWhitespace": true,
+  "rules": [
+    {
+      "id": "exterior-wall",
+      "match": "Exterior",
+      "value": "WALL-EXT-REVIEW"
+    },
+    {
+      "id": "interior-wall",
+      "match": "Interior",
+      "value": "WALL-INT-REVIEW"
+    }
+  ]
+}

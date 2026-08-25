@@ -141,7 +141,7 @@ Remove-Item -Recurse -Force "C:\Users\Use\Desktop\REVIT_MCP"
 | `mcp_config.json` | Antigravity 的 MCP Server 設定檔 | ✅ 必須 |
 | `RevitMCP.csproj` | C# 統一專案建置檔 (Revit 2022–2026, Nice3point SDK) | ✅ 必須 |
 | `package.json` | Node.js 專案設定 | 📖 參考 |
-| `install-addon-bom.ps1` | 自動安裝腳本 | 🔧 選用 |
+| `install-addon.ps1` | 自動安裝腳本 | 🔧 選用 |
 
 ---
 
@@ -391,7 +391,7 @@ dir MCP\bin\Release.R24\RevitMCP.dll
 cd C:\Users\Use\Desktop\REVIT_MCP
 
 # 執行安裝腳本
-.\scripts\install-addon-bom.ps1
+.\scripts\install-addon.ps1
 ```
 
 **互動流程**：

@@ -17,52 +17,21 @@
 
 ## 包含的檔案
 
-### 1. `install-addon.bat` (批次檔案)
-- **適合對象**：大多數 Windows 使用者
-- **使用方法**：雙擊執行即可
-- **優點**：無需安裝額外軟體，執行最簡單
+### `install-addon.ps1` (PowerShell 指令稿)
 
-### 2. `install-addon.ps1` (PowerShell 指令稿)
-- **適合對象**：進階使用者或需要更多控制的使用者
+**這是唯一的正式安裝器**（CLAUDE.md 的 Deployment Rules 明訂）。
+
+- **適合對象**：所有使用者
 - **使用方法**：用 PowerShell 執行
-- **優點**：提供更詳細的進度訊息和彩色輸出
+- **功能**：自動偵測 Revit 版本、驗證路徑、顯示檔案雜湊、等待確認後複製，並一併部署 `ezdxf_worker.py`
+
+> 2026-08-03 起，`install-addon.bat`、`install-addon-bom.ps1`、`install-ascii.ps1` 與根目錄的
+> `author_install_addon.ps1` 都已移除——它們指向已淘汰的 `Release.2024` 路徑或寫死了個人環境路徑，
+> 留著只會讓人（和 AI）挑錯一支來跑。
 
 ## 使用步驟
 
-### 方法 A：雙擊執行（最簡單）
-
-1. **找到 `install-addon.bat` 檔案**
-   - 在 Windows 檔案管理員中找到此檔案
-
-2. **直接雙擊執行**
-   - ⚠️ 不需要「以系統管理員身份執行」
-   - 如果跳出安全警告，點擊「仍然執行」
-
-3. **確認安裝**
-   - 指令稿會顯示將要複製的檔案
-   - 輸入 `Y` 確認安裝
-
-4. **等待完成**
-   - 看到「✓ 安裝完成！」訊息就代表成功
-   - 按 Enter 關閉視窗
-
-### 方法 B：用命令提示字元執行
-
-1. **打開命令提示字元**
-   - 按 `Win + R`
-   - 輸入 `cmd`，按 Enter
-
-2. **切換到指令稿所在的資料夾**
-   ```cmd
-   cd C:\path\to\REVIT_MCP_study\scripts
-   ```
-
-3. **執行安裝**
-   ```cmd
-   install-addon.bat
-   ```
-
-### 方法 C：用 PowerShell 執行
+### 用 PowerShell 執行
 
 1. **打開 PowerShell**
    - 按 `Win + X`

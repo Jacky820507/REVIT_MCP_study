@@ -31,9 +31,7 @@ metadata:
 3. **完美接合突出席 (Nosing/Profile) 的細小缺口**：
    - 踏階判斷不過度依賴純水平或垂直。長度 `< 0.65ft (約20cm)` 的細小線段統一視為側剖面輪廓 (如倒角、收邊突出席) 並予以保留，這樣能保證生成的虛線不會在轉角處留白斷線。
 
-## 2. 執行腳本
-
-執行腳本已收錄於 `MCP-Server/scripts/draw_hidden_stairs.js`
+## 2. 執行步驟（MCP 工具）
 
 ### 步驟 1：取得樓梯並運算隱藏線 (`trace_stair_geometry`)
 - 指令：`trace_stair_geometry`
@@ -46,10 +44,9 @@ metadata:
 
 ## 3. 使用方式
 
-1. 確認 Revit 已開啟目標的**剖面圖視圖** (如: `丙無障礙梯剖面圖(二)`)。
-2. 啟動 `node build/index.js` (或於 VS Code Copilot 確保 MCP 已連線)。
-3. 在終端機執行：
-   ```bash
-   node MCP-Server/scripts/draw_hidden_stairs.js
-   ```
-4. 觀察輸出，如：`Step 2: Creating 448 detail lines with style 虛線(極密) (11911982)... SUCCESS!`
+1. 確認 Revit 已開啟目標的**剖面圖視圖** (如: `丙無障礙梯剖面圖(二)`)，並以 `get_active_view` 在本回合錨定。
+2. 呼叫 `trace_stair_geometry`（不帶參數）。
+3. 用 `get_line_styles` 確認虛線樣式 ID 後，把步驟 2 的線群交給 `create_detail_lines`。
+4. 檢查回傳的建立數量是否與步驟 2 的線段數一致。
+
+> 2026-08-03 起 `draw_hidden_stairs.js` 已移除——它做的就是上面兩個已註冊工具的串接。

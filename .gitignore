@@ -1,4 +1,5 @@
 # Build outputs
+dist/
 MCP/MCP/bin/
 MCP/MCP/obj/
 MCP-Server/build/
@@ -83,6 +84,11 @@ MCP.Contracts/obj/
 MCP.CoreRuntime/bin/
 MCP.CoreRuntime/obj/
 
+# 通用防線：任何 C# 專案的編譯產物一律不入庫
+# （2026-07-17 清除 27 個誤入庫的 obj/bin 檔後加入；CI check-tracked-artifacts.yml 為第二道防線）
+**/obj/
+**/bin/
+
 # Result 資料夾（與此專案無關）
 result/
 
@@ -125,3 +131,11 @@ docs/fork-audit/
 # Personal knowledge vault (see templates/personal-vault/ and docs/BIM_MCP/reference/personal-llm-wiki.html)
 /vault/
 /.obsidian/
+
+# 個人暫存與執行期產物（2026-08-25 upstream 同步前盤點加入）
+# tmp/ 與 logs/ 是本機工作暫存，__pycache__ 是 pyRevit IronPython 產生的位元碼
+tmp/
+logs/
+__pycache__/
+*.pyc
+*.pushbutton.backup-*/

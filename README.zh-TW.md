@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/logo.png" alt="Revit MCP" width="140" height="140">
+</div>
+
 # Revit MCP - AI-Powered Revit Control
 
 [English](README.md) | 繁體中文
@@ -8,13 +12,30 @@ Revit MCP 透過 Model Context Protocol (MCP) 讓 AI Client 呼叫 Revit 工具�
 - 知識站：<https://shuotao.github.io/REVIT_MCP_study/>
 - 預設 WebSocket port：`8964`
 
+## 這是什麼？
+
+用自然語言操作 Revit。你可以請 AI Client 標註視圖、查詢模型資料或執行 BIM 工作流程，Revit 會透過 MCP 工具與專案 SOP 完成工作。
+
+**給誰用：** 想導入 AI 輔助與標準化工作流程的 BIM 工程師及建築師。本 fork 以 **Revit 2020 為主要使用環境**，同時保留專案既有的跨版本相容路徑。
+
+## 三步開始
+
+1. **編譯並安裝 Revit add-in。** Jacky 的主要環境請使用 `Release.R20` 組態；詳見[手動安裝](#手動安裝)。
+2. **把 AI Client 指向 MCP Server。** 可使用本資料夾的 server，或直接執行已發布的 npm 套件：
+   ```json
+   { "mcpServers": { "revit-mcp": { "command": "npx", "args": ["-y", "@shuotao/revit-mcp-server"] } } }
+   ```
+3. **開啟 Revit、在 ribbon 啟用 MCP 服務，就能開始使用。** 完整設定：[AI Client 設定](#ai-client-設定)。
+
+有問題或想分享成果？→ **[Discussions](https://github.com/shuotao/REVIT_MCP_study/discussions)**
+
 ## 目前專案狀態
 
 | 項目 | 數量 | 來源 |
 |---|---:|---|
-| Runtime MCP tools | 146 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
-| Domain SOP files | 61 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
-| Claude skills | 42 | `.claude/skills/*/SKILL.md` |
+| Runtime MCP tools | 185 | `MCP-Server/src/tools/index.ts` 的 `registerRevitTools()` |
+| Domain SOP files | 83 | `domain/*.md` 扣除 `README.md`，加上 `domain/references/*.md` |
+| Claude skills | 62 | `.claude/skills/*/SKILL.md` |
 
 如果這些數字改變，請同步更新 `CLAUDE.md`、本 README、`README.md`、`docs/DOCUMENT_AUDIENCE_INVENTORY.md`，並執行：
 

@@ -42,6 +42,8 @@ namespace RevitMCP.Core
 
             double minX = double.MaxValue, maxX = double.MinValue;
             double minY = double.MaxValue, maxY = double.MinValue;
+            var missingXGridNames = new List<string>();
+            var missingYGridNames = new List<string>();
 
             if (xGridNames.Count > 0)
             {
@@ -54,6 +56,10 @@ namespace RevitMCP.Core
                         double x = (curve.GetEndPoint(0).X + curve.GetEndPoint(1).X) / 2.0;
                         minX = Math.Min(minX, x);
                         maxX = Math.Max(maxX, x);
+                    }
+                    else
+                    {
+                        missingXGridNames.Add(name);
                     }
                 }
             }
@@ -70,7 +76,18 @@ namespace RevitMCP.Core
                         minY = Math.Min(minY, y);
                         maxY = Math.Max(maxY, y);
                     }
+                    else
+                    {
+                        missingYGridNames.Add(name);
+                    }
                 }
+            }
+
+            if (missingXGridNames.Count > 0 || missingYGridNames.Count > 0)
+            {
+                throw new Exception(
+                    "Grid not found. X: " + string.Join(", ", missingXGridNames) +
+                    "; Y: " + string.Join(", ", missingYGridNames));
             }
 
             if (xGridNames.Count == 1) { minX -= offsetFeet; maxX += offsetFeet; }
@@ -103,6 +120,20 @@ namespace RevitMCP.Core
             IdType scopeBoxId = parameters["scopeBoxId"]?.Value<IdType>() ?? 0;
             bool copyCropShape = parameters["copyCropShape"]?.Value<bool>() ?? true;
             bool copyCropVisibility = parameters["copyCropVisibility"]?.Value<bool>() ?? true;
+            bool copySourceDependents =
+                (parameters["copySourceDependents"] ?? parameters["copyAllSourceDependents"])?.Value<bool>() ?? false;
+            bool replaceExistingDependentViews =
+                (parameters["replaceExistingDependentViews"] ?? parameters["clearExistingDependentViews"])?.Value<bool>() ?? false;
+
+            if (scopeBoxId > 0)
+            {
+                Element scopeBox = doc.GetElement(scopeBoxId.ToElementId());
+                if (scopeBox == null || scopeBox.Category == null ||
+                    scopeBox.Category.Id != new ElementId(BuiltInCategory.OST_VolumeOfInterest))
+                {
+                    throw new Exception("scopeBoxId must refer to an existing Scope Box.");
+                }
+            }
 
             View sourceCropView = null;
             if (sourceCropViewId > 0)
@@ -110,6 +141,17 @@ namespace RevitMCP.Core
                 sourceCropView = doc.GetElement(sourceCropViewId.ToElementId()) as View;
                 if (sourceCropView == null)
                     throw new Exception($"找不到來源裁切視圖: {sourceCropViewId}");
+            }
+
+            var sourceDependentViews = new List<View>();
+            if (sourceCropView != null && copySourceDependents)
+            {
+                foreach (ElementId sourceDependentId in sourceCropView.GetDependentViewIds())
+                {
+                    View sourceDependentView = doc.GetElement(sourceDependentId) as View;
+                    if (sourceDependentView != null)
+                        sourceDependentViews.Add(sourceDependentView);
+                }
             }
 
             double minX = parameters["min"]?["x"]?.Value<double>() ?? 0;
@@ -143,73 +185,134 @@ namespace RevitMCP.Core
                     if (parentView == null || !parentView.CanViewBeDuplicated(ViewDuplicateOption.AsDependent))
                         continue;
 
-                    ElementId newViewId = parentView.Duplicate(ViewDuplicateOption.AsDependent);
-                    View newView = doc.GetElement(newViewId) as View;
-
-                    string finalSuffix = suffixName;
-                    if (string.IsNullOrEmpty(finalSuffix))
+                    var deletedExistingViewIds = new List<IdType>();
+                    if (replaceExistingDependentViews)
                     {
-                        int childCount = parentView.GetDependentViewIds().Count();
-                        finalSuffix = childCount.ToString();
+                        List<ElementId> existingDependentViewIds = parentView.GetDependentViewIds().ToList();
+                        deletedExistingViewIds = existingDependentViewIds
+                            .Select(id => id.GetIdValue())
+                            .ToList();
 
-                        string targetName = $"{parentView.Name}-{finalSuffix}";
-                        int loopGuard = 0;
-                        while (new FilteredElementCollector(doc).OfClass(typeof(View)).Cast<View>().Any(v => v.Name == targetName) && loopGuard < 100)
-                        {
-                            childCount++;
-                            finalSuffix = childCount.ToString();
-                            targetName = $"{parentView.Name}-{finalSuffix}";
-                            loopGuard++;
-                        }
+                        if (existingDependentViewIds.Count > 0)
+                            doc.Delete(existingDependentViewIds);
                     }
 
-                    string newName = $"{parentView.Name}-{finalSuffix}";
-                    try { newView.Name = newName; }
-                    catch (Exception ex) { Logger.Debug($"視圖命名失敗: {ex.Message}"); }
+                    var cropTemplates = sourceDependentViews.Count > 0
+                        ? sourceDependentViews
+                        : (sourceCropView != null
+                            ? new List<View> { sourceCropView }
+                            : new List<View> { null });
 
-                    newView.CropBoxActive = true;
-                    newView.CropBoxVisible = true;
-                    newView.CropBox = bbox;
-
-                    var warnings = new List<string>();
-
-                    if (sourceCropView != null)
+                    for (int templateIndex = 0; templateIndex < cropTemplates.Count; templateIndex++)
                     {
-                        if (copyCropVisibility)
+                        View cropTemplate = cropTemplates[templateIndex];
+                        ElementId newViewId = parentView.Duplicate(ViewDuplicateOption.AsDependent);
+                        View newView = doc.GetElement(newViewId) as View;
+                        if (newView == null)
+                            continue;
+
+                        string requestedName;
+                        if (sourceDependentViews.Count > 0 && cropTemplate != null && sourceCropView != null)
                         {
-                            newView.CropBoxActive = sourceCropView.CropBoxActive;
-                            newView.CropBoxVisible = sourceCropView.CropBoxVisible;
+                            string suffix = GetDependentNameSuffix(
+                                sourceCropView.Name,
+                                cropTemplate.Name,
+                                templateIndex + 1);
+                            requestedName = parentView.Name + suffix;
+                        }
+                        else
+                        {
+                            string finalSuffix = suffixName;
+                            if (string.IsNullOrEmpty(finalSuffix))
+                            {
+                                int childCount = parentView.GetDependentViewIds().Count();
+                                finalSuffix = childCount.ToString();
+                            }
+                            requestedName = $"{parentView.Name}-{finalSuffix}";
                         }
 
-                        if (copyCropShape)
+                        string newName = MakeUniqueViewName(doc, requestedName);
+                        try { newView.Name = newName; }
+                        catch (Exception ex) { Logger.Debug($"視圖命名失敗: {ex.Message}"); }
+
+                        BoundingBoxXYZ templateBox = cropTemplate != null
+                            ? CloneBoundingBox(cropTemplate.CropBox)
+                            : CloneBoundingBox(bbox);
+                        newView.CropBoxActive = true;
+                        newView.CropBoxVisible = true;
+                        if (templateBox != null)
+                            newView.CropBox = templateBox;
+
+                        var warnings = new List<string>();
+
+                        if (cropTemplate != null)
                         {
-                            warnings.AddRange(CopyCropShape(sourceCropView, newView));
+                            if (copyCropVisibility)
+                            {
+                                newView.CropBoxActive = cropTemplate.CropBoxActive;
+                                newView.CropBoxVisible = cropTemplate.CropBoxVisible;
+                            }
+
+                            if (copyCropShape)
+                            {
+                                warnings.AddRange(CopyCropShape(cropTemplate, newView));
+                            }
                         }
-                    }
 
-                    IdType? appliedScopeBoxId = null;
-                    string appliedScopeBoxName = null;
-                    if (scopeBoxId > 0)
-                    {
-                        warnings.AddRange(SetScopeBoxOnView(doc, newView, scopeBoxId.ToElementId(), out appliedScopeBoxId, out appliedScopeBoxName));
-                    }
+                        IdType? appliedScopeBoxId = null;
+                        string appliedScopeBoxName = null;
+                        if (scopeBoxId > 0)
+                        {
+                            warnings.AddRange(SetScopeBoxOnView(doc, newView, scopeBoxId.ToElementId(), out appliedScopeBoxId, out appliedScopeBoxName));
+                        }
 
-                    results.Add(new
-                    {
-                        ParentName = parentView.Name,
-                        NewViewId = newView.Id.GetIdValue(),
-                        NewViewName = newView.Name,
-                        SourceCropViewId = sourceCropView?.Id.GetIdValue(),
-                        AppliedScopeBoxId = appliedScopeBoxId,
-                        AppliedScopeBoxName = appliedScopeBoxName,
-                        Warnings = warnings
-                    });
+                        results.Add(new
+                        {
+                            ParentName = parentView.Name,
+                            NewViewId = newView.Id.GetIdValue(),
+                            NewViewName = newView.Name,
+                            SourceCropViewId = sourceCropView?.Id.GetIdValue(),
+                            SourceTemplateViewId = cropTemplate?.Id.GetIdValue(),
+                            DeletedExistingViewIds = deletedExistingViewIds,
+                            AppliedScopeBoxId = appliedScopeBoxId,
+                            AppliedScopeBoxName = appliedScopeBoxName,
+                            Warnings = warnings
+                        });
+                    }
                 }
 
                 trans.Commit();
             }
 
             return results;
+        }
+
+        private string GetDependentNameSuffix(string sourceParentName, string sourceDependentName, int fallbackIndex)
+        {
+            string fallback = "-" + fallbackIndex.ToString();
+            if (string.IsNullOrEmpty(sourceParentName) || string.IsNullOrEmpty(sourceDependentName))
+                return fallback;
+
+            if (!sourceDependentName.StartsWith(sourceParentName, StringComparison.OrdinalIgnoreCase))
+                return fallback;
+
+            string suffix = sourceDependentName.Substring(sourceParentName.Length);
+            return string.IsNullOrEmpty(suffix) ? fallback : suffix;
+        }
+
+        private string MakeUniqueViewName(Document doc, string requestedName)
+        {
+            string candidate = requestedName;
+            int suffix = 2;
+            while (new FilteredElementCollector(doc)
+                .OfClass(typeof(View))
+                .Cast<View>()
+                .Any(view => view.Name == candidate))
+            {
+                candidate = $"{requestedName} ({suffix})";
+                suffix++;
+            }
+            return candidate;
         }
 
         private object GetViewCropBox(JObject parameters)
@@ -573,6 +676,40 @@ namespace RevitMCP.Core
 
         private object CreateGridCroppedViewsBatch(JObject parameters)
         {
+            bool hasSourceCropView = parameters["sourceCropViewId"] != null ||
+                                     parameters["copyCropFromViewId"] != null;
+            if (hasSourceCropView)
+            {
+                var sourceCreateParams = new JObject
+                {
+                    ["parentViewIds"] = parameters["parentViewIds"] ?? new JArray(),
+                    ["suffixName"] = parameters["suffixName"],
+                    ["sourceCropViewId"] = parameters["sourceCropViewId"] ?? parameters["copyCropFromViewId"]
+                };
+
+                if (parameters["scopeBoxId"] != null)
+                    sourceCreateParams["scopeBoxId"] = parameters["scopeBoxId"];
+                if (parameters["copyCropShape"] != null)
+                    sourceCreateParams["copyCropShape"] = parameters["copyCropShape"];
+                if (parameters["copyCropVisibility"] != null)
+                    sourceCreateParams["copyCropVisibility"] = parameters["copyCropVisibility"];
+                if (parameters["copySourceDependents"] != null)
+                    sourceCreateParams["copySourceDependents"] = parameters["copySourceDependents"];
+                if (parameters["copyAllSourceDependents"] != null)
+                    sourceCreateParams["copyAllSourceDependents"] = parameters["copyAllSourceDependents"];
+                if (parameters["replaceExistingDependentViews"] != null)
+                    sourceCreateParams["replaceExistingDependentViews"] = parameters["replaceExistingDependentViews"];
+                if (parameters["clearExistingDependentViews"] != null)
+                    sourceCreateParams["clearExistingDependentViews"] = parameters["clearExistingDependentViews"];
+
+                object sourceCreatedViews = CreateDependentViews(sourceCreateParams);
+                return new
+                {
+                    Bounds = (object)null,
+                    CreatedViews = sourceCreatedViews
+                };
+            }
+
             var boundsParams = new JObject
             {
                 ["xGrids"] = parameters["x_grid_names"] ?? parameters["xGrids"] ?? new JArray(),
@@ -589,6 +726,21 @@ namespace RevitMCP.Core
                 ["min"] = bounds["min"],
                 ["max"] = bounds["max"]
             };
+
+            if (parameters["scopeBoxId"] != null)
+                createParams["scopeBoxId"] = parameters["scopeBoxId"];
+            if (parameters["copyCropShape"] != null)
+                createParams["copyCropShape"] = parameters["copyCropShape"];
+            if (parameters["copyCropVisibility"] != null)
+                createParams["copyCropVisibility"] = parameters["copyCropVisibility"];
+            if (parameters["copySourceDependents"] != null)
+                createParams["copySourceDependents"] = parameters["copySourceDependents"];
+            if (parameters["copyAllSourceDependents"] != null)
+                createParams["copyAllSourceDependents"] = parameters["copyAllSourceDependents"];
+            if (parameters["replaceExistingDependentViews"] != null)
+                createParams["replaceExistingDependentViews"] = parameters["replaceExistingDependentViews"];
+            if (parameters["clearExistingDependentViews"] != null)
+                createParams["clearExistingDependentViews"] = parameters["clearExistingDependentViews"];
 
             object createdViews = CreateDependentViews(createParams);
 

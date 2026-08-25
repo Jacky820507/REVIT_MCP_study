@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="數量計算 Excel 設定" Height="690" Width="820"
+    WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="125"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+
+    <CheckBox x:Name="includeHostCheckBox"
+              Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4"
+              Margin="0,0,0,12" IsChecked="True"
+              Content="包含目前模型"/>
+
+    <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,4,10,8"
+               Text="連結模型（勾選納入）"/>
+    <TextBlock x:Name="sourceSummaryText"
+               Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+               Margin="0,4,0,8" Foreground="#666"
+               Text="已包含目前模型；尚未選擇連結模型。"/>
+    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4"
+            Margin="0,0,0,14" MinHeight="120"
+            BorderBrush="#CCC" BorderThickness="1">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="linkList"/>
+      </ScrollViewer>
+    </Border>
+
+    <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,4,10,8"
+               Text="各來源樓層（勾選限制）"/>
+    <TextBlock x:Name="levelSummaryText"
+               Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+               Margin="0,4,0,8" Foreground="#666"
+               Text="未勾選樓層：每個已選來源都採用全部樓層。"
+               TextWrapping="Wrap"/>
+    <Border Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4"
+            Margin="0,0,0,14" MinHeight="160"
+            BorderBrush="#CCC" BorderThickness="1">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="levelList"/>
+      </ScrollViewer>
+    </Border>
+
+    <TextBlock Grid.Row="5" Grid.Column="0" Margin="0,5,10,8"
+               Text="主要 Excel（選填）"/>
+    <TextBox x:Name="pathBox"
+             Grid.Row="5" Grid.Column="1" Margin="0,0,8,8"
+             MinWidth="420" VerticalContentAlignment="Center"/>
+    <Button x:Name="browseButton"
+            Grid.Row="5" Grid.Column="2" Margin="0,0,8,8"
+            Padding="14,5" Content="選擇..."/>
+    <Button x:Name="clearButton"
+            Grid.Row="5" Grid.Column="3" Margin="0,0,0,8"
+            Padding="14,5" Content="清除"/>
+
+    <Grid Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4" Margin="0,6,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Margin="0,6,16,0" Foreground="#666"
+                 Text="未選主要 Excel：匯出獨立、含公式的活頁簿。"
+                 TextWrapping="Wrap"/>
+      <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button x:Name="continueButton" MinWidth="105"
+                Margin="0,0,8,0" Padding="16,6" Content="繼續"/>
+        <Button x:Name="cancelButton" MinWidth="80"
+                Padding="16,6" Content="取消"/>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

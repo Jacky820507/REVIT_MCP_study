@@ -1,0 +1,7 @@
+interface:
+  display_name: "台灣建築法規模型資料完整性"
+  short_description: "整理專案法規輸入並比對 Revit 模型完整性"
+  default_prompt: "Use $taiwan-building-code-model-integrity to map project data, explain each input decision, audit the live Revit model, separate AreaPlan existence from Area data, and report the Gate status before any compliance review."
+
+policy:
+  allow_implicit_invocation: true

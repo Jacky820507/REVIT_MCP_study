@@ -1,0 +1,20 @@
+{
+  "targetParameter": "Room Classification",
+  "matchField": "name",
+  "mode": "fill_blank",
+  "includeUnplaced": false,
+  "caseInsensitive": true,
+  "collapseWhitespace": true,
+  "rules": [
+    {
+      "id": "office",
+      "match": "辦公",
+      "value": "OFFICE"
+    },
+    {
+      "id": "corridor",
+      "match": "走廊",
+      "value": "CIRCULATION"
+    }
+  ]
+}

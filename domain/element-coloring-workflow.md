@@ -36,36 +36,30 @@ metadata:
 
 ## 標準執行步驟
 
-**必須依序執行，每步完成後等待用戶確認再繼續：**
+**必須依序執行，每步完成後等待用戶確認再繼續。全部走 MCP 工具呼叫，不要寫或跑 Node 腳本。**
+
+### 步驟 0: 錨定當前視圖
+`get_active_view` — 所有覆寫都只影響當前視圖，動手前必須在本回合確認視圖身分。
 
 ### 步驟 1: 清除舊顏色
-```bash
-node clear_walls.js
-```
+`query_elements`（Walls，限當前視圖）→ 對取得的 ID 呼叫 `clear_element_override`。
 
 ### 步驟 2: 取消牆柱接合
-```bash
-node step_unjoin.js
-```
+`query_elements` 取牆 ID → `unjoin_wall_joins`。
+接合會讓相鄰牆柱的剖切面合併，不先解開的話上色範圍會糊在一起。
 
 ### 步驟 3: 牆體上色
-```bash
-node fire_rating_full.js
-```
+`query_elements` + `get_wall_info`（或 `get_field_values` 先確認參數值分佈）取得每面牆的分類參數 → 依顏色方案對每組 ID 呼叫 `override_element_graphics`。
 
 ### 步驟 4: 柱子上色（黑色）
-```bash
-node color_columns_black.js
-```
+`query_elements`（StructuralColumns / Columns）→ `override_element_graphics`。
 
 ### 步驟 5: 恢復牆柱接合
-```bash
-node step_rejoin.js
-```
+`rejoin_wall_joins` — **這一步不能省**，否則模型會留在解接合狀態影響後續出圖。
 
-## 腳本目錄
-
-`c:\Users\User\Desktop\REVIT MCP\MCP-Server\`
+> 2026-08-03 起，本流程原本的 5 支 Node 腳本（`clear_walls.js`、`step_unjoin.js`、`fire_rating_full.js`、
+> `color_columns_black.js`、`step_rejoin.js`）已移除。它們呼叫的每一個指令都已經是註冊的 MCP 工具，
+> 腳本只是繞過工具層的預先編排，且其中一支還寫死了個人路徑。
 
 ## 顏色方案範例（防火防煙性能）
 
@@ -79,7 +73,7 @@ node step_rejoin.js
 ## 注意事項
 
 - 所有操作只影響當前視圖
-- 操作可逆，使用 `clear_walls.js` 清除
+- 操作可逆，使用 `clear_element_override` 清除
 - 修改 C# 後需重新啟動 Revit
 
 ## 相關工具

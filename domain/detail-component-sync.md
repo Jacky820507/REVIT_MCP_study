@@ -159,6 +159,26 @@ metadata:
 
 ---
 
+### 4. get_detail_component_families + sync_detail_component_sheet_fields（參數比對雙向檢核）
+
+不綁死家族名與參數名的彈性檢核修正流程（2026-07 新增，pyRevit「詳圖編號同步」按鈕即此流程）：
+
+**步驟：**
+1. `get_detail_component_families`：列出詳圖元件/通用註解家族與其文字類型參數（含範例值），供使用者選擇家族、指定哪個參數放「圖紙號碼」、哪個放「圖紙名稱」。
+2. `sync_detail_component_sheet_fields`：掃描全專案圖紙建立「號碼 ↔ 名稱」對照，依 `matchBy` 選定主鍵方向檢核並修正另一欄：
+   - `matchBy=sheetNumber`（以圖紙號碼為主）：信任圖號參數 → 用它找圖紙 → 修正名稱參數。
+   - `matchBy=sheetName`（以圖紙名稱為主）：信任名稱參數 → 反向修正圖號參數。
+
+**參數：** `familyName`（必填）、`matchBy`、`sheetNumberParameter`（如 `詳圖圖號`）、`sheetNameParameter`（如 `圖說名稱`）、`dryRun`（預設 true）、`renameTypes`（預設 true）、`detailNameParameter`（預設 `詳圖名稱`）。
+
+**逐筆狀態：** `ok` 一致／`update|updated` 需修正、已修正／`empty_key` 主鍵空值／`not_matched` 查無圖紙／`ambiguous` 圖紙名稱重複（列候選、不寫入）／`target_unwritable` 目標參數不可寫。
+
+**類型名稱同步改名（`renameTypes=true` 時）：** 修正參數的同時，將匹配到圖紙的類型依命名規範改名為 `{圖紙號碼}-{圖紙名稱}-{詳圖名稱}`。詳圖名只「偵測」使用者自行 key in 的 `detailNameParameter`（預設「詳圖名稱」）類型參數——工具只讀取、絕不寫入該參數。逐筆改名狀態：`name_ok` 已符合／`rename|renamed` 需改名、已改名／`rename_conflict` 目標名稱已存在（不改，需人工處理）／`no_detail_name` 詳圖名稱參數為空（跳過改名，只改參數）。pyRevit 按鈕由使用者在 UI 選擇「詳圖名稱」參數（預設排最前），選定後才執行類型改名。
+
+**注意：** 圖紙號碼在 Revit 內唯一，但圖紙名稱可能重複——以名稱為主時重複名稱一律標 `ambiguous` 不自動修正，需人工裁決。
+
+---
+
 ## 📐 命名規範
 
 ### 類型名稱格式

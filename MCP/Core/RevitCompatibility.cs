@@ -53,6 +53,18 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
+        /// 取得樓板的 SlabShapeEditor（Revit 2026 移除了 Floor.SlabShapeEditor 屬性，改用方法）
+        /// </summary>
+        internal static SlabShapeEditor GetSlabShapeEditorCompat(this Floor floor)
+        {
+#if REVIT2026_OR_GREATER
+            return floor.GetSlabShapeEditor();
+#else
+            return floor.SlabShapeEditor;
+#endif
+        }
+
+        /// <summary>
         /// 檢查參數定義是否為數值類型
         /// </summary>
         internal static bool IsNumeric(this Definition def)

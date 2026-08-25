@@ -1,0 +1,146 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="台灣建築法規模型資料完整性檢查器"
+    Width="1160"
+    Height="760"
+    MinWidth="960"
+    MinHeight="620"
+    WindowStartupLocation="CenterScreen"
+    ResizeMode="CanResizeWithGrip"
+    ShowInTaskbar="False">
+  <Window.Resources>
+    <SolidColorBrush x:Key="BorderBrush" Color="#D3DCE6"/>
+    <SolidColorBrush x:Key="HeaderBrush" Color="#EAF2F8"/>
+    <Style TargetType="{x:Type TextBox}">
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Padding" Value="6,3"/>
+    </Style>
+    <Style TargetType="{x:Type Button}">
+      <Setter Property="Padding" Value="12,6"/>
+      <Setter Property="Margin" Value="4"/>
+      <Setter Property="MinHeight" Value="30"/>
+    </Style>
+  </Window.Resources>
+
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <Border Grid.Row="0" Background="#2F6F4E" CornerRadius="3"
+            Padding="14,10" Margin="0,0,0,10">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button x:Name="refreshButton" Content="重新檢核"/>
+          <Button x:Name="closeButton" Content="關閉" IsCancel="True"/>
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Text="台灣建築法規模型資料完整性檢查器"
+                     FontSize="21" FontWeight="Bold" Foreground="White"/>
+          <TextBlock x:Name="documentText" Foreground="#EAF5EE" Margin="0,4,0,0"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Border Grid.Row="1" Background="#F3F6FA" BorderBrush="#D8E0EA"
+            BorderThickness="1" CornerRadius="4" Padding="13,10" Margin="0,0,0,10">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0" Margin="0,0,26,0">
+          <TextBlock Text="Gate" Foreground="#68737D"/>
+          <TextBlock x:Name="gateStatusText" Text="UNKNOWN" FontSize="20"
+                     FontWeight="Bold" Foreground="#B3261E"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="0,0,26,0">
+          <TextBlock Text="檢核摘要" Foreground="#68737D"/>
+          <TextBlock x:Name="summaryText" Margin="0,5,0,0" FontSize="14"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock x:Name="gateHintText" TextWrapping="Wrap"/>
+          <TextBlock x:Name="auditRunText" Margin="0,5,0,0"
+                     FontSize="11" Foreground="#68737D" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <TabControl Grid.Row="2">
+      <TabItem Header="檢核總覽">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="findingsPanel" Margin="0,8,0,0"/>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Project Information 輸入">
+        <Grid Margin="0,8,0,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <TextBlock Grid.Row="0"
+                     Text="直接編輯「新值」欄；Double 依 Revit 專案目前單位解析，空白不會寫入。也可先匯出 Excel 批次編輯，再匯回預覽。"
+                     Foreground="#5B6770" Margin="4,0,4,8"/>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+              <Grid x:Name="projectHeader" Height="32" Background="#EAF2F8"/>
+              <StackPanel x:Name="projectRowsPanel"/>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="Area 輸入">
+        <Grid Margin="0,8,0,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <TextBlock Grid.Row="0"
+                     Text="每個 Area 各自列出 Law_建管-用途類組與 Law_技規-法定名稱；只填空白模式會保留已有值。Excel 匯回仍需按套用。"
+                     Foreground="#5B6770" Margin="4,0,4,8"/>
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+              <Grid x:Name="areaHeader" Height="32" Background="#EAF2F8"/>
+              <StackPanel x:Name="areaRowsPanel"/>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <Border Grid.Row="3" Margin="0,10,0,0" Padding="10,8"
+            Background="#F8FAFC" BorderBrush="#D8E0EA"
+            BorderThickness="1" CornerRadius="4">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+          <CheckBox x:Name="overwriteCheck"
+                    Content="覆寫既有值（需明確確認；預設只填空白）"
+                    Margin="0,0,0,5"/>
+          <TextBlock x:Name="statusText" Foreground="#52606D"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button x:Name="importExcelButton" Content="匯入 Excel..." MinWidth="115"/>
+          <Button x:Name="exportExcelButton" Content="匯出 Excel..." MinWidth="115"
+                  Background="#2F6F4E" Foreground="White"/>
+          <Button x:Name="previewButton" Content="預覽變更" MinWidth="110"/>
+          <Button x:Name="applyButton" Content="套用變更" MinWidth="110"
+                  Background="#2F6F4E" Foreground="White"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

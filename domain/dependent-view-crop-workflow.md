@@ -66,11 +66,18 @@ metadata:
 
 ---
 
-### 3.2 Node.js 執行腳本
-讓使用者能透過修改腳本開頭的配置檔，一鍵執行：
+### 3.2 執行方式（MCP 工具）
 
-- **`scripts/batch_dependent_crop.js`**: 適用於跨樓層、相同網格區塊的批次裁切。
-- **`scripts/crop_viewblocks.js`**: 適用於單一視圖內，切割成 N 個座標區塊的矩陣裁切。
+兩種情境都用同一組工具，差別只在迴圈怎麼跑：
+
+- **跨樓層、相同網格區塊的批次裁切**：對每個母視圖跑一次下列序列。
+- **單一視圖切成 N 個座標區塊的矩陣裁切**：對同一個母視圖跑 N 次，每次帶不同的網格組合。
+
+序列：`get_all_views` 找出母視圖 → `calculate_grid_bounds`（帶網格名稱與 `offset_mm`）取得裁切範圍 → `create_dependent_views` 建立並套用。
+
+> 2026-08-03 起原本的 `batch_dependent_crop.js` 與 `crop_viewblocks.js` 已移除——兩支腳本呼叫的
+> 是同樣這三個已註冊工具，只是把配置寫死在檔案開頭；改用工具呼叫可以逐步檢查中間結果。
+> 下面的 config 結構保留下來當作參數範例。
 
 ```javascript
 const config = {

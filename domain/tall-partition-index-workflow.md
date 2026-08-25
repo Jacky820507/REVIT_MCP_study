@@ -2,13 +2,15 @@
 name: tall-partition-index-workflow
 description: "Revit 輕隔間牆高於 6m 的結構回饋索引圖 SOP，整合 TYPE 牆分析、房間排除、與細節一起複製(W)、藍色房間填滿與紅色牆線標示。"
 metadata:
-  version: "1.0"
-  updated: "2026-07-03"
+  version: "1.1"
+  updated: "2026-07-27"
   created: "2026-07-03"
   references:
     - "MCP/Core/Commands/CommandExecutor.PartitionTakeoff.cs"
     - "MCP/Core/Commands/CommandExecutor.ViewDuplicate.cs"
     - "MCP/Core/Commands/CommandExecutor.RoomFilledRegions.cs"
+    - "pyRevit_Tools/MCP_Tools.extension/lib/tall_partition_logic.py"
+    - "pyRevit_Tools/MCP_Tools.extension/lib/tall_partition_excel.py"
   related:
     - "revit-partition-takeoff.md"
     - "element-coloring-workflow.md"
@@ -166,3 +168,26 @@ CSV 欄位使用繁體中文，且必須保留 Element ID，因為後續視覺�
 本流程也應與通用 `element-coloring` 分開。
 
 當使用者只要依參數上色時，使用 `element-coloring`；當任務要求房間必須以 FilledRegion 呈現、牆標示又必須顯示在填滿之上時，使用本流程。
+
+## Excel 交付（pyRevit 按鈕「高隔間分析 Excel」）
+
+索引圖是給圖面協調用的；**回饋給結構單位時另需一份可篩選、可對 ElementId 的清單**。
+按鈕 `TallPartitionExcel`（`lib/tall_partition_excel.py` ＋純規則模組
+`lib/tall_partition_logic.py`）輸出三張分頁：
+
+| 分頁 | 內容 | 用途 |
+|---|---|---|
+| 高牆清單 | 樓層、牆 ElementId、牆類型、牆高(mm)、高度依據、牆長、牆面積、相鄰房間數、雙面共用、關聯房間 | 結構單位主要工作表；依樓層再依牆高由高到低排序 |
+| 受影響房間 | 樓層、房號、房名、房間 ElementId、面積、高牆數、共用高牆數、邊界長、房間側牆面積、射線淨高 min/max/avg、關聯牆 ElementId | 房間視角對照 |
+| 檢核條件 | 判定條件、統計、被排除的牆與房間、警告 | 可稽核性；讓對方看得到這份清單是用什麼條件篩出來的 |
+
+規則：
+
+1. 欄位一律繁體中文，且**必須保留 ElementId**——結構單位要能在 Revit 直接選取。
+2. `excludeWallTypeNames` **MCP 命令沒有這個參數**（C# 端未實作）。
+   domain 要求排除的 `Type-F 岩棉庫板` 系列改在 pyRevit 端對回傳的牆清單過濾。
+3. 排除某牆型後，必須**重算房間清單**：只因該牆型才入列的房間要一併消失，
+   不可留下高牆數為 0 的房間，否則兩張分頁對不起來。
+4. 一面牆被兩間房共用時，兩間房都要列入（與索引圖規則一致），
+   牆清單以「雙面共用」欄標示。
+5. .xlsx 以 OpenXML（ZipArchive）直接寫出，不依賴本機安裝 Excel。

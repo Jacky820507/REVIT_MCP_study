@@ -351,36 +351,31 @@ using (Transaction trans = new Transaction(doc, "外牆開口檢討"))
 
 ## 📝 使用範例
 
-### 執行檢討腳本
-使用 Node.js 執行以下腳本：
+### 執行檢討
 
-```bash
-node MCP-Server/scripts/exterior_wall_check.js
+直接呼叫 MCP 工具 `check_exterior_wall_openings`。參數範例：
+
+```json
+{
+  "checkArticle41": true,
+  "checkArticle42": true,
+  "checkArticle45": true,
+  "siteBoundary": [
+    { "x": 0, "y": 0 },
+    { "x": 50, "y": 0 },
+    { "x": 50, "y": 30 },
+    { "x": 0, "y": 30 }
+  ],
+  "colorizeViolations": true,
+  "createDimensions": true,
+  "exportReport": true,
+  "reportPath": "<使用者指定的輸出路徑>"
+}
 ```
 
-### 參數參考 (JS)
+`reportPath` 一律由使用者指定，不要寫死（見 `domain/user-specified-runtime-parameters.md`）。
 
-```javascript
-// Node.js MCP Server 呼叫範例
-const result = await executeRevitCommand({
-  command: "CheckExteriorWallOpenings",
-  parameters: {
-    checkArticle41: true,  // 檢查採光
-    checkArticle42: true,  // 檢查有效採光
-    checkArticle45: true,  // 檢查開口距離
-    siteBoundary: [
-      { x: 0, y: 0 },
-      { x: 50, y: 0 },
-      { x: 50, y: 30 },
-      { x: 0, y: 30 }
-    ],
-    colorizeViolations: true,
-    createDimensions: true,
-    exportReport: true,
-    reportPath: "D:\\Reports\\exterior_wall_check.json"
-  }
-});
-```
+> 2026-08-03 起 `exterior_wall_check.js` 已移除——它只是這一個工具的薄包裝。
 
 ---
 

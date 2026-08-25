@@ -10,6 +10,8 @@
 #   6. Domain Metadata and Shared SOP Quality
 #   7. Cross-Document Alignment (CLAUDE.md / BIM_MCP web / scripts must report same Skill/Domain/Tool counts)
 #   8. Document Audience and Encoding Hygiene
+#   9. Tool Reachability (every registered MCP tool must reach a real Revit command; -Version reports
+#      which version-guarded tools a given build would withhold)
 
 param(
     [switch]$SkipBuild,
@@ -88,6 +90,30 @@ Write-Check "No RevitMCP.2024.csproj" (-not (Test-Path "$projectRoot\MCP\RevitMC
 Write-Check "No RevitMCP.2024.addin" (-not (Test-Path "$projectRoot\MCP\RevitMCP.2024.addin")) "Duplicate addin found - delete it"
 Write-Check "No MCP\MCP\ directory" (-not (Test-Path "$projectRoot\MCP\MCP")) "Nested directory found - delete it"
 Write-Check "No fix_addin_path.ps1" (-not (Test-Path "$projectRoot\scripts\fix_addin_path.ps1")) "Dangerous script found - delete it"
+
+# Installer uniqueness. CLAUDE.md's Deployment Rules name scripts/install-addon.ps1 as the one
+# primary installer; these four were removed on 2026-08-03 because they pointed at the retired
+# Release.2024 output path or hardcoded a personal environment. A second installer is not a harmless
+# spare — whoever (or whatever) picks the wrong one deploys the wrong DLL and then debugs a ghost.
+$retiredInstallers = @(
+    @("scripts\install-addon-bom.ps1", "retired: outdated Release.2024 paths"),
+    @("scripts\install-addon.bat", "retired: outdated build output paths"),
+    @("scripts\install-ascii.ps1", "retired: hardcoded personal path"),
+    @("author_install_addon.ps1", "retired: root-level copy of the canonical installer")
+)
+foreach ($ri in $retiredInstallers) {
+    Write-Check "No $($ri[0])" (-not (Test-Path "$projectRoot\$($ri[0])")) `
+        "$($ri[1]). Use scripts\install-addon.ps1 — it is the only supported installer."
+}
+
+# Skill-directory uniqueness. On 2026-08-03 three parallel skill trees existed (.claude/skills 52,
+# .agents/skills 32, .agent/skills 9) and 14 same-named files had drifted into contradicting each
+# other on thresholds, tool names and workflow steps. They were merged into .claude/skills and the
+# other two removed. A second skill tree has no upside and silently reintroduces prompt conflict.
+foreach ($sd in @(".agents\skills", ".agent\skills")) {
+    Write-Check "No $sd directory" (-not (Test-Path "$projectRoot\$sd")) `
+        "Merged into .claude\skills on 2026-08-03. .claude\skills is the only skill directory — see CLAUDE.md 'Skills'."
+}
 
 # 1-2: Required files
 Write-Host ""
@@ -179,9 +205,11 @@ $excludedFiles = @(
 )
 
 $mdFiles = Get-ChildItem -Path $projectRoot -Filter "*.md" -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch "node_modules|\.claude[\\/]plugins|docs[\\/]_archive|docs[\\/]fork-audit|[\\/]log[\\/]" }
+    Where-Object { $_.FullName -notmatch "node_modules|\.claude[\\/]plugins|\.claude[\\/]worktrees|docs[\\/]_archive|docs[\\/]fork-audit|[\\/]log[\\/]" }
     # log/ 為 append-only 事件日誌、docs/fork-audit/ 為 fork 盤點報告（gitignored）：
     # 兩者屬敘事性歷史文件，描述修正/外部 fork 時合法引用禁用檔名，非規範性指引，排除於 stale-ref 掃描。
+    # .claude/worktrees/ 為 Claude Code session 自動建立的 git worktree（整份 repo 的副本），
+    # 其內的 CLAUDE.md 等檔案只是主 repo 已豁免內容的複本，掃描只會重複誤報，故排除。
 
 $staleFound = $false
 foreach ($pattern in $stalePatterns) {
@@ -769,7 +797,13 @@ foreach ($lf in $linkScanFiles) {
     $relFile = $lf.Replace("$projectRoot\", "").Replace("\", "/")
     $fileDir = Split-Path -Parent $lf
     $lines = $text -split "`r?`n"
+    # Track fenced code blocks. Content inside ``` / ~~~ is illustrative, not markdown — a naming
+    # template like [母視圖名稱]([分張序號]/[總張數]) is not a link and must not be treated as one.
+    # (Inline code spans are handled per-match below via the backtick-parity check.)
+    $inFence = $false
     for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^\s*(```|~~~)') { $inFence = -not $inFence; continue }
+        if ($inFence) { continue }
         foreach ($m in $mdLinkRx.Matches($lines[$i])) {
             $target = $m.Groups[1].Value
             # Skip URLs, in-page anchors, mailto, image data URIs
@@ -918,6 +952,218 @@ if ($skillMojibake.Count -gt 0) {
 }
 else {
     Write-Check "Skill docs pass mojibake warning scan" $true
+}
+
+# ─────────────────────────────────────────────
+# Phase 9: Tool Reachability (MCP tool layer <-> Revit command layer)
+# ─────────────────────────────────────────────
+# Why this phase exists: on 2026-08-03 an audit found 66 of 180 registered MCP tools had no
+# `case "<name>":` in MCP/Core/CommandExecutor.cs. Merge 9049da0 kept this fork's C# (keep-mine,
+# Revit 2020 protection) while the upstream TypeScript tool definitions merged in normally, so the
+# server advertised tools whose only possible outcome was `NotImplementedException`.
+# An advertised-but-dead tool is worse than a missing one: the AI calls it, gets an exception,
+# and may fill the gap with invented numbers. This phase makes that drift impossible to reintroduce.
+Write-Host ""
+Write-Host "[Phase 9] Tool Reachability" -ForegroundColor Yellow
+Write-Host "─────────────────────────────────────────────" -ForegroundColor DarkGray
+
+Write-Host ""
+Write-Host "  9-1. Every registered MCP tool has a Revit command case:" -ForegroundColor Cyan
+
+$nodeNames = "import('./MCP-Server/build/tools/index.js').then(m=>{console.log(m.registerRevitTools().map(t=>t.name).join(','))}).catch(()=>process.exit(2))"
+Push-Location $projectRoot
+$namesRaw = & node --input-type=module -e $nodeNames 2>$null
+$namesExit = $LASTEXITCODE
+Pop-Location
+
+if ($namesExit -ne 0 -or -not $namesRaw) {
+    Write-Warn "Tool reachability check skipped" "Could not read the runtime tool registry. Run 'npm run build' in MCP-Server first."
+}
+else {
+    $registeredNames = ($namesRaw -join '') -split ',' | Where-Object { $_.Trim() -ne '' }
+
+    # One blob of every hand-written C# source (obj/ holds generated build artifacts only).
+    $csFileList = Get-ChildItem -Path "$projectRoot\MCP" -Recurse -Filter *.cs -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '\\obj\\' }
+    $csBlob = ($csFileList | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8 }) -join "`n"
+
+    # Walk every C# file tracking #if/#else/#endif nesting so we know which command strings are
+    # only compiled in for certain Revit versions. A raw substring match cannot see this: a case
+    # inside `#if REVIT2024_OR_GREATER` is physically present in the source but stripped by the
+    # compiler on Release.R20/R22/R23, so the tool is dead on those builds.
+    # $guardMap: command name -> the minimum Revit version required (0 = always compiled).
+    $guardMap = @{}
+    foreach ($f in $csFileList) {
+        $stack = @()
+        foreach ($line in (Get-Content -LiteralPath $f.FullName -Encoding UTF8)) {
+            if ($line -match '^\s*#if\s+(.+?)\s*$')      { $stack += $Matches[1]; continue }
+            if ($line -match '^\s*#elif\s+(.+?)\s*$')    { if ($stack.Count -gt 0) { $stack[-1] = $Matches[1] }; continue }
+            if ($line -match '^\s*#else\b')              { if ($stack.Count -gt 0) { $stack[-1] = "!(" + $stack[-1] + ")" }; continue }
+            if ($line -match '^\s*#endif\b')             { if ($stack.Count -gt 0) { $stack = @($stack[0..($stack.Count-1)] | Select-Object -SkipLast 1) }; continue }
+            if ($line -match '^\s*case\s+"([^"]+)"\s*:') {
+                $name = $Matches[1]
+                $minVer = 0
+                foreach ($cond in $stack) {
+                    if ($cond -match '^\s*REVIT(\d{4})_OR_GREATER\s*$' -and [int]$Matches[1] -gt $minVer) { $minVer = [int]$Matches[1] }
+                }
+                # An unguarded case anywhere wins — the command is then always reachable.
+                if (-not $guardMap.ContainsKey($name) -or $guardMap[$name] -gt $minVer) { $guardMap[$name] = $minVer }
+            }
+        }
+    }
+
+    $unreachable = @()
+    foreach ($n in $registeredNames) {
+        if ($csBlob -notmatch [regex]::Escape("`"$n`"")) { $unreachable += $n }
+    }
+    Write-Check "All $($registeredNames.Count) registered tools reach a Revit command" ($unreachable.Count -eq 0) `
+        $(if ($unreachable.Count -gt 0) {
+            "These tools would throw NotImplementedException when called:`n  " + (($unreachable | Sort-Object) -join "`n  ") +
+            "`nFix: add the case to MCP/Core/CommandExecutor.cs, or add the name to UNIMPLEMENTED_ON_THIS_FORK in MCP-Server/src/tools/index.ts."
+        } else { "" })
+
+    # 9-1b: reachable in the source text, but only for some Revit versions.
+    # The MCP server registers tools before it knows which Revit build is on the other end, so a
+    # version-guarded tool is advertised to every client regardless. Surface it explicitly rather
+    # than letting 9-1's PASS imply "works everywhere".
+    Write-Host ""
+    Write-Host "  9-1b. Version-guarded tools (compiled in only above a Revit version):" -ForegroundColor Cyan
+
+    $guarded = @()
+    foreach ($n in $registeredNames) {
+        if ($guardMap.ContainsKey($n) -and $guardMap[$n] -gt 0) {
+            $guarded += [pscustomobject]@{ Name = $n; MinVersion = $guardMap[$n] }
+        }
+    }
+
+    # The hard gate is NOT "does this tool work on every Revit version" — some genuinely cannot,
+    # and that is fine. What must never happen is a version-guarded tool with no way to withhold it:
+    # then an old-Revit deployment advertises a tool that can only throw. So the check is
+    # "every version-guarded case is declared in VERSION_GATED_TOOLS", verified against the C# source
+    # in both directions. `-Version` then just reports what a given build would withhold.
+    $indexTsForGate = Get-Content -LiteralPath "$projectRoot\MCP-Server\src\tools\index.ts" -Raw -Encoding UTF8
+    $mapMatch = [regex]::Match($indexTsForGate, 'VERSION_GATED_TOOLS\s*:\s*Record<string,\s*number>\s*=\s*\{(.*?)\};', 'Singleline')
+    if (-not $mapMatch.Success) {
+        Write-Warn "Version-gate map not found" "Expected VERSION_GATED_TOOLS in MCP-Server/src/tools/index.ts"
+    }
+    else {
+        $mapped = @{}
+        foreach ($m in [regex]::Matches($mapMatch.Groups[1].Value, '([A-Za-z0-9_]+)\s*:\s*(\d{4})')) {
+            $mapped[$m.Groups[1].Value] = [int]$m.Groups[2].Value
+        }
+        $mapProblems = @()
+        foreach ($g in $guarded) {
+            if (-not $mapped.ContainsKey($g.Name)) {
+                $mapProblems += "$($g.Name): C# guards it at Revit $($g.MinVersion)+ but VERSION_GATED_TOOLS does not list it"
+            }
+            elseif ($mapped[$g.Name] -ne $g.MinVersion) {
+                $mapProblems += "$($g.Name): C# guards it at $($g.MinVersion)+ but the map says $($mapped[$g.Name])"
+            }
+        }
+        foreach ($k in $mapped.Keys) {
+            if (-not ($guarded | Where-Object { $_.Name -eq $k })) {
+                $mapProblems += "$k`: listed in VERSION_GATED_TOOLS but its C# case is not version-guarded (or it is not registered)"
+            }
+        }
+        Write-Check "$($guarded.Count) version-guarded tool(s), all declared in VERSION_GATED_TOOLS" ($mapProblems.Count -eq 0) `
+            $(if ($mapProblems.Count -gt 0) {
+                ($mapProblems -join "`n  ") +
+                "`nWhy this matters: an undeclared guarded tool cannot be withheld, so an older-Revit deployment advertises a tool that can only throw."
+            } else { "" })
+
+        if ($guarded.Count -gt 0) {
+            $targetVer = 0
+            if ($Version -match '(\d{4})') { $targetVer = [int]$Matches[1] }
+            foreach ($g in ($guarded | Sort-Object Name)) {
+                if ($targetVer -gt 0) {
+                    $verdict = if ($targetVer -lt $g.MinVersion) { "withheld on this Revit $targetVer build (set REVIT_VERSION=$targetVer)" } else { "available on Revit $targetVer" }
+                    Write-Host "        $($g.Name)  needs Revit $($g.MinVersion)+ -> $verdict" -ForegroundColor Gray
+                }
+                else {
+                    Write-Host "        $($g.Name)  needs Revit $($g.MinVersion)+; set REVIT_VERSION on older deployments to withhold it" -ForegroundColor Gray
+                }
+            }
+        }
+    }
+
+    # 9-2 is the reverse direction: a name parked in the withhold list that HAS since gained a C#
+    # implementation is a capability the AI is being denied for no reason.
+    Write-Host ""
+    Write-Host "  9-2. Withhold list contains no tools that now work:" -ForegroundColor Cyan
+
+    $indexTs = Get-Content -LiteralPath "$projectRoot\MCP-Server\src\tools\index.ts" -Raw -Encoding UTF8
+    $gateMatch = [regex]::Match($indexTs, 'UNIMPLEMENTED_ON_THIS_FORK\s*=\s*new Set<string>\(\[(.*?)\]\)', 'Singleline')
+    if (-not $gateMatch.Success) {
+        Write-Warn "Withhold list not found" "Expected UNIMPLEMENTED_ON_THIS_FORK in MCP-Server/src/tools/index.ts"
+    }
+    else {
+        $gated = [regex]::Matches($gateMatch.Groups[1].Value, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value }
+        $staleGate = @()
+        foreach ($n in $gated) {
+            if ($csBlob -match [regex]::Escape("`"$n`"")) { $staleGate += $n }
+        }
+        Write-Check "Withhold list has $($gated.Count) entries, none stale" ($staleGate.Count -eq 0) `
+            $(if ($staleGate.Count -gt 0) {
+                "These now have a Revit command and should be removed from UNIMPLEMENTED_ON_THIS_FORK:`n  " + (($staleGate | Sort-Object) -join "`n  ")
+            } else { "" })
+    }
+}
+
+# ─────────────────────────────────────────────
+# Phase 10: MCP Bypass Surface
+# ─────────────────────────────────────────────
+# CLAUDE.md's AI Guard Rails forbid ad hoc scripts that send JSON straight to ws://localhost:8964:
+# they skip the tool schema, the permission surface, and the tool-call honesty rules.
+# On 2026-08-03 MCP-Server/scripts held 59 such files; 54 of them only chained already-registered
+# tools, so they were removed and the domain/skill docs rewired to tool calls. The 5 survivors are
+# listed in MCP-Server/scripts/README.md with a reason each. This phase keeps the list from
+# silently regrowing — a new bypass script must be a deliberate, explained decision.
+Write-Host ""
+Write-Host "[Phase 10] MCP Bypass Surface" -ForegroundColor Yellow
+Write-Host "─────────────────────────────────────────────" -ForegroundColor DarkGray
+
+Write-Host ""
+Write-Host "  10-1. No undocumented WebSocket-bypass scripts:" -ForegroundColor Cyan
+
+# Files allowed to talk to the socket directly. Keep in sync with MCP-Server/scripts/README.md.
+$allowedBypass = @(
+    'curtain_preview_server.js',              # serves the browser preview UI, not a Revit command wrapper
+    'run_command.js',                         # generic escape hatch for a not-yet-refreshed tool list
+    'number_parking.js',                      # real gap: no C# parking-numbering command yet
+    'export_partition_takeoff_current.cjs'    # real gap: no C# partition-takeoff Excel command yet
+)
+
+$bypassDir = "$projectRoot\MCP-Server\scripts"
+if (-not (Test-Path $bypassDir)) {
+    Write-Check "MCP-Server\scripts contains no bypass scripts" $true
+}
+else {
+    $offenders = @()
+    Get-ChildItem $bypassDir -File -Include *.js, *.cjs, *.mjs -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        $body = Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8
+        $talksToSocket = $body -match 'ws://' -or $body -match "8964" -or $body -match 'new WebSocket'
+        if ($talksToSocket -and ($allowedBypass -notcontains $_.Name)) {
+            $offenders += $_.Name
+        }
+    }
+    Write-Check "MCP-Server\scripts has only the $($allowedBypass.Count) documented bypass script(s)" ($offenders.Count -eq 0) `
+        $(if ($offenders.Count -gt 0) {
+            "Undocumented WebSocket-bypass script(s):`n  " + (($offenders | Sort-Object) -join "`n  ") +
+            "`nIf the script only chains already-registered tools, delete it and call the tools instead." +
+            "`nIf it fills a real capability gap, add it to `$allowedBypass here AND document the reason in MCP-Server/scripts/README.md."
+        } else { "" })
+
+    # The README is the human-readable half of this gate; without it the allowlist has no rationale.
+    Write-Host ""
+    Write-Host "  10-2. Bypass allowlist is documented:" -ForegroundColor Cyan
+    $bypassReadme = "$bypassDir\README.md"
+    $readmeText = if (Test-Path $bypassReadme) { Read-FileText $bypassReadme } else { $null }
+    $undocumented = @()
+    foreach ($a in $allowedBypass) {
+        if (-not $readmeText -or $readmeText -notmatch [regex]::Escape($a)) { $undocumented += $a }
+    }
+    Write-Check "Every allowed bypass script is explained in MCP-Server/scripts/README.md" ($undocumented.Count -eq 0) `
+        $(if ($undocumented.Count -gt 0) { "Not mentioned in the README:`n  " + ($undocumented -join "`n  ") } else { "" })
 }
 
 # ─────────────────────────────────────────────

@@ -8,12 +8,11 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 export const visualizationTools: Tool[] = [
     {
         name: "override_element_graphics",
-        description: "在指定視圖中覆寫元素的圖形顯示（填滿顏色、圖樣、線條顏色等）。支援單一 elementId 或批次 elementIds（同一交易內套用相同覆寫，批次上色請優先用 elementIds）。",
+        description: "在指定視圖中覆寫元素的圖形顯示（填滿顏色、圖樣、線條顏色等）。",
         inputSchema: {
             type: "object",
             properties: {
-                elementId: { type: "number", description: "要覆寫的元素 ID（單一元素）" },
-                elementIds: { type: "array", items: { type: "number" }, description: "要覆寫的元素 ID 陣列（批次，同一交易套用相同覆寫設定）" },
+                elementId: { type: "number", description: "要覆寫的元素 ID" },
                 viewId: { type: "number", description: "視圖 ID（若不指定則使用當前視圖）" },
                 surfaceFillColor: {
                     type: "object",

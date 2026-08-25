@@ -89,4 +89,4 @@ node MCP-Server/scratch/batch_rc_filled.cjs
 ## 📂 相關檔案
 - **C# 核心**：`MCP/Core/Commands/CommandExecutor.FillPatterns.cs`
 - **入口腳本**：`MCP-Server/scratch/batch_rc_filled.cjs`
-- **Skill**：`.agent/skills/revit-rc-filled-region/SKILL.md`
+- **Skill**：`.claude/skills/rc-filled-region/SKILL.md`

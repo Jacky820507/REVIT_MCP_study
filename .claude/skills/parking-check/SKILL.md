@@ -26,11 +26,15 @@ description: "停車場檢討：停車位淨空高度檢查（>210cm）與停車
 4. 與法定需求量比對，回報差異
 
 ### 3. 停車位自動編號 / 車位編碼
-執行前讀取 domain/parking-auto-numbering.md 與 domain/lessons.md 的 L-021。
+執行前讀取 domain/parking-auto-numbering.md 與 domain/lessons.md 的 L-021
 
-1. 先以 `get_active_schema` 確認當前視圖含 `Parking` 類別，並確認使用者要處理汽車、機車或大客車。
-2. 使用 `MCP-Server/scripts/number_parking.js`，正式寫入前必須先跑 `--dry-run` 檢查排序預覽。
-3. 若使用者指定起點 ElementId，加入 `--start-element {id}`；若未指定，腳本會自動使用排序後第一個元素，並在輸出中列出「自動判定 ElementId」。
-4. 汽車位常用指令格式：`node scripts/number_parking.js --dry-run --only car --order yx --linear --car-start {startNumber} [--start-element {elementId}]`。
-5. dry-run 確認後移除 `--dry-run` 正式寫入；寫入欄位為 Parking 例證參數「備註」。
-6. 若 Revit 跳出「已在群組編輯模式之外變更群組」警告，需確認 Revit add-in 已部署含 `DismissWarningsPreprocessor` 的版本後再重跑。
+1. 先以 `get_active_schema` 確認當前視圖含 `Parking` 類別，並確認使用者要處理汽車、機車或大客車
+2. 使用 `MCP-Server/scripts/number_parking.js`，正式寫入前必須先跑 `--dry-run` 檢查排序預覽
+3. 若使用者指定起點 ElementId，加入 `--start-element {id}`；未指定時腳本會自動使用排序後第一個元素，並在輸出中列出「自動判定 ElementId」
+4. 汽車位常用指令：`node scripts/number_parking.js --dry-run --only car --order yx --linear --car-start {startNumber} [--start-element {elementId}]`
+5. dry-run 確認後移除 `--dry-run` 正式寫入；寫入欄位為 Parking 例證參數「備註」
+6. 若 Revit 跳出「已在群組編輯模式之外變更群組」警告，需確認 Revit add-in 已部署含 `DismissWarningsPreprocessor` 的版本後再重跑
+
+> 注意：這一支走的是 `MCP-Server/scripts/` 底下直連 WebSocket 的既有腳本路徑，不是 MCP 工具呼叫。
+> 它是現存且有人在用的流程，但與 CLAUDE.md 的 Do Not Bypass MCP 規則有張力；
+> 若之後把自動編號收編成正式 MCP 工具，這一節要一併改掉。

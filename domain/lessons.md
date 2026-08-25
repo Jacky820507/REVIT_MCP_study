@@ -3,7 +3,7 @@ name: lessons
 description: "Lessons Learned：由 /lessons 指令自動維護的專案避坑經驗集。記錄高階開發規則與實作教訓，採 Append-only 追加、禁止修改或刪除已有條目。當使用者提到 lessons、開發經驗、避坑、經驗、教訓時觸發。"
 metadata:
   version: "1.2"
-  updated: "2026-05-26"
+  updated: "2026-07-24"
   created: "2026-03-13"
   contributors:
     - "Admin"
@@ -18,6 +18,7 @@ metadata:
     - element-query
     - fire-safety-check
     - parking-check
+    - pyrevit-button-dev
     - wall-orientation-check
   tags: [lessons, 開發經驗, 避坑, 經驗, 教訓, append-only]
 ---
@@ -343,7 +344,12 @@ metadata:
 
 - **情境**：輕隔間 CSV 初版以「門窗座標靠近 TYPE 牆」推定開口扣除，導致房間 F212 的 `廁所門-60x200 cm` 被錯扣；該門實際 `主體 ID` 是非 TYPE 的廁所隔牆。另以 `不連續高度` 直接相乘，使 `Type-B 濕式輕隔間-襯板` 從舊表約 64 m² 被高估到 76.4928 m²。
 - **規則 1：開口扣除必須 host-only**。門窗或開口只有在其 `主體 ID` / Host ElementId 等於本次計算的 TYPE 牆 ElementId 時才能扣除。不得用 nearest wall、座標距離、同樓層接近、房間內接近等幾何近似替代 host 關係。
-- **規則 2：表內牆高是有效高度，不是原始 `不連續高度`**。若範本要求保留 `牆長 × 牆高` 公式，應以 Revit 牆 `面積` 為基準反推有效高度：`表內牆高 = (Revit 牆面積 + 已驗證 host 開口面積) / 牆長`。Excel 再扣開口後，總計才會回到 Revit 牆面積基準。
+- **規則 2：牆高欄要可解釋，不可藏面積校正**。不要逐房間、逐列各自用 `Revit 面積 / 牆長` 反推牆高，否則牆高欄會出現大量無法向審查者說明的小數。Revit 面積只能作為驗證基準；若需面積校正，應另設校正欄或檢核表。
+- **規則 3：全高牆優先用樓層到上層樓板底**。一般全高輕隔間牆的報表牆高應為 `上層樓層標高 - 上層樓板厚度 - 牆基準樓層標高 - 牆基準偏移`。樓板厚度應由 Floors/樓板類型統計取得，優先選該樓層代表結構樓板厚。
+- **規則 4：「貼附頂/底」是斜板或特殊頂部條件的重要訊號**。若牆使用 Revit「貼附頂/底」且貼附後幾何高度與一般樓板底高度差異明顯，可採貼附後 Revit 幾何平均高度並標記來源；若差異很小，仍用樓層到上層樓板底，讓高度一致。
+- **規則 5：低矮/襯板/未到頂牆保留 Revit 牆高**。預設可用 2.70m 作為全高門檻；若未使用「貼附頂/底」且 Revit 牆高比上層樓板底高度低超過約 0.35m，視為特殊未到頂牆，不可強制套用樓板底高度。
+- **規則 6：斜板/局部降板精算另開幾何流程**。遇到斜板或局部降板，不要只靠樓層代表厚度硬猜。若需要精準拆分局部高度，需升級 Floor 幾何取樣或 raycast，對牆線取樣並保留命中樓板與樓板底標高證據。
+- **規則 7：報表 TYPE 分欄與表尾要像正式算量表**。TYPE 分欄只列實際存在牆實例的輕隔間類型，不列只有 Wall Type 定義但無實體牆者。表尾需有 `輕隔間數量總計`，左側固定資料欄跨欄置中，右側各 TYPE 欄以 `SUM` 彙總。
 - **驗證**：抽查一個使用者質疑的房間與一個總量敏感的牆型。F212 應無 `廁所門-60x200 cm` 扣除；`Type-B 濕式輕隔間-襯板` 應回到舊表基準約 64.0563 m²。若任一不符，停止交付並重查 host 與面積來源。
 - **Domain 參考**：`domain/revit-partition-takeoff.md`。
 ## [L-042] 房間重新排序編號應使用 Revit 端批次交易
@@ -440,3 +446,107 @@ metadata:
 - **規則**：用結構化 CSV parser 讀取；以欄名尋找 `編號`、`空間名稱` 等欄位，再依任務類型選 F/B/W/C 代碼欄。空白與 `-` 視為無代碼，Revit 參數以 `+` 分割成集合後比對。
 - **實踐**：差異報告分成三類：值不一致、CSV 有但 Revit 明細表沒有、Revit 明細表有但 CSV 沒有。每次比對前都要重新讀取 CSV，不沿用上一版檔案內容。
 - **Domain/Skill**：詳見 `domain/finish-schedule-governance.md` 與 `finish-schedule-governance` Skill。
+
+## [L-054] 房間型算量的開口必須同時通過宿主與邊界驗證
+
+- **情境**：踢腳與內牆粉刷初版依門的 FromRoom/ToRoom 關係扣除，結果把房間內廁所隔牆上的門也扣進主要房間周長或牆面積。
+- **教訓**：門屬於某房間，不代表門位於本次計算的房間邊界。房間關係只能提供候選，不能證明扣除位置。
+- **規則**：踢腳與內牆粉刷只有在 `opening.Host.Id` 存在於該 Room 的 `GetBoundarySegments(Finish)` segment ElementIds 時才能扣除。輕隔間則更嚴格，HostId 必須等於被計算的牆 ElementId。
+- **禁止退回**：不得用最近牆、同樓層、座標距離或 BoundingBox 接近補猜宿主。缺宿主或不在邊界上的開口要略過並列入 warnings。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-055] 完成面算量不可直接使用 Revit 房間周長參數
+
+- **情境**：Revit 房間 `周長` 可能依中心線或專案的房間邊界設定計算，與實際踢腳、粉刷所在的完成面內圈不一致；房間有內圈或多個邊界迴圈時，單一周長值也無法說明組成。
+- **規則**：踢腳、內牆粉刷與空間表更新使用 `GetBoundarySegments(Finish)`，加總所有有效迴圈，並保留每段 ElementId。`ROOM_PERIMETER` 只能是 boundary API 失敗時的具名 fallback。
+- **完整性**：沒有踢腳或粉刷代碼的房間仍要列在 Excel。是否列房間與是否產生材料數量必須分開判斷。
+- **驗證**：輸出 boundary、parameter fallback、missing 與 multi-loop room 數量；總周長差異不可只用四捨五入解釋。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-056] 內牆粉刷淨高必須保留天花板到樓板底的證據鏈
+
+- **情境**：房間 F110 有實體天花板 `C2-明架礦纖天花板 (綠建材、耐燃一級)`，距樓層高度偏移為 3.2m；舊邏輯因天花板 bbox sample 未命中而退回上層樓板底，Excel 淨高變成 5.05m。
+- **規則 1**：先以房間 bbox 與天花板 bbox 的交集區域做多點 `Room.IsPointInRoom` 取樣，確認實體天花板真的覆蓋該房間。
+- **規則 2**：候選天花板優先讀 `CEILING_HEIGHTABOVELEVEL_PARAM`／`距樓層的高度偏移`，以 `天花板樓層標高 + offset - 房間基準標高` 計算。幾何底面只是 offset 不可用時的 fallback。
+- **規則 3**：只有房間沒有實體天花板時，才使用 `上層樓層標高 - 上層代表樓板厚度 - 房間基準標高`。
+- **精度**：保留完整計算精度，最後顯示才取小數兩位；不得用面積反推淨高，也不得讓每個房間出現無法解釋的任意小數。
+- **驗證**：報表或執行摘要必須揭露 `actual-ceiling-offset`、geometry/bbox、slab-bottom 與 final fallback 的房間數。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-057] 數量 Excel 是稽核文件，不只是輸出格式
+
+- **教訓**：只有最終數字的 Excel 無法查出錯扣開口、錯誤淨高或材料對應問題。正式算量表必須保留公式、來源與總計。
+- **規則**：標題取目前 Revit 檔名；門窗名稱取 Revit 類型名稱；材料名稱去掉 `B1=`、`W1=` 等代碼前綴；只列實際存在的牆型／材料欄，但保留所有有效房間列。
+- **公式**：明細保留 `周長 - SUM(開口)`、`周長 × 淨高 - SUM(開口面積)` 等儲存格公式；表尾加入跨欄總計標籤與每個數量欄的 `SUM`。
+- **既有活頁簿**：若更新既有 `.xls/.xlsx` 且有跨分頁固定引用，必須先 dry-run、建立 timestamped backup，再就地寫入；不得為了方便重排房間列或破壞公式。
+- **驗證**：交付前掃描 `#REF!`、`#VALUE!`、`#NAME?`、`#DIV/0!`，並回報 skipped openings、missing hosts/sizes/heights 與 fallback 數量。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-058] 天花算量：材料欄以 Room C 代碼為主，面積優先採實體天花
+
+- **情境**：Room `天花板塗層` 已填 C 代碼，但命中的實體天花類型標記可能不同；若再以粉刷明細表篩選房間，還可能漏掉不在該表但有效的 Room。
+- **規則**：天花 Excel 直接讀取全部有效 Room。材料欄以 Room C 代碼為準，公式直接引用 C 欄面積，不需要粉刷明細表複選 UI，也不再使用舊版「面積修正」欄。
+- **面積**：面積欄優先採房間上方命中的 `OST_Ceilings` 在該房間邊界內的實際覆蓋面積；沒有有效實體天花時，才用 Room 面積或明確標記的估算值備援。F506 至 F511 這類上方有 C2 實體天花的挑空房間，不能因淨高檢核排除上層天花就退回整房 Room 面積。
+- **格式**：目前天花 Excel 主表只有 A 編號、B 空間名稱、C 面積三個固定欄；材料欄從 D 欄開始，資料列從第 8 列開始，總計列公式從 `D8` 起加總。不要再輸出舊版 D 欄「面積修正」，避免材料欄位整體右移。
+- **QA**：實體 `OST_Ceilings` 的 Type Mark 只負責核對。與 Room C 代碼集合不一致時，材料欄仍依 Room 參數，但報表與完成提示必須標示「實體天花需更改」；Type Mark 空白則列未編碼警告。
+- **空值**：Room `天花板塗層` 空白即不填材料數量，不可用命中的實體天花 Type Mark 補值；應另提示回填 Room 參數。
+- **高度**：天花與樓板必須保留完整樓層身分，不能把不同棟別同名樓層合併。淨高檢核不得只因 XY 重疊就把上層天花當成本房間樓板底；高於本房間上層樓板底者可排除並採樓板底，但此判斷不得覆蓋天花面積的實體優先規則。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-059] 跨房間與跨樓層實體天花必須分層後依 Room 邊界切分
+
+- **情境**：F131 的 Room 面積約 35.041 m²，但舊輸出為 1220.906 m²。原因包含兩層：同一 Ceiling 可跨越多個房間；舊邏輯又只比較 `B` 棟別字首，使 B-1F Room 可能同時累加 B-2F、B-3F 等垂直重疊天花。
+- **規則 1：先分層**。優先保留與 Room 完整基準樓層相同的天花；同層沒有有效候選時，才採最近上方候選所在樓層，以支援 F506 至 F511 類挑空房間。不得把不同樓層的 XY 重疊天花全部相加。
+- **規則 2：再裁切**。命中只代表候選成立。正式數量須以 `GetBoundarySegments(Finish)` 建立 Room 垂直裁切體，與 Ceiling Solid 做布林交集，取交集的向上表面面積；不得直接把整個 `HOST_AREA_COMPUTED` 分配給每個房間。
+- **備援**：Solid 或 Boolean 失敗時才使用水平覆蓋估算，且估算不得超過 Room 面積。高度檢核工作表必須列出數量面積及來源，讓使用者能辨別幾何裁切、含估算、純估算與 Room 面積回退。
+- **驗證**：F131 應接近自身 Room／天花交集面積，不得再等於整片跨房間 Ceiling 面積；F506 至 F511 的局部實體天花仍須保留局部覆蓋量，不可一律改成整房面積。
+- **Domain/Skill**：詳見 `domain/quantity-takeoff-excel.md` 與 `quantity-takeoff-excel` Skill。
+
+## [L-060] 施工架 Excel 不可沿用手動挑列總和
+
+- **情境**：舊工項活頁簿以 `內牆!K144` 手動挑選零散房間列計算「施工架(含防護設施)」，其中混有一般房間、樓梯、電梯、水箱，且只包含部分樓層，無法說明房間分類與漏算原因。
+- **規則**：施工架固定拆成三類：`室外框式施工架(含防護設施)` 為外部周長×總高度（M2）；`室內施工架(含防護措施)` 為一般房間 Finish 周長×高度（M2）；`室內裝修施工架` 為樓梯／電梯類長×寬×高（M3）。三類互斥，不扣門窗。
+- **Excel 契約**：以 `01空間表` 房號作室內更新名單，重複房號直接中止；建立 `施工架計算` 逐房稽核表，再由 `其他面積` 引用摘要；同步維持 `小計`、`更新工項` 公式鏈。寫入前 dry-run 並做 timestamped backup，存檔前完整重算並掃描公式錯誤。
+- **排除**：`FN/TF`、戶外／室外／屋頂平台、露臺、陽台、管道間、水箱與挑空排除；`梯廳` 保留為一般房間。Excel/Revit 單邊存在或缺高度者列警告且不靜默計入。
+- **Domain/Skill**：詳見 `domain/scaffold-takeoff.md`、`Lessons/scaffold-takeoff-lessons.md` 與 `scaffold-takeoff` Skill。
+
+## [L-061] pyRevit 新按鈕不要在 bundle.yaml 放未實測 availability context
+
+- **情境**：新增 `ParkingNumbering.pushbutton` 後，Revit 啟動顯示「外部工具 - 可用性指令載入失敗」，訊息指向 pyRevit 產生的 availability command。該按鈕是目前唯一在 `bundle.yaml` 放 `context: active-doc` 的 MCP 巨集按鈕。
+- **根因**：`bundle.yaml` 的 `context:` 會讓 pyRevit 在 ribbon 載入階段建立可用性命令；若 context 名稱、pyRevit 版本或產生命名與 Revit 載入流程不相容，按鈕還沒被點擊就會失敗。
+- **規則**：新建 `.pushbutton` 時，`bundle.yaml` 預設只放 `title` 與 `tooltip`。需要文件、平面視圖、選取元素、host-only、參數可寫等限制時，放在 `script.py` 內部用 `forms.alert()` 阻擋，避免 ribbon availability 先炸。
+- **驗證**：交付 pyRevit 按鈕前掃描 `bundle.yaml` 不得含未實測的 `context:` / `availability:`，並在可用時 Reload pyRevit 檢查 ribbon 是否仍跳「可用性指令載入失敗」。
+- **Domain/Skill**：詳見 `domain/pyrevit-button-development.md` 與 `pyrevit-button-dev` Skill。
+
+## [L-062] 修正 pyRevit availability 後必須清掉舊 compiled cache
+
+- **情境**：`ParkingNumbering.pushbutton/bundle.yaml` 已移除 `context: active-doc`，repo 掃描也沒有 `context:` / `availability:`，但 Revit 仍跳「外部工具 - 可用性指令載入失敗」，訊息仍指向 `mcp_tools_mcp_macros_numbering_parking...`。
+- **根因**：pyRevit 會把 extension/ribbon metadata 編譯成 `%APPDATA%\pyRevit\<revit_year>\pyRevit_<year>_*_MCP_Tools.dll`。repo 修好後，如果沒有清 cache，Revit 仍可能載入舊 DLL 內的 availability command。
+- **規則**：遇到 availability 載入錯誤時，先關閉 Revit，再執行 `pyrevit caches clear --all`；若 CLI 因檔案鎖或權限失敗，確認目標都在 `%APPDATA%\pyRevit` 後刪除 `%APPDATA%\pyRevit\2020`、`%APPDATA%\pyRevit\2024`、`%APPDATA%\pyRevit\Cache`，並補回空的 `Cache` 目錄。
+- **驗證**：重新開 Revit 前，確認 repo 內 `bundle.yaml` 沒有 `context:` / `availability:`、cache 目錄不存在或已重建為空、`pyrevit attached` 仍列出需要的 Revit 版本。
+- **Domain/Skill**：詳見 `domain/pyrevit-button-development.md` 與 `pyrevit-button-dev` Skill。
+
+## [L-063] pyRevit script.py 的 __context__ 也會觸發 availability 載入
+
+- **情境**：`bundle.yaml` 已清掉 `context:` 後，Revit 仍提示 `mcp_tools_mcp_macros_numbering_parking...` availability command 載入失敗；進一步檢查發現 `ParkingNumbering.pushbutton/script.py` 仍有 `__context__ = 'doc-project'`。
+- **根因**：pyRevit 不只讀 `bundle.yaml`；`script.py` 裡的 `__context__` 也屬於 ribbon availability metadata，可能在按鈕被點擊前就讓 Revit 嘗試載入可用性命令。
+- **規則**：MCP 巨集按鈕預設不要使用 `__context__`。需要開啟專案、平面視圖、選取元素或 host-only 等條件時，在 `main()` 開頭用 `revit.doc`、`revit.active_view`、collector 與參數檢查自行阻擋。
+- **驗證**：交付前掃描整個 `MCP_Tools.extension`，不得留下未實測的 `bundle.yaml context/availability` 或 `script.py __context__`；修正後清 pyRevit cache 並重啟 Revit。
+- **Domain/Skill**：詳見 `domain/pyrevit-button-development.md` 與 `pyrevit-button-dev` Skill。
+
+## [L-064] 新增或刪除 pushbutton 也需要清 compiled DLL cache，不是只有 availability 錯誤
+
+- **情境**：新增 `DoorWindowExcel.pushbutton` 與 `Matchlines.pushbutton` 後，`bundle.yaml`/`script.py` 都沒有 `context`/`availability`/`__context__`，pyRevit Reload 也做了，Revit 仍跳「外部工具 - 完整類別名稱錯誤：無法初始化增益集『門窗表 Excel』，因為在增益集組合中找不到類別 `mcp_tools_mcp_macros_takeoff_doorwindowexcel...`」。同時，稍早已刪除的 `About.pushbutton`（龍蝦）與整個 `MCP_Schedules.tab` 仍出現在 ribbon 上。
+- **根因**：pyRevit 把 ribbon/extension metadata 編譯進 `%APPDATA%\pyRevit\<year>\pyRevit_<year>_<hash>_MCP_Tools.dll`，只在 pyRevit 判定 extension 結構有變時才重編；單純 `pyRevit reload` 只重讀 `script.py` 內容，不會重建按鈕清單。用二進位字串比對確認：舊 DLL（LastWriteTime 落後於按鈕資料夾的建立時間）裡完全沒有新按鈕資料夾名稱（`doorwindowexcel`、`matchlines`），但已刪除按鈕的名稱（`createschedules`、`about`）仍在裡面。
+- **規則**：**新增、刪除、重新命名 `.pushbutton`/`.panel`/`.tab` 資料夾，一律視為需要清 cache 的動作**，不是只有出現「可用性指令載入失敗」時才清。流程：先完全關閉 Revit（DLL 被鎖住時無法清除也無法重建）→ `pyrevit caches clear --all`（或手動刪 `%APPDATA%\pyRevit\<year>` 與 `%APPDATA%\pyRevit\Cache` 並補回空 `Cache` 目錄）→ 重新啟動 Revit。
+- **快速診斷**（Revit 還開著、還不能清 cache 時）：用 PowerShell 讀最新的 `*_MCP_Tools.dll`，轉成小寫 ASCII 字串後 `.Contains('<新按鈕資料夾名稱小寫>')`；`$false` 就確定是 cache 過期，不必往程式碼找 bug。同一份字串也能反查已刪除按鈕是否仍留在編譯結果內。
+- **驗證**：清 cache 並重啟 Revit 後，新按鈕出現、已刪按鈕消失、ribbon 沒有「完整類別名稱錯誤」。
+- **Domain/Skill**：詳見 `domain/pyrevit-button-development.md`「Cache Discipline」與「快速確認是不是 cache 問題」。
+## [L-065] pyRevit 按鈕跑 IronPython 2.7，用本機 CPython 驗證是假綠燈
+
+- **情境**：改 `PartitionTakeoff.pushbutton/script.py` 的版面時，在 `sheet_xml` 寫了 `max((len(row) for row in values), default=FIXED_REPORT_COLS)`。以本機 CPython 3.11 抽函式做的離線單元測試 15 項全過，使用者一按按鈕就跳 `TypeError: max() got an unexpected keyword argument (default)`。
+- **根因**：`default=` 是 CPython 3.4+ 才有的參數。`MCP_Tools.extension` 底下的腳本第一行沒有 `#! python3`，pyRevit 用預設引擎 **IPY2712PR（IronPython 2.7.12）** 執行，其 `Builtin.max` 只接受 `key`——traceback 裡的 `VerifyKeys` / `max(CodeContext, Object, IDictionary)` 就是 2.7 的簽章。`lib/*.py` 被按鈕 import，同樣跑在這個引擎上。
+- **規則**：驗證要用「實際執行它的那個引擎」。pyRevit 自帶的引擎在 `%APPDATA%\pyRevit-Masterin\{netcore|netfx}\engines\IPY2712PR\`，`Add-Type` 載入 `pyRevitLabs.Microsoft.Scripting.dll`、`pyRevitLabs.Microsoft.Dynamic.dll`、`pyRevitLabs.IronPython.dll`、`pyRevitLabs.IronPython.Modules.dll` 後 `[IronPython.Hosting.Python]::CreateEngine()`；PowerShell 7 用 netcore、Windows PowerShell 5.1 用 netfx。**不可拿同目錄的 IPY342（3.4.2）代測**——實測它支援 `max(default=)`，過了也不代表什麼。該宿主沒有 stdlib 路徑（`import io` 會失敗），讀檔要用 `open(path,'rb').read().decode('utf-8')`，`re`／`math` 可用。
+- **附帶**：`.pushbutton` 資料夾裡有 `__pycache__/*.cpython-3xx.pyc` 不代表它跑 CPython，shebang 才算數。手動 grep 禁用寫法時要**大小寫敏感**，否則 `['f']`、`'F'`、`u'{}F'` 都會被誤判成 f-string。這批檔案只 import 了 `unicode_literals`、沒有 `division`，故 `int / int` 是地板除法。
+- **驗證**：新增 `pyRevit_Tools/tools/verify_ironpython.ps1` 作為閘門——以真引擎編譯全部 54 個 `.py`，並掃 11 種 Py3 專屬寫法與整數除法。修正後 54/54 編譯通過、0 命中。
+- **Domain/Skill**：詳見 `pyrevit-ironpython-compat` Skill。

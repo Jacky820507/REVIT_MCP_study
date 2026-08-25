@@ -115,6 +115,11 @@ metadata:
 
 ## 相關工具
 
-建議搭配使用以下腳本：
-- `MCP-Server/scripts/fire_rating_full.js` - 完整防火上色流程
-- `MCP-Server/scripts/clear_walls.js` - 清除顏色
+上色與還原走 MCP 工具，完整順序見 `domain/element-coloring-workflow.md`：
+
+- `query_elements` / `get_wall_info` — 取得牆體與其防火參數
+- `override_element_graphics` — 依防火時效上色
+- `clear_element_override` — 清除顏色（操作可逆）
+- `unjoin_wall_joins` / `rejoin_wall_joins` — 上色前解接合、完成後務必還原
+
+（原本的 `fire_rating_full.js`、`clear_walls.js` 已於 2026-08-03 移除——它們呼叫的指令都已是註冊工具。）

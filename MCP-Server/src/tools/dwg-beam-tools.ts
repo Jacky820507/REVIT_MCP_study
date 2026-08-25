@@ -10,7 +10,8 @@ export const dwgBeamTools: Tool[] = [
     {
         name: "get_dwg_beam_layers",
         description:
-            "掃描目前 Revit 平面視圖中所有 CAD 匯入/連結的圖層名稱，" +
+            "掃描目前 Revit 平面視圖中的 CAD 匯入/連結圖層名稱；若目前選取包含 CAD 元件，僅掃描選取的 CAD，" +
+            "未選取 CAD 時才掃描視圖中的全部 CAD。" +
             "回傳圖層清單並自動推薦可能包含樑、標註文字的圖層。" +
             "使用前請確認 Revit 已開啟平面視圖且已匯入 CAD 檔案。",
         inputSchema: {
@@ -21,7 +22,8 @@ export const dwgBeamTools: Tool[] = [
     {
         name: "preview_dwg_beams",
         description:
-            "解析 CAD 指定圖層中的雙線幾何，預覽識別到的樑中心線資訊（區分 X 向與 Y 向）。" +
+            "解析目前選取 CAD（若未選取 CAD 則為視圖中的全部 CAD）指定圖層中的雙線幾何，" +
+            "預覽識別到的樑中心線資訊（區分 X 向與 Y 向）。" +
             "此工具不會建立任何 Revit 元素，僅回傳解析結果供確認數量。" +
             "建議在執行 create_beams_from_dwg 前先呼叫此工具確認數量。",
         inputSchema: {
@@ -39,6 +41,7 @@ export const dwgBeamTools: Tool[] = [
         name: "create_beams_from_dwg",
         description:
             "從 CAD 指定圖層建立 Revit 結構樑（必須搭配文字標注圖層）。\n" +
+            "若目前選取包含 CAD 元件，只處理選取的 CAD；未選取 CAD 時處理目前視圖中的全部 CAD。\n" +
             "重要：建議按類型分批執行（先大樑、再次樑、再地樑），\n" +
             "每批只處理一個線條圖層與對應的文字圖層。\n" +
             "使用 beamRole 參數標示目前處理的批次。",

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Agile BIM 模型治理"
+  short_description: "以規則管理 Revit 示意、規格、細部與 QA 驗證流程"
+  default_prompt: "Use $agile-bim-model-governance to audit the live Revit model, preview rule-based specification changes, and verify the approved result."
+
+policy:
+  allow_implicit_invocation: true

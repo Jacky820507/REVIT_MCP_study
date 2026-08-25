@@ -830,65 +830,111 @@ namespace RevitMCP.Core
                 }
             }
 
-            // 1. 重新掃描所有圖紙
+            // 1. 重新掃描所有圖紙，泛用解析編號結構（前綴 + 主號 + 插入後綴），不綁死特定格式
+            bool compactGaps = parameters?["compactGaps"]?.Value<bool>() ?? true;
+            long blockGapThreshold = parameters?["blockGapThreshold"]?.Value<long>() ?? 50;
+            string prefixFilter = parameters?["prefixFilter"]?.Value<string>();
+
             var allSheets = new FilteredElementCollector(doc)
                 .OfClass(typeof(ViewSheet))
                 .Cast<ViewSheet>()
                 .ToList();
 
-            var insertSheets = allSheets
-                .Where(s => s.SheetNumber.EndsWith("-1"))
-                .OrderBy(s => s.SheetNumber)
-                .ToList();
+            var existingNumbers = new HashSet<string>(allSheets.Select(s => s.SheetNumber), StringComparer.Ordinal);
 
-            if (insertSheets.Count == 0)
-                return new { Success = true, Message = "專案中沒有發現帶有 '-1' 後綴的圖紙" };
-
-            var sheetMap = allSheets.ToDictionary(s => s.SheetNumber, s => s.Id.GetIdValue());
-            Dictionary<IdType, string> finalMoves = new Dictionary<IdType, string>();
-            Dictionary<string, IdType> reservationMap = new Dictionary<string, IdType>(sheetMap.Count);
-            foreach (var kvp in sheetMap) reservationMap[kvp.Key] = kvp.Value;
-
-            int processedInsertions = 0;
-
-            // 2. 計算變更 (模擬過程)
-            foreach (var sourceSheet in insertSheets)
+            var parsedSheets = new List<ParsedSheetNumber>();
+            foreach (var sheet in allSheets)
             {
-                IdType sourceId = sourceSheet.Id.GetIdValue();
-                string sourceNumber = sourceSheet.SheetNumber;
-                string baseNumber = sourceNumber.Substring(0, sourceNumber.Length - 2);
-                string targetNumber = IncrementString(baseNumber);
+                var info = ParseSheetNumber(sheet.SheetNumber, existingNumbers);
+                if (info == null) continue;
+                info.Id = sheet.Id.GetIdValue();
+                parsedSheets.Add(info);
+            }
 
-                string currentMoverNumber = targetNumber;
-                IdType currentMoverId = sourceId;
+            if (!string.IsNullOrEmpty(prefixFilter))
+                parsedSheets = parsedSheets
+                    .Where(p => p.Prefix.StartsWith(prefixFilter, StringComparison.Ordinal))
+                    .ToList();
 
-                while (true)
+            int processedInsertions = parsedSheets.Count(p => p.Suffix.HasValue);
+            int gapMoves = 0;
+            Dictionary<IdType, string> finalMoves = new Dictionary<IdType, string>();
+
+            // 2. 計算變更：同前綴為一個系列，系列內依 (主號, 後綴) 排序後連號重排。
+            //    與前一張原始主號差距超過 blockGapThreshold 視為刻意分段（如 D01xxx→D02xxx），保留原錨點不壓縮。
+            foreach (var grp in parsedSheets.GroupBy(p => p.Prefix, StringComparer.Ordinal))
+            {
+                var items = grp
+                    .OrderBy(p => p.Main)
+                    .ThenBy(p => p.Suffix ?? -1)
+                    .ToList();
+
+                long prevAssigned = 0;
+                long prevOriginalMain = 0;
+                bool first = true;
+
+                foreach (var item in items)
                 {
-                    if (reservationMap.ContainsKey(currentMoverNumber))
+                    long desired;
+                    if (first)
                     {
-                        IdType occupierId = reservationMap[currentMoverNumber];
-                        if (occupierId == currentMoverId) break;
-
-                        finalMoves[currentMoverId] = currentMoverNumber;
-                        reservationMap[currentMoverNumber] = currentMoverId;
-                        currentMoverId = occupierId;
-                        currentMoverNumber = IncrementString(currentMoverNumber);
+                        desired = item.Main; // 系列第一張以原始號碼為錨點
+                        first = false;
+                    }
+                    else if (item.Suffix.HasValue)
+                    {
+                        desired = prevAssigned + 1; // 插入圖紙（-N 後綴）：接續前一張
                     }
                     else
                     {
-                        finalMoves[currentMoverId] = currentMoverNumber;
-                        reservationMap[currentMoverNumber] = currentMoverId;
-                        break;
+                        long jump = item.Main - prevOriginalMain;
+                        if (!compactGaps || jump > blockGapThreshold)
+                            desired = Math.Max(item.Main, prevAssigned + 1); // 新區塊：保留原錨點，僅在被插入圖紙推擠時順移
+                        else
+                            desired = prevAssigned + 1; // 區塊內：補齊跳號
                     }
 
-                    if (finalMoves.Count > 2000) break;
-                }
+                    string target = item.Prefix + desired.ToString().PadLeft(item.Width, '0');
+                    if (!string.Equals(target, item.OriginalNumber, StringComparison.Ordinal))
+                    {
+                        finalMoves[item.Id] = target;
+                        if (!item.Suffix.HasValue) gapMoves++;
+                    }
 
-                processedInsertions++;
+                    prevAssigned = desired;
+                    prevOriginalMain = item.Main;
+                }
             }
+
+            if (finalMoves.Count == 0)
+                return new
+                {
+                    Success = true,
+                    DryRun = dryRun,
+                    ChangedCount = 0,
+                    InsertionsResolved = 0,
+                    PlannedMoves = new List<object>(),
+                    Message = "圖紙編號已連續，無插入後綴或跳號需要處理"
+                };
 
             // 3. 執行變更
             finalMoves = OptimizeSheetOrder(doc, finalMoves);
+
+            // 安全檢查：目標編號不得互撞，也不得撞到未參與變更的既有圖紙
+            var movedIds = new HashSet<IdType>(finalMoves.Keys);
+            var targetSet = new HashSet<string>(StringComparer.Ordinal);
+            var conflicts = new List<string>();
+            foreach (var kvp in finalMoves)
+                if (!targetSet.Add(kvp.Value)) conflicts.Add(kvp.Value);
+            foreach (var sheet in allSheets)
+                if (!movedIds.Contains(sheet.Id.GetIdValue()) && targetSet.Contains(sheet.SheetNumber))
+                    conflicts.Add(sheet.SheetNumber);
+            if (conflicts.Count > 0)
+                return new
+                {
+                    Success = false,
+                    Message = "目標編號衝突，已中止（未寫入）：" + string.Join(", ", conflicts.Distinct())
+                };
 
             List<object> plannedMoves = finalMoves
                 .Select(kvp =>
@@ -913,7 +959,7 @@ namespace RevitMCP.Core
                     ChangedCount = 0,
                     InsertionsResolved = processedInsertions,
                     PlannedMoves = plannedMoves,
-                    Message = $"dry-run 預覽：{processedInsertions} 張插入圖紙，共 {finalMoves.Count} 個編號將變更（未寫入）"
+                    Message = $"dry-run 預覽：{processedInsertions} 張插入圖紙（-N 後綴）、{gapMoves} 張跳號/順移圖紙，共 {finalMoves.Count} 個編號將變更（未寫入）"
                 };
             }
 
@@ -969,7 +1015,57 @@ namespace RevitMCP.Core
                 ChangedCount = changedCount,
                 InsertionsResolved = processedInsertions,
                 PlannedMoves = plannedMoves,
-                Message = $"修復並更新完成：處理了 {processedInsertions} 張插入圖紙，共更新 {changedCount} 個編號"
+                Message = $"修復並更新完成：處理了 {processedInsertions} 張插入圖紙（-N 後綴）、{gapMoves} 張跳號/順移圖紙，共更新 {changedCount} 個編號"
+            };
+        }
+
+        private class ParsedSheetNumber
+        {
+            public IdType Id { get; set; }
+            public string OriginalNumber { get; set; }
+            public string Prefix { get; set; }
+            public long Main { get; set; }
+            public int Width { get; set; }
+            public long? Suffix { get; set; }
+        }
+
+        private ParsedSheetNumber ParseSheetNumber(string number, HashSet<string> existingNumbers)
+        {
+            if (string.IsNullOrEmpty(number)) return null;
+
+            // 插入後綴（例 ARA-D04005-2 = 插在 ARA-D04005 之後）。
+            // 判定證據擇一：母號圖紙實際存在；或母號尾碼位數比後綴長（避免 A2-01 這類正常編號被誤判為插入）。
+            var sfx = System.Text.RegularExpressions.Regex.Match(number, @"^(.*\d)-(\d+)$");
+            if (sfx.Success)
+            {
+                string basePart = sfx.Groups[1].Value;
+                string suffixStr = sfx.Groups[2].Value;
+                var baseMatch = System.Text.RegularExpressions.Regex.Match(basePart, @"^(.*?)(\d+)$");
+                if (baseMatch.Success &&
+                    (existingNumbers.Contains(basePart) || baseMatch.Groups[2].Value.Length > suffixStr.Length) &&
+                    long.TryParse(baseMatch.Groups[2].Value, out long baseMain) &&
+                    long.TryParse(suffixStr, out long suffixVal))
+                {
+                    return new ParsedSheetNumber
+                    {
+                        OriginalNumber = number,
+                        Prefix = baseMatch.Groups[1].Value,
+                        Main = baseMain,
+                        Width = baseMatch.Groups[2].Value.Length,
+                        Suffix = suffixVal
+                    };
+                }
+            }
+
+            var m = System.Text.RegularExpressions.Regex.Match(number, @"^(.*?)(\d+)$");
+            if (!m.Success || !long.TryParse(m.Groups[2].Value, out long main)) return null;
+            return new ParsedSheetNumber
+            {
+                OriginalNumber = number,
+                Prefix = m.Groups[1].Value,
+                Main = main,
+                Width = m.Groups[2].Value.Length,
+                Suffix = null
             };
         }
 
