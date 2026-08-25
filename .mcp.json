@@ -6,7 +6,9 @@
       "args": [
         "./MCP-Server/build/index.js"
       ],
-      "env": {}
+      "env": {
+          "REVIT_VERSION": "2020"
+      }
     }
   }
 }
