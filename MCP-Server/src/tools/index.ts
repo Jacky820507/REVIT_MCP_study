@@ -8,6 +8,8 @@
  */
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
+import { withAnnotations } from "./annotations.js";
+import { withAppUi } from "../apps/register-apps.js";
 import { baseTools } from "./base-tools.js";
 import { wallTools } from "./wall-tools.js";
 import { roomTools } from "./room-tools.js";
@@ -151,7 +153,15 @@ export function registerRevitTools(): Tool[] {
         }
     }
 
-    const tools = Array.from(toolMap.values());
+    // 上游 2026-07-28 MCP 升級：補 title / readOnlyHint 標註、掛上 MCP Apps UI，
+    // 並以工具名稱 codepoint 排序，讓 tools/list 每次啟動順序一致。
+    // 這一段必須排在 fork 閘門「之後」——被扣留的工具不需要標註，
+    // 也不該出現在排序結果裡，否則 AI 又會看到打不通的工具。
+    const tools = Array.from(toolMap.values())
+        .map(withAnnotations)
+        .map(withAppUi)
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+
     const duplicateCount = rawTools.length - beforeGate;
     const forkGatedCount = beforeGate - afterForkGate;
     const versionGatedCount = afterForkGate - tools.length;

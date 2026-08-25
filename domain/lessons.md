@@ -550,3 +550,10 @@ metadata:
 - **附帶**：`.pushbutton` 資料夾裡有 `__pycache__/*.cpython-3xx.pyc` 不代表它跑 CPython，shebang 才算數。手動 grep 禁用寫法時要**大小寫敏感**，否則 `['f']`、`'F'`、`u'{}F'` 都會被誤判成 f-string。這批檔案只 import 了 `unicode_literals`、沒有 `division`，故 `int / int` 是地板除法。
 - **驗證**：新增 `pyRevit_Tools/tools/verify_ironpython.ps1` 作為閘門——以真引擎編譯全部 54 個 `.py`，並掃 11 種 Py3 專屬寫法與整數除法。修正後 54/54 編譯通過、0 命中。
 - **Domain/Skill**：詳見 `pyrevit-ironpython-compat` Skill。
+
+## [L-066] PowerShell 腳本教訓——native 指令成敗要看 $LASTEXITCODE
+
+- **規則**：判斷 native 指令（dotnet/npm/winget/net 等外部程式）是否成功，唯一可靠依據是 `$LASTEXITCODE`，**不是** stderr 有沒有輸出。在 `$ErrorActionPreference = "Stop"` 下對 native 指令用 `2>&1` 重導向，PowerShell 5.1 會把 stderr 上的一般進度/警告行升級成終止例外，即使該指令實際 0 錯誤退出。
+- **避坑經驗**：`setup.ps1` 半年來對 8 個 native 呼叫點都用了 `2>&1` + 全域 EAP Stop，`dotnet build` 明明 0 error 卻被腳本誤報「編譯例外」。issue #89 由首次貢獻者 @ray92chiu-png 在乾淨 Windows + stock PowerShell 5.1 環境上首度踩到並精準定位根因，修法是新增 `Invoke-ExternalCommand` helper，在呼叫 native 指令前後暫時把 EAP 切回 Continue，事後仍靠 `$LASTEXITCODE` 判斷成敗（commit `1b5a71e`）。橫向掃描後發現 `scripts/release-port.ps1` 的 `net stop`/`net start http` 同款地雷，一併修正（commit `33f1a44`）。
+- **根因（為何半年沒事）**：CI 一律用 `-SkipBuild -SkipDeploy` 跑 `verify-qaqc.ps1`，setup.ps1 的 native 呼叫路徑從未被實際執行過；早期部署者剛好用 PowerShell 7（無此行為）或工具鏈已預裝、繞過了 native 安裝分支。**「半年沒事」是倖存者偏差，不是腳本沒問題**——CI 覆蓋率的空洞，會被下一個踩線的使用者（而非測試）發現。
+- **實踐**：任何跨版本執行環境（PS 5.1 vs PS 7、cmd vs bash）的腳本，涉及 native 指令 stderr 重導向時，一律用 exit code 判斷成敗，不要讓 stderr 存在與否影響控制流；CI gate 若刻意 skip 某段路徑（如 `-SkipBuild -SkipDeploy`），必須在文件或 log 中明確標記「此路徑未被 CI 覆蓋」，避免長期零覆蓋卻被誤認為已驗證。

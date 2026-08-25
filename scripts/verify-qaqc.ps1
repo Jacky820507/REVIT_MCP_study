@@ -12,6 +12,9 @@
 #   8. Document Audience and Encoding Hygiene
 #   9. Tool Reachability (every registered MCP tool must reach a real Revit command; -Version reports
 #      which version-guarded tools a given build would withhold)
+#  10. MCP Bypass Surface (no undocumented ws://localhost:8964 scripts)
+#  11. MCP 2026 Compliance (tool annotation coverage: title / readOnlyHint / destructiveHint allow-list;
+#      MCP Apps ui:// resource integrity)
 
 param(
     [switch]$SkipBuild,
@@ -1164,6 +1167,96 @@ else {
     }
     Write-Check "Every allowed bypass script is explained in MCP-Server/scripts/README.md" ($undocumented.Count -eq 0) `
         $(if ($undocumented.Count -gt 0) { "Not mentioned in the README:`n  " + ($undocumented -join "`n  ") } else { "" })
+}
+
+# ─────────────────────────────────────────────
+# Phase 11: MCP 2026 Compliance
+# ─────────────────────────────────────────────
+Write-Host ""
+Write-Host "[Phase 11] MCP 2026 Compliance" -ForegroundColor Yellow
+Write-Host "─────────────────────────────────────────────" -ForegroundColor DarkGray
+
+# Invokes the built registry the same way Phase 7's Get-ToolCount does (node --input-type=module
+# -e against build/tools/index.js). Does not rebuild — honors -SkipBuild by using whatever build/
+# already exists. Returns $null if the built registry is unavailable so the caller can Skip
+# instead of failing the whole phase.
+function Get-ToolAnnotationReport {
+    $nodeScript = "import('./MCP-Server/build/tools/index.js').then(m=>{const tools=m.registerRevitTools();const allow=new Set(['delete_element','dedup_detail_elements_in_view','curate_mep_sizes']);const missingTitle=[];const missingReadOnlyHint=[];const badDestructive=[];for(const t of tools){const title=t.title;if(typeof title!=='string'||title.trim().length===0)missingTitle.push(t.name);const ro=t.annotations?t.annotations.readOnlyHint:undefined;if(typeof ro!=='boolean')missingReadOnlyHint.push(t.name);const destructive=t.annotations?t.annotations.destructiveHint:undefined;if(destructive===true&&!allow.has(t.name))badDestructive.push(t.name);}console.log(JSON.stringify({total:tools.length,missingTitle:missingTitle,missingReadOnlyHint:missingReadOnlyHint,badDestructive:badDestructive}));}).catch(()=>process.exit(2))"
+    Push-Location $projectRoot
+    $result = & node --input-type=module -e $nodeScript 2>$null
+    $exit = $LASTEXITCODE
+    Pop-Location
+    if ($exit -eq 0 -and $result) {
+        try {
+            return ($result | ConvertFrom-Json)
+        }
+        catch {
+            return $null
+        }
+    }
+    return $null
+}
+
+# MCP Apps (io.modelcontextprotocol/ui): for every tool that declares _meta.ui.resourceUri, confirm
+# the ui:// resource resolves via readAppResource with the exact Apps MIME, non-empty HTML, and no
+# external src/href/url() references (self-contained / CSP-safe). Returns $null if build/ is absent.
+function Get-AppResourceReport {
+    $nodeScript = "Promise.all([import('./MCP-Server/build/tools/index.js'),import('./MCP-Server/build/apps/register-apps.js')]).then(([tm,am])=>{const tools=tm.registerRevitTools();const ui=tools.filter(t=>t._meta&&t._meta.ui&&t._meta.ui.resourceUri);const out=[];const rx=/(?:src|href)\s*=\s*['\x22]?https?:|url\(\s*['\x22]?https?:/gi;for(const t of ui){const uri=t._meta.ui.resourceUri;let ok=false,mime='',bytes=0,ext=0;try{const r=am.readAppResource(uri);const c=r&&r.contents&&r.contents[0];if(c){mime=c.mimeType;const html=c.text||'';bytes=html.length;const scan=html.replace(/<script[\s\S]*?<\/script>/gi,'');ext=(scan.match(rx)||[]).length;ok=mime==='text/html;profile=mcp-app'&&bytes>0&&/^\s*<!doctype/i.test(html)&&ext===0;}}catch(e){mime='ERR:'+e.message;}out.push({name:t.name,uri,ok,mime,bytes,ext});}console.log(JSON.stringify({uiToolCount:ui.length,resources:out}));}).catch(()=>process.exit(2))"
+    Push-Location $projectRoot
+    $result = & node --input-type=module -e $nodeScript 2>$null
+    $exit = $LASTEXITCODE
+    Pop-Location
+    if ($exit -eq 0 -and $result) {
+        try {
+            return ($result | ConvertFrom-Json)
+        }
+        catch {
+            return $null
+        }
+    }
+    return $null
+}
+
+Write-Host ""
+Write-Host "  11-1. Tool annotation coverage (title / readOnlyHint / destructiveHint allow-list):" -ForegroundColor Cyan
+$builtRegistry = Join-Path $projectRoot "MCP-Server\build\tools\index.js"
+if (-not (Test-Path $builtRegistry)) {
+    Write-Skip "Tool annotation coverage (build/tools/index.js)" "Built registry missing - run npm run build in MCP-Server first"
+}
+elseif (-not ($annotationReport = Get-ToolAnnotationReport)) {
+    # 已 build 但無法評估 registerRevitTools() → 視為 FAIL（不可靜默略過，以免回歸漏檢）。
+    Write-Check "Tool annotation coverage: built registry evaluates" $false "build/tools/index.js exists but registerRevitTools() failed to evaluate - run: node --input-type=module -e ""import('./MCP-Server/build/tools/index.js').then(m=>m.registerRevitTools())"""
+}
+else {
+    $destructiveAllowList = @('delete_element', 'dedup_detail_elements_in_view', 'curate_mep_sizes')
+    $missingTitle = @($annotationReport.missingTitle)
+    $missingReadOnlyHint = @($annotationReport.missingReadOnlyHint)
+    $badDestructive = @($annotationReport.badDestructive)
+
+    Write-Check "All $($annotationReport.total) tools declare a non-empty title" ($missingTitle.Count -eq 0) `
+        $(if ($missingTitle.Count -gt 0) { "Missing/empty title: $($missingTitle -join ', ')" } else { "" })
+
+    Write-Check "All $($annotationReport.total) tools declare boolean annotations.readOnlyHint" ($missingReadOnlyHint.Count -eq 0) `
+        $(if ($missingReadOnlyHint.Count -gt 0) { "Missing/non-boolean readOnlyHint: $($missingReadOnlyHint -join ', ')" } else { "" })
+
+    Write-Check "destructiveHint=true confined to allow-list ($($destructiveAllowList -join ', '))" ($badDestructive.Count -eq 0) `
+        $(if ($badDestructive.Count -gt 0) { "Unexpected destructiveHint=true on: $($badDestructive -join ', ')" } else { "" })
+}
+
+Write-Host ""
+Write-Host "  11-2. MCP Apps UI resource integrity (ui:// resolves / MIME / self-contained):" -ForegroundColor Cyan
+$appReport = Get-AppResourceReport
+if (-not $appReport) {
+    Write-Skip "MCP Apps UI resource integrity" "Runtime registry / app bundle unavailable - run npm run build in MCP-Server first"
+}
+elseif ([int]$appReport.uiToolCount -eq 0) {
+    Write-Skip "MCP Apps UI resource integrity" "No tools declare _meta.ui.resourceUri"
+}
+else {
+    foreach ($res in $appReport.resources) {
+        $detail = if (-not $res.ok) { "mime=$($res.mime) bytes=$($res.bytes) externalRefs=$($res.ext)" } else { "" }
+        Write-Check "App '$($res.name)' -> $($res.uri) self-contained $($res.mime)" ([bool]$res.ok) $detail
+    }
 }
 
 # ─────────────────────────────────────────────

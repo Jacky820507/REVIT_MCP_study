@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -657,6 +657,20 @@
 
   <div class="skill-card">
     <div>
+      <div class="skill-name">/partition-takeoff</div>
+      <div class="skill-cat">D · 模型分析</div>
+    </div>
+    <div>
+      <div class="skill-desc">輕隔間牆數量計算與 CSV 報表更新：以 TYPE 牆為候選，只扣除 host 可驗證的門窗開口，牆面積以 Revit 牆面積為基準，輸出可稽核算式。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">輕隔間</span><span class="trigger-tag">partition takeoff</span><span class="trigger-tag">TYPE 牆</span><span class="trigger-tag">扣除開口</span><span class="trigger-tag">數量計算</span>
+        <a href="domain-index.html#revit-partition-takeoff" class="domain-link">→ revit-partition-takeoff</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="skill-card">
+    <div>
       <div class="skill-name">/quantity-takeoff-excel</div>
       <div class="skill-cat">D · 模型分析</div>
     </div>
@@ -713,32 +727,72 @@
 
   <div class="skill-card">
     <div>
-      <div class="skill-name">/tall-partition-index</div>
+      <div class="skill-name">/room-numbering</div>
       <div class="skill-cat">D · 模型分析</div>
     </div>
     <div>
-      <div class="skill-desc">找出高於門檻的輕隔間牆，依房間與樓層產出可追溯索引，並排除管道間、樓梯間、電梯間等指定空間。</div>
+      <div class="skill-desc">房間重新排序編號與批次自動編號：優先 renumber_rooms_by_level，中心點由上而下、由左而右排序，dry-run → 寫入 → 驗證。</div>
       <div class="skill-meta">
-        <span class="trigger-tag">高隔間</span><span class="trigger-tag">輕隔間高度</span><span class="trigger-tag">tall partition</span>
-        <a href="domain-index.html#tall-partition-index-workflow" class="domain-link">→ tall-partition-index-workflow</a>
+        <span class="trigger-tag">房間編號</span><span class="trigger-tag">renumber rooms</span><span class="trigger-tag">自動編號</span><span class="trigger-tag">從 B134 開始</span><span class="trigger-tag">只排 B1F</span>
+        <a href="domain-index.html#room-numbering-workflow" class="domain-link">→ room-numbering-workflow</a>
       </div>
     </div>
   </div>
 
   <div class="skill-card">
     <div>
-      <div class="skill-name">/threshold-opening-takeoff</div>
+      <div class="skill-name">/ifc-structural-sync</div>
       <div class="skill-cat">D · 模型分析</div>
     </div>
     <div>
-      <div class="skill-desc">依房間關聯統計門窗開口，套用排除條件，產出門檻數量與可追溯明細。</div>
+      <div class="skill-desc">IFC 結構同步至 Revit 原生 StructuralFraming／StructuralColumns：dry-run 檢查 b/h 與貼樓板底、replaceExisting 重建同源元素、apply 後回讀驗證。</div>
       <div class="skill-meta">
-        <span class="trigger-tag">門檻</span><span class="trigger-tag">房間門窗統計</span><span class="trigger-tag">threshold opening</span>
-        <a href="domain-index.html#threshold-opening-takeoff" class="domain-link">→ threshold-opening-takeoff</a>
+        <span class="trigger-tag">IFC 結構</span><span class="trigger-tag">sync_ifc_structural_to_native</span><span class="trigger-tag">StructuralColumns</span><span class="trigger-tag">b/h</span><span class="trigger-tag">replaceExisting</span>
+        <a href="domain-index.html#ifc-structural-native-sync" class="domain-link">→ ifc-structural-native-sync</a>
       </div>
     </div>
   </div>
 
+  <div class="skill-card">
+    <div>
+      <div class="skill-name">/finish-schedule-governance</div>
+      <div class="skill-cat">D · 模型分析</div>
+    </div>
+    <div>
+      <div class="skill-desc">治理房間粉刷明細表與 F/B/W/C 材料代碼：盤點、跳號重排、批次回寫房間參數、同步 AE-材料版，並以外部 CSV 比對房間欄位。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">粉刷明細表</span><span class="trigger-tag">材料編號</span><span class="trigger-tag">finish code remap</span><span class="trigger-tag">AE-材料版</span><span class="trigger-tag">粉刷比對 CSV</span>
+        <a href="domain-index.html#finish-schedule-governance" class="domain-link">→ finish-schedule-governance</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="skill-card">
+    <div>
+      <div class="skill-name">/set-project-units</div>
+      <div class="skill-cat">D · 模型分析</div>
+    </div>
+    <div>
+      <div class="skill-desc">一鍵切換整個專案的顯示單位（mode=taiwan＝公制＋Air Flow m³/h，對齊建技 §102 通風量）。單一 Transaction 可 Ctrl+Z，避免手動逐 discipline 漏設（Air Flow 常被漏成 CFM）。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">專案單位</span><span class="trigger-tag">單位轉換</span><span class="trigger-tag">set project units</span><span class="trigger-tag">公制</span><span class="trigger-tag">m³/h</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="skill-card">
+    <div>
+      <div class="skill-name">/mep-settings-curation</div>
+      <div class="skill-cat">D · 模型分析</div>
+    </div>
+    <div>
+      <div class="skill-desc">盤點與增減 Mechanical Settings 的尺寸目錄（管段 / 風管 Rect·Oval·Round）、角度、坡度、流體。四階段：目錄盤點 → 模型實際用量 → 標準對帳 → 增減。核心規則是「目錄 ≠ 用量」：增無限，減只能刪模型沒用到的，且走 列表 → 執行 → QC → 誤刪復原 四步。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">盤點管徑</span><span class="trigger-tag">風管尺寸表</span><span class="trigger-tag">segments and sizes</span><span class="trigger-tag">刪掉沒用到的尺寸</span><span class="trigger-tag">mechanical settings</span><span class="trigger-tag">CNS 對帳</span>
+        <a href="domain-index.html#mep-mechanical-settings" class="domain-link">→ mep-mechanical-settings</a>
+      </div>
+    </div>
+  </div>
   <div class="cat-header">E · 開發運維（6 個）</div>
 
   <div class="skill-card">
@@ -765,6 +819,20 @@
       <div class="skill-meta">
         <span class="trigger-tag">deploy</span><span class="trigger-tag">AppData</span><span class="trigger-tag">DLL</span><span class="trigger-tag">Addins folder</span>
         <a href="deployment-guide.html" class="domain-link">→ deployment-guide</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="skill-card">
+    <div>
+      <div class="skill-name">/loop-up</div>
+      <div class="skill-cat">E · 開發運維</div>
+    </div>
+    <div>
+      <div class="skill-desc">多模型分工的自動迴圈修正：Fable 規劃、Sonnet 實作、Haiku 唯讀觀察記錄、高階模型唯讀稽核驗收；失敗時從最前端的 prompt 回頭修正再重跑，同階段三次不過就升級 Fable advisor。全程 human out of the loop，但 commit／push／發佈／刪除仍須停下來問人。修改驗證工具本身時，驗收強制包含負向測試以防「永遠 PASS」的假綠燈。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">loop-up</span><span class="trigger-tag">多模型分工</span><span class="trigger-tag">自動迴圈修正</span><span class="trigger-tag">prompt-first correction</span><span class="trigger-tag">迴圈驗收</span>
+        <a href="domain-index.html#qa-checklist" class="domain-link">→ qa-checklist</a>
       </div>
     </div>
   </div>
@@ -979,6 +1047,20 @@
       </div>
     </div>
   </div>
+
+  <div class="skill-card">
+    <div>
+      <div class="skill-name">/archicad-skill-adapter</div>
+      <div class="skill-cat">F · 進階開發 / 文件作者</div>
+    </div>
+    <div>
+      <div class="skill-desc">把既有 Revit-oriented BIM Skill 的意圖與名詞轉譯為受控的 Archicad MCP workflow，同時保留原始 Domain 方法與 Revit 路徑不變。opt-in 分支，只有明確選定 Archicad 或雙 backend 情境才會進入 discovery／translate／verify 流程；目前僅 3 個 Skill 有正式 pilot 規格，尚未經 Skill 層級的 live test 驗證。</div>
+      <div class="skill-meta">
+        <span class="trigger-tag">Archicad</span><span class="trigger-tag">backend 轉譯</span><span class="trigger-tag">GUID</span><span class="trigger-tag">Zone</span><span class="trigger-tag">Tapir</span>
+        <a href="domain-index.html#tool-capability-boundary" class="domain-link">→ tool-capability-boundary（L11）</a>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ============================================ -->
@@ -1027,6 +1109,8 @@
       <tr><td><code>/copy-sheets-cross-project</code></td><td>C 文件</td><td>跨專案複製含 model views 圖紙</td><td>—</td></tr>
       <tr><td><code>/excel-to-legend</code></td><td>C 文件</td><td>Excel 表格匯入 Drafting View</td><td>—</td></tr>
       <tr><td><code>/detect-clashes</code></td><td>D 分析</td><td>MEP × CSA 碰撞</td><td>mep-csa-clash-detection</td></tr>
+      <tr><td><code>/mep-settings-curation</code></td><td>D 分析</td><td>管徑/風管尺寸目錄盤點與增刪</td><td>mep-mechanical-settings</td></tr>
+      <tr><td><code>/set-project-units</code></td><td>D 分析</td><td>一鍵切換專案顯示單位</td><td>mep-mechanical-settings</td></tr>
       <tr><td><code>/qa-review</code></td><td>D 分析</td><td>專案品質檢核</td><td>qa-checklist</td></tr>
       <tr><td><code>/dwg-beam-import</code></td><td>D 分析</td><td>CAD/DWG 圖層批次建樑</td><td>dwg-beam-import</td></tr>
       <tr><td><code>/dwg-column-import</code></td><td>D 分析</td><td>CAD/DWG 圖層批次建柱</td><td>dwg-column-import</td></tr>
@@ -1043,15 +1127,16 @@
       <tr><td><code>/tall-partition-index</code></td><td>D 分析</td><td>高於 6m 輕隔間結構回饋索引圖與 Excel</td><td>tall-partition-index-workflow</td></tr>
       <tr><td><code>/threshold-opening-takeoff</code></td><td>D 分析</td><td>房間關聯門窗統計與門檻長度</td><td>threshold-opening-takeoff</td></tr>
       <tr><td><code>/scaffold-takeoff</code></td><td>D 分析</td><td>施工架數量計算與工項 Excel 更新</td><td>scaffold-takeoff</td></tr>
-      <tr><td><code>/tall-partition-index</code></td><td>D 分析</td><td>高隔間牆房間／樓層索引</td><td>tall-partition-index-workflow</td></tr>
-      <tr><td><code>/threshold-opening-takeoff</code></td><td>D 分析</td><td>房間關聯門窗與門檻數量統計</td><td>threshold-opening-takeoff</td></tr>
+      <tr><td><code>/quantity-takeoff-excel</code></td><td>D 分析</td><td>可稽核數量計算 Excel</td><td>quantity-takeoff-excel</td></tr>
       <tr><td><code>/build-revit</code></td><td>E 運維</td><td>多版本 build</td><td>(deployment-guide)</td></tr>
       <tr><td><code>/deploy-addon</code></td><td>E 運維</td><td>DLL 部署</td><td>(deployment-guide)</td></tr>
       <tr><td><code>/claude-md-sync</code></td><td>E 運維</td><td>CLAUDE.md 雙向同步</td><td>path-maintenance-qa</td></tr>
+      <tr><td><code>/loop-up</code></td><td>E 運維</td><td>多模型分工自動迴圈修正</td><td>qa-checklist</td></tr>
       <tr><td><code>/hj-pr-proposal</code></td><td>E 運維</td><td>domain/skill 轉譯為 HJ PR 草案</td><td>skill-authoring-standard</td></tr>
       <tr><td><code>/core-reload-dev</code></td><td>F 進階</td><td>opt-in 熱重載開發迭代</td><td>core-reload-boundary</td></tr>
       <tr><td><code>/domain-diagram</code></td><td>F 進階</td><td>domain SOP 流程圖像化</td><td>domain-flow-visualization</td></tr>
       <tr><td><code>/dll-to-mcp-tool</code></td><td>F 進階</td><td>把 DLL/.cs 封裝為 MCP 工具</td><td>—</td></tr>
+      <tr><td><code>/archicad-skill-adapter</code></td><td>F 進階</td><td>Revit Skill 轉譯為 Archicad MCP workflow</td><td>tool-capability-boundary</td></tr>
     </tbody>
   </table>
 </section>
