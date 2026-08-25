@@ -56,6 +56,15 @@ namespace RevitMCP
                 settingsButtonData.ToolTip = "開啟 MCP 設定視窗";
                 panel.AddItem(settingsButtonData);
 
+                // 4. 切換/釋放連線按鈕
+                PushButtonData switchButtonData = new PushButtonData(
+                    "MCPSwitch",
+                    "切換/\n釋放連線",
+                    assemblyPath,
+                    "RevitMCP.Commands.SwitchConnectionCommand");
+                switchButtonData.ToolTip = "關閉目前連線，讓下一個重新連線的 MCP 客戶端取得連線（無法指定特定客戶端）";
+                panel.AddItem(switchButtonData);
+
                 // 初始化 ExternalEventManager (必須在 UI 執行緒建立)
                 _ = ExternalEventManager.Instance;
 
@@ -174,38 +183,29 @@ namespace RevitMCP
         /// <summary>
         /// 處理接收到的命令
         /// </summary>
-        private static async void OnCommandReceived(object sender, Models.CommandReceivedEventArgs e)
+        private static async void OnCommandReceived(object sender, Models.RevitCommandRequest request)
         {
-            var request = e.Request;
-            var socket = e.SourceSocket;
-
-            if (request == null)
-            {
-                Logger.Error("[Socket] 收到空的請求物件，可能反序列化失敗。");
-                return;
-            }
-
             // 使用外部事件在 Revit UI 執行緒執行命令
             ExternalEventManager.Instance.ExecuteCommand((uiApp) =>
             {
                 try
                 {
-                    var executor = new CommandExecutor(uiApp);
+                    var executor = new CommandExecutor(uiApp  );
                     var response = executor.ExecuteCommand(request);
 
                     // 發送回應
-                    _socketService?.SendResponseAsync(socket, response).ConfigureAwait(false);
+                    _socketService?.SendResponseAsync(response).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     var errorResponse = new Models.RevitCommandResponse
                     {
                         Success = false,
-                        Error = ex.ToString(),
+                        Error = ex.Message,
                         RequestId = request.RequestId
                     };
 
-                    _socketService?.SendResponseAsync(socket, errorResponse).ConfigureAwait(false);
+                    _socketService?.SendResponseAsync(errorResponse).ConfigureAwait(false);
                 }
             });
         }
