@@ -13,6 +13,7 @@ from System import Activator, GC, Type
 from System.Runtime.InteropServices import Marshal
 
 import parking_excel_logic as logic
+import sheet_layout
 import takeoff_entry
 import takeoff_standalone
 
@@ -29,6 +30,25 @@ SCHEDULES = (
     (u'機車停車數量', 'motorcycle'),
 )
 OTHER_SHEET = u'其他數量'
+
+# 「其他數量」分頁的兩個數量欄。同一欄在這支程式裡有三種寫法：儲存格的欄號、
+# 訊息字串裡的欄位字母、以及 old[key] 的字典鍵。欄號是唯一的真相，字母一律由
+# _addr() 導出（字典鍵沿用舊名，改動範圍太大另議）。
+# 唯一定義在 parking_excel_logic（驗證邏輯也要用同一份），這裡只是轉出。
+OTHER_COUNT_COL = logic.OTHER_COUNT_COL
+OTHER_WHEEL_COL = logic.OTHER_WHEEL_COL
+
+
+def _col(col_number):
+    """欄位字母（1 基欄號 → 'F'）。訊息裡不再手寫字母。"""
+    return sheet_layout.column_letter(col_number - 1)
+
+
+def _addr(sheet_name, col_number, row):
+    """給人看的位址：``其他數量!F12``。"""
+    return u'{0}!{1}{2}'.format(
+        sheet_name, sheet_layout.column_letter(col_number - 1), row)
+
 SUBTOTAL_SHEET = u'小計'
 XL_CALCULATION_AUTOMATIC = -4105
 SOURCE_MODE_AUTO = 'auto'
@@ -1241,27 +1261,24 @@ def inspect_workbook(path):
         protected_inputs = []
         blockers = []
         for key, row in rows.items():
-            if _has_formula(ws.Cells(row, 6)):
-                formula = _formula(ws.Cells(row, 6))
+            if _has_formula(ws.Cells(row, OTHER_COUNT_COL)):
+                formula = _formula(ws.Cells(row, OTHER_COUNT_COL))
                 protected_inputs.append(
-                    u'{}!F{} 保留公式：{}'.format(
-                        OTHER_SHEET, row, formula))
+                    u'{} 保留公式：{}'.format(_addr(OTHER_SHEET, OTHER_COUNT_COL, row), formula))
                 if not logic.protected_input_formula_shape_ok(
                         key, row, formula, rows):
                     blockers.append(
-                        u'{}!F{} 是尚未列入白名單的公式，禁止覆寫：{}'.format(
-                            OTHER_SHEET, row, formula))
-            if key == 'wheel_stop' and _has_formula(ws.Cells(row, 7)):
+                        u'{} 是尚未列入白名單的公式，禁止覆寫：{}'.format(_addr(OTHER_SHEET, OTHER_COUNT_COL, row), formula))
+            if key == 'wheel_stop' and _has_formula(ws.Cells(row, OTHER_WHEEL_COL)):
                 blockers.append(
-                    u'{}!G{} 是公式，禁止覆寫。'.format(
-                        OTHER_SHEET, row))
+                    u'{} 是公式，禁止覆寫。'.format(_addr(OTHER_SHEET, OTHER_WHEEL_COL, row)))
             old[key] = {
-                'f': ws.Cells(row, 6).Value2,
-                'g': ws.Cells(row, 7).Value2,
+                'f': ws.Cells(row, OTHER_COUNT_COL).Value2,
+                'g': ws.Cells(row, OTHER_WHEEL_COL).Value2,
             }
             input_formulas[key] = {
-                'f': _formula(ws.Cells(row, 6)),
-                'g': _formula(ws.Cells(row, 7)),
+                'f': _formula(ws.Cells(row, OTHER_COUNT_COL)),
+                'g': _formula(ws.Cells(row, OTHER_WHEEL_COL)),
             }
             blocker, formulas[key] = _formula_blocker(ws, row)
             if blocker:
@@ -1309,8 +1326,7 @@ def _formula_result_blockers(inspection, counts, multiplier):
     if embedded_multiplier and int(embedded_multiplier) != int(multiplier):
         row = inspection['rows']['wheel_stop']
         blockers.append(
-            u'{}!F{} 公式已內含輪檔倍率 {}，但 UI 選擇 {}，禁止更新。'.format(
-                OTHER_SHEET, row, embedded_multiplier, multiplier))
+            u'{} 公式已內含輪檔倍率 {}，但 UI 選擇 {}，禁止更新。'.format(_addr(OTHER_SHEET, OTHER_COUNT_COL, row), embedded_multiplier, multiplier))
     for key, row in inspection.get('rows', {}).items():
         formula = inspection['input_formulas'][key]['f']
         if not formula or (key == 'wheel_stop' and embedded_multiplier):
@@ -1319,8 +1335,7 @@ def _formula_result_blockers(inspection, counts, multiplier):
         target = expected[key]
         if actual is None or abs(actual - target) > 0.0001:
             blockers.append(
-                u'{}!F{} 保留公式結果為 {}，但本次預期 {}，禁止更新。'.format(
-                    OTHER_SHEET, row, _format_number(inspection['old'][key]['f']),
+                u'{} 保留公式結果為 {}，但本次預期 {}，禁止更新。'.format(_addr(OTHER_SHEET, OTHER_COUNT_COL, row), _format_number(inspection['old'][key]['f']),
                     _format_number(target)))
     return blockers
 
@@ -1379,17 +1394,16 @@ def update_workbook(path, inspection, counts, multiplier, backup):
             raise Exception(u'Excel 工項列自預覽後已改變，未寫入。')
         for key, row in current_rows.items():
             current_input_formulas = {
-                'f': _formula(ws.Cells(row, 6)),
-                'g': _formula(ws.Cells(row, 7)),
+                'f': _formula(ws.Cells(row, OTHER_COUNT_COL)),
+                'g': _formula(ws.Cells(row, OTHER_WHEEL_COL)),
             }
             if current_input_formulas != inspection['input_formulas'][key]:
                 raise Exception(
                     u'{} 第 {} 列 F/G 公式自預覽後已改變，未寫入。'.format(
                         OTHER_SHEET, row))
-            if key == 'wheel_stop' and _has_formula(ws.Cells(row, 7)):
+            if key == 'wheel_stop' and _has_formula(ws.Cells(row, OTHER_WHEEL_COL)):
                 raise Exception(
-                    u'{}!G{} 自預覽後變成公式，未寫入。'.format(
-                        OTHER_SHEET, row))
+                    u'{} 自預覽後變成公式，未寫入。'.format(_addr(OTHER_SHEET, OTHER_WHEEL_COL, row)))
             current_formulas = tuple(
                 _formula(ws.Cells(row, col)) for col in (8, 9, 10))
             if current_formulas != inspection['formulas'][key]:
@@ -1400,8 +1414,8 @@ def update_workbook(path, inspection, counts, multiplier, backup):
                 raise Exception(
                     u'{} 第 {} 列 H 未直接引用同列 F/G，未寫入。'.format(
                         OTHER_SHEET, row))
-            current_f = ws.Cells(row, 6).Value2
-            current_g = ws.Cells(row, 7).Value2
+            current_f = ws.Cells(row, OTHER_COUNT_COL).Value2
+            current_g = ws.Cells(row, OTHER_WHEEL_COL).Value2
             if (current_f != inspection['old'][key]['f'] or
                     current_g != inspection['old'][key]['g']):
                 raise Exception(
@@ -1409,8 +1423,8 @@ def update_workbook(path, inspection, counts, multiplier, backup):
                         OTHER_SHEET, row))
         for item in logic.ITEMS:
             row = current_rows[item['key']]
-            if not _has_formula(ws.Cells(row, 6)):
-                ws.Cells(row, 6).Value2 = expected[item['key']]
+            if not _has_formula(ws.Cells(row, OTHER_COUNT_COL)):
+                ws.Cells(row, OTHER_COUNT_COL).Value2 = expected[item['key']]
         wheel_row = current_rows['wheel_stop']
         if not _has_formula(ws.Cells(wheel_row, 6)):
             ws.Cells(wheel_row, 6).Value2 = sum(
@@ -1424,11 +1438,11 @@ def update_workbook(path, inspection, counts, multiplier, backup):
         pre_save_errors = []
         for key, row in current_rows.items():
             target_f = _target_f_value(key, counts, multiplier, inspection)
-            actual_f = _number(ws.Cells(row, 6).Value2)
+            actual_f = _number(ws.Cells(row, OTHER_COUNT_COL).Value2)
             if actual_f is None or abs(actual_f - target_f) > 0.0001:
                 pre_save_errors.append(
                     u'F{} 預期 {}，公式／輸入結果為 {}'.format(
-                        row, target_f, ws.Cells(row, 6).Value2))
+                        row, target_f, ws.Cells(row, OTHER_COUNT_COL).Value2))
         actual_g = _number(ws.Cells(wheel_row, 7).Value2)
         if actual_g is None or abs(actual_g - wheel_g_target) > 0.0001:
             pre_save_errors.append(
@@ -1570,23 +1584,26 @@ def _preview_text(path, level_name, multiplier, takeoff, inspection):
     for item in logic.ITEMS:
         row = inspection['rows'][item['key']]
         old = inspection['old'][item['key']]['f']
-        lines.append(u'{:<22} {:>5} 位  (F{} 舊值 {})'.format(
-            item['label'], counts[item['key']], row, _format_number(old)))
+        lines.append(u'{:<22} {:>5} 位  ({}{} 舊值 {})'.format(
+            item['label'], counts[item['key']], _col(OTHER_COUNT_COL), row,
+            _format_number(old)))
     wheel_row = inspection['rows']['wheel_stop']
     wheel_formula_multiplier = _wheel_stop_formula_multiplier(inspection)
     wheel_g = 1 if wheel_formula_multiplier else multiplier
     lines.extend([
         u'',
         u'汽車合計（含大客車）：{} 位'.format(car_total),
-        u'塑膠車輪檔：{} × {} = {} 個  (F{}/G{})'.format(
+        u'塑膠車輪檔：{} × {} = {} 個  ({}{}/{}{})'.format(
             car_total, multiplier, car_total * multiplier,
-            wheel_row, wheel_row),
+            _col(OTHER_COUNT_COL), wheel_row,
+            _col(OTHER_WHEEL_COL), wheel_row),
     ])
     if wheel_formula_multiplier:
         lines.append(
-            u'注意：F{} 公式已內含輪檔倍率 {}；更新時保留 F{}，G{} 寫入 {}，避免重複相乘。'.format(
-                wheel_row, wheel_formula_multiplier, wheel_row,
-                wheel_row, wheel_g))
+            u'注意：{0}{1} 公式已內含輪檔倍率 {2}；更新時保留 {0}{1}，'
+            u'{3}{1} 寫入 {4}，避免重複相乘。'.format(
+                _col(OTHER_COUNT_COL), wheel_row, wheel_formula_multiplier,
+                _col(OTHER_WHEEL_COL), wheel_g))
     grouped_total = sum(
         int(source.get('grouped', 0))
         for source in takeoff.get('source_counts', []))

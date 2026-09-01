@@ -18,6 +18,7 @@ import mcp_bridge as mcp
 import room_takeoff_sources
 import room_takeoff_sources_logic
 import scaffold_height
+import sheet_layout
 
 try:
     reload(scaffold_height)
@@ -41,9 +42,134 @@ INNER_WALL_SHEET = u'內牆'
 LEVEL_SUMMARY_HEADER_ROW = 9
 LEVEL_SUMMARY_START_ROW = 10
 # 逐房明細佔用第 1~23 欄（最後四欄是來源Key/來源模型/ElementId/長寬來源）。
+# 逐房稽核表的欄位。以前這 23 欄同時被三種寫法引用：Cells(row, 15) 這類欄號、
+# '=IF(Q{}="是",ROUND(I{}*L{},3),0)' 這類寫死字母的公式、以及手寫的
+# ROOM_AUDIT_LAST_COL = 23。三者必須同步，錯開時公式不會壞掉，只會指到隔壁欄。
+ROOM_AUDIT_COLUMNS = [
+    'revit_id',         # RevitId
+    'level',            # 樓層
+    'number',           # 房間編號
+    'name',             # 房間名稱
+    'category',         # 分類代碼
+    'category_name',    # 計入工項
+    'rule',             # 分類依據
+    'space_row',        # 「<空間表>列」
+    'perimeter',        # 周長(m)
+    'length',           # 長(m)
+    'width',            # 寬(m)
+    'height',           # 高(m)
+    'height_source',    # 高度來源
+    'formula_text',     # 計算式
+    'quantity',         # 數量
+    'unit',             # 單位
+    'included',         # 計入
+    'note',             # 備註
+    'level_key',        # 樓層鍵
+    'source_key',       # 來源Key
+    'source_label',     # 來源模型
+    'element_id',       # ElementId
+    'dimension_source', # 長寬來源
+]
+ROOM_AUDIT = sheet_layout.SheetLayout(
+    ROOM_AUDIT_COLUMNS, first_data_row=10, name=u'逐房稽核')
+ROOM_AUDIT_HEADER_ROW = 9
+ROOM_AUDIT_FIRST_ROW = ROOM_AUDIT.first_data_row
+# 表頭文字（「<空間表>列」那一欄的名稱要帶入實際分頁名，寫入時再補）
+ROOM_AUDIT_HEADERS = [
+    ('revit_id', u'RevitId'), ('level', u'樓層'), ('number', u'房間編號'),
+    ('name', u'房間名稱'), ('category', u'分類代碼'),
+    ('category_name', u'計入工項'), ('rule', u'分類依據'),
+    ('space_row', u'列'), ('perimeter', u'周長(m)'), ('length', u'長(m)'),
+    ('width', u'寬(m)'), ('height', u'高(m)'), ('height_source', u'高度來源'),
+    ('formula_text', u'計算式'), ('quantity', u'數量'), ('unit', u'單位'),
+    ('included', u'計入'), ('note', u'備註'), ('level_key', u'樓層鍵'),
+    ('source_key', u'來源Key'), ('source_label', u'來源模型'),
+    ('element_id', u'ElementId'), ('dimension_source', u'長寬來源'),
+]
+# --- 工項活頁簿「範本」的欄位 ------------------------------------------------
+#
+# 下面三張分頁的欄位順序是**使用者的範本**決定的，不是我們排的版，所以不用
+# SheetLayout（那是給我們自己排版的表用的）。但同一個範本欄位在這支程式裡同時
+# 以欄號（``Cells(sr, 6)``）與字母（``'!F{}'``）出現——寫入一次、驗證再寫一次、
+# 訊息再寫一次，一個欄位三個地方。統一從這裡取，字母一律用 _col_letter() 導出。
+SUBTOTAL_COLS = {
+    'code': 2,          # B 工項代碼
+    'name': 3,          # C 工項名稱
+    'unit': 5,          # E 單位
+    'rounded_qty': 6,   # F 取整數量（=ROUND(數量,0)）
+    'source': 7,        # G 來源註記
+    'quantity': 8,      # H 數量
+}
+OTHER_COLS = {
+    'code': 2,          # B
+    'name': 3,          # C
+    'level': 4,         # D 樓層／位置
+    'count': 5,         # E 數量（固定 1）
+    'length': 6,        # F
+    'height': 8,        # H
+    'subtotal': 9,      # I 小計
+    'total': 16,        # P 總量
+}
+UPDATE_COLS = {
+    'name': 2,          # B 工項名稱
+    'unit': 3,          # C 單位
+    'rounded_qty': 4,   # D
+    'source': 5,        # E
+    'quantity': 6,      # F
+}
+
+
+def _rounded_qty_formula(row):
+    """小計分頁「取整數量」欄的公式。寫入端與驗證端共用同一份定義——以前這串
+    取整公式以前在三個地方各寫一次，改一個忘一個時驗證會安靜地放行。"""
+    return u'=ROUND({0}{1},0)'.format(
+        _col_letter(SUBTOTAL_COLS['quantity']), row)
+
+
+def _addr(sheet_name, col_number, row):
+    """給人看的位址（驗證訊息用，不加引號）：``其他面積!D12``。"""
+    return u'{0}!{1}{2}'.format(sheet_name, _col_letter(col_number), row)
+
+
+def _sheet_ref(sheet_name, col_number, row):
+    """``'小計'!H12``——欄位字母由欄號導出，不手寫。"""
+    return u'{0}!{1}{2}'.format(_quote_sheet(sheet_name),
+                                _col_letter(col_number), row)
+
+
+# 獨立匯出的「數量明細」分頁欄位（跟上面那張逐房稽核表不同張、不同順序）。
+STANDALONE_DETAIL_COLUMNS = [
+    'source_key', 'source_label', 'composite_id', 'element_id', 'level',
+    'number', 'name', 'category', 'perimeter', 'length', 'width',
+    'height', 'height_source', 'included', 'quantity', 'unit',
+    'rule', 'dimension_source', 'warning',
+]
+STANDALONE_DETAIL_HEADERS = [
+    u'來源Key', u'來源模型', u'複合識別', u'ElementId', u'樓層',
+    u'房號', u'房名', u'分類', u'周長(m)', u'長(m)', u'寬(m)',
+    u'高度(m)', u'高度來源', u'計入', u'數量', u'單位',
+    u'分類依據', u'長寬來源', u'警告',
+]
+if len(STANDALONE_DETAIL_COLUMNS) != len(STANDALONE_DETAIL_HEADERS):
+    raise AssertionError(
+        u'STANDALONE_DETAIL 的欄位與表頭長度不一致：加欄位時兩邊都要加')
+STANDALONE_DETAIL = sheet_layout.SheetLayout(
+    STANDALONE_DETAIL_COLUMNS, first_data_row=2, name=u'施工架數量明細')
+
+ROOM_AUDIT_WIDTHS = [
+    18, 12, 13, 24, 24, 28, 25, 12, 12, 12, 12, 12, 28, 30,
+    14, 10, 9, 42, 12, 16, 28, 13, 30,
+]
+if [key for key, _t in ROOM_AUDIT_HEADERS] != ROOM_AUDIT_COLUMNS:
+    raise AssertionError(
+        u'ROOM_AUDIT_HEADERS 與 ROOM_AUDIT_COLUMNS 的欄位順序不一致')
+if len(ROOM_AUDIT_WIDTHS) != len(ROOM_AUDIT_COLUMNS):
+    raise AssertionError(
+        u'ROOM_AUDIT_WIDTHS 有 {0} 個、欄位有 {1} 個：加欄位時兩邊都要加'.format(
+            len(ROOM_AUDIT_WIDTHS), len(ROOM_AUDIT_COLUMNS)))
 # 樓層小計表必須留在它右邊，中間空兩欄當分隔；放在 21~23 欄會蓋掉前幾間房的
 # 來源證據，並讓逐房明細的自動篩選連帶隱藏小計列。
-ROOM_AUDIT_LAST_COL = 23
+ROOM_AUDIT_LAST_COL = ROOM_AUDIT.width
 LEVEL_SUMMARY_LEVEL_COL = 26
 LEVEL_SUMMARY_KEY_COL = 27
 LEVEL_SUMMARY_GENERAL_COL = 28
@@ -65,6 +191,30 @@ SUMMARY_ROWS = {
     'general': 5,
     'interior_finish': 6,
 }
+SUMMARY_FIRST_ROW = min(SUMMARY_ROWS.values())
+SUMMARY_LAST_ROW = max(SUMMARY_ROWS.values())
+AUDIT_HEADER_ROW = 3
+AUDIT_SOURCE_ROW = 7          # 室外周長來源那一列
+
+# 稽核表上方摘要區的五欄。以前這五欄有**三個各自維護的真相**：headers 清單、
+# 'A3:E3' 這類手寫字母、以及 _write_exterior_audit 裡的 Cells(row, 2/4/5)。
+# 加一欄就會全部錯開，而且不會報錯。現在字母與欄號一律問 layout。
+AUDIT_SUMMARY_COLUMNS = ['item', 'quantity', 'unit', 'formula', 'updated_at']
+AUDIT_SUMMARY_HEADERS = [u'工項', u'數量', u'單位', u'公式／來源', u'更新時間']
+AUDIT_SUMMARY_WIDTHS = [28, 14, 10, 34, 20]
+if not (len(AUDIT_SUMMARY_COLUMNS) == len(AUDIT_SUMMARY_HEADERS)
+        == len(AUDIT_SUMMARY_WIDTHS)):
+    raise AssertionError(
+        u'AUDIT_SUMMARY 的欄位／表頭／欄寬三份清單長度不一致：加欄位時三邊都要加')
+AUDIT_SUMMARY = sheet_layout.SheetLayout(
+    AUDIT_SUMMARY_COLUMNS, first_data_row=SUMMARY_FIRST_ROW,
+    name=AUDIT_SHEET)
+
+# 標題橫幅的寬度與欄位無關，純粹是視覺上要夠寬。
+AUDIT_TITLE_LAST_COL = 19
+AUDIT_TITLE_SPAN = u'{0}1:{1}1'.format(
+    sheet_layout.column_letter(0),
+    sheet_layout.column_letter(AUDIT_TITLE_LAST_COL - 1))
 
 SUMMARY_CATEGORIES = {
     'general': 'general_scaffold',
@@ -1083,7 +1233,7 @@ def _ensure_item_rows(wb, excel, takeoff=None):
     if not finish_row:
         finish_row = gen_row + 1
         _copy_insert_row(excel, subtotal, gen_row, finish_row)
-        subtotal.Cells(finish_row, 3).Value2 = ITEM_NAMES['interior_finish']
+        subtotal.Cells(finish_row, SUBTOTAL_COLS['name']).Value2 = ITEM_NAMES['interior_finish']
         created_finish = True
     subtotal_rows = {}
     for mode in ('exterior', 'general', 'interior_finish'):
@@ -1091,9 +1241,9 @@ def _ensure_item_rows(wb, excel, takeoff=None):
         if mode == 'interior_finish' and not row:
             row = finish_row
         subtotal_rows[mode] = row
-        subtotal.Cells(row, 5).Value2 = ITEM_UNITS[mode]
-        subtotal.Cells(row, 6).Formula = u'=ROUND(H{},0)'.format(row)
-        subtotal.Cells(row, 7).Value2 = u'其他面積數量計算表'
+        subtotal.Cells(row, SUBTOTAL_COLS['unit']).Value2 = ITEM_UNITS[mode]
+        subtotal.Cells(row, SUBTOTAL_COLS['rounded_qty']).Formula = _rounded_qty_formula(row)
+        subtotal.Cells(row, SUBTOTAL_COLS['source']).Value2 = u'其他面積數量計算表'
 
     update_rows = dict((mode, (None, None)) for mode in (
         'exterior', 'general', 'interior_finish'))
@@ -1111,7 +1261,7 @@ def _ensure_item_rows(wb, excel, takeoff=None):
         finish_row = _next_calculation_item_row(other, gen_row)
         _copy_insert_row(excel, other, gen_row, finish_row)
         _clear_contents(other, finish_row, 6, finish_row, 18)
-        other.Cells(finish_row, 3).Value2 = ITEM_NAMES['interior_finish']
+        other.Cells(finish_row, OTHER_COLS['name']).Value2 = ITEM_NAMES['interior_finish']
         other.Cells(finish_row, 4).Value2 = u'ALL'
         created_finish = True
     other_rows = {}
@@ -1140,23 +1290,29 @@ def _ensure_item_rows(wb, excel, takeoff=None):
     for mode in ('exterior', 'general', 'interior_finish'):
         sr = subtotal_rows[mode]
         other_row = other_rows[mode]
-        subtotal.Cells(sr, 5).Value2 = ITEM_UNITS[mode]
-        subtotal.Cells(sr, 6).Formula = u'=ROUND(H{},0)'.format(sr)
-        subtotal.Cells(sr, 7).Value2 = u'其他面積數量計算表'
-        subtotal.Cells(sr, 8).Formula = u'={}!P{}'.format(
-            _quote_sheet(other.Name), other_row)
+        subtotal.Cells(sr, SUBTOTAL_COLS['unit']).Value2 = ITEM_UNITS[mode]
+        subtotal.Cells(sr, SUBTOTAL_COLS['rounded_qty']).Formula = _rounded_qty_formula(sr)
+        subtotal.Cells(sr, SUBTOTAL_COLS['source']).Value2 = u'其他面積數量計算表'
+        subtotal.Cells(sr, SUBTOTAL_COLS['quantity']).Formula = u'=' + _sheet_ref(
+                                                          other.Name, OTHER_COLS['total'], other_row)
 
         ur = update_rows.get(mode)
         if update is not None and ur:
-            update.Cells(ur, 2).Formula = u'={}!C{}'.format(_quote_sheet(subtotal.Name), sr)
-            update.Cells(ur, 3).Formula = u'={}!E{}'.format(_quote_sheet(subtotal.Name), sr)
-            update.Cells(ur, 4).Formula = u'={}!F{}'.format(_quote_sheet(subtotal.Name), sr)
-            update.Cells(ur, 5).Formula = u'={}!G{}'.format(_quote_sheet(subtotal.Name), sr)
-            update.Cells(ur, 6).Formula = u'={}!H{}'.format(_quote_sheet(subtotal.Name), sr)
+            update.Cells(ur, UPDATE_COLS['name']).Formula = u'=' + _sheet_ref(
+                                                            subtotal.Name, SUBTOTAL_COLS['name'], sr)
+            update.Cells(ur, UPDATE_COLS['unit']).Formula = u'=' + _sheet_ref(
+                                                            subtotal.Name, SUBTOTAL_COLS['unit'], sr)
+            update.Cells(ur, UPDATE_COLS['rounded_qty']).Formula = u'=' + _sheet_ref(
+                                                            subtotal.Name, SUBTOTAL_COLS['rounded_qty'], sr)
+            update.Cells(ur, UPDATE_COLS['source']).Formula = u'=' + _sheet_ref(
+                                                            subtotal.Name, SUBTOTAL_COLS['source'], sr)
+            update.Cells(ur, UPDATE_COLS['quantity']).Formula = u'=' + _sheet_ref(
+                                                            subtotal.Name, SUBTOTAL_COLS['quantity'], sr)
 
-        other.Cells(other_row, 2).Formula = u'={}!B{}'.format(
-            _quote_sheet(subtotal.Name), sr)
-        other.Cells(other_row, 3).Formula = u'={}!C{}'.format(_quote_sheet(subtotal.Name), sr)
+        other.Cells(other_row, 2).Formula = u'=' + _sheet_ref(
+                                                              subtotal.Name, SUBTOTAL_COLS['code'], sr)
+        other.Cells(other_row, OTHER_COLS['name']).Formula = u'=' + _sheet_ref(
+                                                              subtotal.Name, SUBTOTAL_COLS['name'], sr)
 
     return {
         'subtotal': subtotal,
@@ -1178,39 +1334,43 @@ def _ensure_audit_sheet(wb):
     elif ws.Name != AUDIT_SHEET:
         ws.Name = AUDIT_SHEET
     try:
-        ws.Range(u'A1:S1').UnMerge()
+        ws.Range(AUDIT_TITLE_SPAN).UnMerge()
     except Exception:
         pass
-    ws.Range(u'A1:S1').Merge()
+    ws.Range(AUDIT_TITLE_SPAN).Merge()
     ws.Cells(1, 1).Value2 = u'施工架數量計算稽核表'
     ws.Cells(1, 1).Font.Name = REPORT_FONT_NAME
     ws.Cells(1, 1).Font.Bold = False
     ws.Cells(1, 1).Font.Size = 24
     ws.Cells(1, 1).HorizontalAlignment = -4108
     ws.Cells(1, 1).VerticalAlignment = -4108
-    ws.Range(u'A1:S1').Interior.Color = _rgb(47, 84, 91)
-    ws.Range(u'A1:S1').Font.Color = _rgb(255, 255, 255)
+    ws.Range(AUDIT_TITLE_SPAN).Interior.Color = _rgb(47, 84, 91)
+    ws.Range(AUDIT_TITLE_SPAN).Font.Color = _rgb(255, 255, 255)
 
-    headers = [u'工項', u'數量', u'單位', u'公式／來源', u'更新時間']
-    for col, value in enumerate(headers, 1):
-        ws.Cells(3, col).Value2 = value
+    for key, value in zip(AUDIT_SUMMARY_COLUMNS, AUDIT_SUMMARY_HEADERS):
+        ws.Cells(AUDIT_HEADER_ROW, AUDIT_SUMMARY.number(key)).Value2 = value
     for mode in ('exterior', 'general', 'interior_finish'):
         row = SUMMARY_ROWS[mode]
-        ws.Cells(row, 1).Value2 = ITEM_NAMES[mode]
-        ws.Cells(row, 3).Value2 = ITEM_UNITS[mode]
-    ws.Range(u'A3:E3').Font.Name = REPORT_FONT_NAME
-    ws.Range(u'A3:E3').Font.Bold = False
-    ws.Range(u'A4:E6').Font.Name = REPORT_FONT_NAME
-    ws.Range(u'A4:E6').Font.Size = 9
-    ws.Range(u'A4:E6').Font.Bold = True
-    ws.Range(u'A3:E3').Interior.Color = _rgb(217, 225, 225)
-    ws.Range(u'A3:E6').Borders.LineStyle = 1
-    ws.Range(u'B4:B6').NumberFormat = u'0.000'
-    ws.Columns(1).ColumnWidth = 28
-    ws.Columns(2).ColumnWidth = 14
-    ws.Columns(3).ColumnWidth = 10
-    ws.Columns(4).ColumnWidth = 34
-    ws.Columns(5).ColumnWidth = 20
+        ws.Cells(row, AUDIT_SUMMARY.number('item')).Value2 = ITEM_NAMES[mode]
+        ws.Cells(row, AUDIT_SUMMARY.number('unit')).Value2 = ITEM_UNITS[mode]
+
+    first, last = AUDIT_SUMMARY_COLUMNS[0], AUDIT_SUMMARY_COLUMNS[-1]
+    header_span = AUDIT_SUMMARY.rect(first, last, AUDIT_HEADER_ROW)
+    body_span = AUDIT_SUMMARY.rect(first, last,
+                                   SUMMARY_FIRST_ROW, SUMMARY_LAST_ROW)
+    whole_span = AUDIT_SUMMARY.rect(first, last,
+                                    AUDIT_HEADER_ROW, SUMMARY_LAST_ROW)
+    ws.Range(header_span).Font.Name = REPORT_FONT_NAME
+    ws.Range(header_span).Font.Bold = False
+    ws.Range(body_span).Font.Name = REPORT_FONT_NAME
+    ws.Range(body_span).Font.Size = 9
+    ws.Range(body_span).Font.Bold = True
+    ws.Range(header_span).Interior.Color = _rgb(217, 225, 225)
+    ws.Range(whole_span).Borders.LineStyle = 1
+    ws.Range(AUDIT_SUMMARY.rng('quantity', SUMMARY_FIRST_ROW,
+                               SUMMARY_LAST_ROW)).NumberFormat = u'0.000'
+    for key, width in zip(AUDIT_SUMMARY_COLUMNS, AUDIT_SUMMARY_WIDTHS):
+        ws.Columns(AUDIT_SUMMARY.number(key)).ColumnWidth = width
     return ws
 
 
@@ -1276,65 +1436,67 @@ def _write_room_audit(ws, takeoff):
     _clear_room_audit(ws)
     building_prefixes = _takeoff_building_prefixes(takeoff)
     space_sheet_name = _text(takeoff.get('space_sheet')) or SPACE_SHEET
-    headers = [
-        u'RevitId', u'樓層', u'房間編號', u'房間名稱', u'分類代碼', u'計入工項',
-        u'分類依據', u'{}列'.format(space_sheet_name),
-        u'周長(m)', u'長(m)', u'寬(m)', u'高(m)',
-        u'高度來源', u'計算式', u'數量', u'單位', u'計入', u'備註', u'樓層鍵',
-        u'來源Key', u'來源模型', u'ElementId',
-        u'長寬來源',
-    ]
-    for col, value in enumerate(headers, 1):
-        ws.Cells(9, col).Value2 = value
-    header_range = u'A9:{}9'.format(_col_letter(ROOM_AUDIT_LAST_COL))
+    headers = dict(ROOM_AUDIT_HEADERS)
+    headers['space_row'] = u'{}列'.format(space_sheet_name)
+    for key in ROOM_AUDIT_COLUMNS:
+        ws.Cells(ROOM_AUDIT_HEADER_ROW,
+                 ROOM_AUDIT.number(key)).Value2 = headers[key]
+    header_range = ROOM_AUDIT.rect(ROOM_AUDIT_COLUMNS[0],
+                                   ROOM_AUDIT_COLUMNS[-1],
+                                   ROOM_AUDIT_HEADER_ROW)
     ws.Range(header_range).Font.Name = REPORT_FONT_NAME
     ws.Range(header_range).Font.Bold = False
     ws.Range(header_range).Interior.Color = _rgb(217, 225, 225)
     ws.Range(header_range).WrapText = True
 
-    start_row = 10
+    start_row = ROOM_AUDIT_FIRST_ROW
+    col = ROOM_AUDIT.number
     for offset, item in enumerate(takeoff['rows']):
         row = start_row + offset
-        values = [
-            item['revit_id'], item['level'], item['number'], item['name'],
-            item['category'], item['category_name'], item['rule'], item['space_row'],
-        ]
-        for col, value in enumerate(values, 1):
-            ws.Cells(row, col).Value2 = value
-        ws.Cells(row, 9).Formula = u'={}!{}{}'.format(
+        for key in ('revit_id', 'level', 'number', 'name', 'category',
+                    'category_name', 'rule', 'space_row'):
+            ws.Cells(row, col(key)).Value2 = item[key]
+        ws.Cells(row, col('perimeter')).Formula = u'={}!{}{}'.format(
             _quote_sheet(item['space_sheet']),
             _col_letter(item['perimeter_col']),
             item['space_row'],
         )
         if item['length'] is not None:
-            ws.Cells(row, 10).Value2 = item['length']
+            ws.Cells(row, col('length')).Value2 = item['length']
         if item['width'] is not None:
-            ws.Cells(row, 11).Value2 = item['width']
+            ws.Cells(row, col('width')).Value2 = item['width']
         if item['height_ref']:
             ref = item['height_ref']
-            ws.Cells(row, 12).Formula = u'={}!{}{}'.format(
+            ws.Cells(row, col('height')).Formula = u'={}!{}{}'.format(
                 _quote_sheet(ref['sheet']), _col_letter(ref['col']), ref['row'])
         elif item['height'] is not None:
-            ws.Cells(row, 12).Value2 = item['height']
-        ws.Cells(row, 13).Value2 = item['height_source']
-        ws.Cells(row, 14).Value2 = item['formula_text']
+            ws.Cells(row, col('height')).Value2 = item['height']
+        ws.Cells(row, col('height_source')).Value2 = item['height_source']
+        ws.Cells(row, col('formula_text')).Value2 = item['formula_text']
+        # 數量欄的公式以前把欄位字母（Q/I/J/K/L）寫死，跟上面的欄號是兩套真相。
         if item['category'] == 'general_scaffold':
-            ws.Cells(row, 15).Formula = u'=IF(Q{}="是",ROUND(I{}*L{},3),0)'.format(
-                row, row, row)
+            ws.Cells(row, col('quantity')).Formula = ROOM_AUDIT.formula(
+                row, u'IF({included}="是",ROUND({perimeter}*{height},3),0)')
         elif item['category'] == 'interior_finish_scaffold':
-            ws.Cells(row, 15).Formula = u'=IF(Q{}="是",ROUND(J{}*K{}*L{},3),0)'.format(
-                row, row, row, row)
+            ws.Cells(row, col('quantity')).Formula = ROOM_AUDIT.formula(
+                row,
+                u'IF({included}="是",'
+                u'ROUND({length}*{width}*{height},3),0)')
         else:
-            ws.Cells(row, 15).Value2 = 0
-        ws.Cells(row, 16).Value2 = item['unit']
-        ws.Cells(row, 17).Value2 = u'是' if item['included'] else u'否'
-        ws.Cells(row, 18).Value2 = u'；'.join(item['warnings'])
-        ws.Cells(row, 19).Value2 = _level_key(
+            ws.Cells(row, col('quantity')).Value2 = 0
+        ws.Cells(row, col('unit')).Value2 = item['unit']
+        ws.Cells(row, col('included')).Value2 = (
+            u'是' if item['included'] else u'否')
+        ws.Cells(row, col('note')).Value2 = u'；'.join(item['warnings'])
+        ws.Cells(row, col('level_key')).Value2 = _level_key(
             item['level'], building_prefixes)
-        ws.Cells(row, 20).Value2 = item.get('source_key') or u''
-        ws.Cells(row, 21).Value2 = item.get('source_label') or u''
-        ws.Cells(row, 22).Value2 = item.get('local_element_id') or u''
-        ws.Cells(row, 23).Value2 = item.get('dimension_source') or u''
+        ws.Cells(row, col('source_key')).Value2 = item.get('source_key') or u''
+        ws.Cells(row, col('source_label')).Value2 = (
+            item.get('source_label') or u'')
+        ws.Cells(row, col('element_id')).Value2 = (
+            item.get('local_element_id') or u'')
+        ws.Cells(row, col('dimension_source')).Value2 = (
+            item.get('dimension_source') or u'')
 
     last_row = start_row + len(takeoff['rows']) - 1
     if takeoff['rows']:
@@ -1363,26 +1525,32 @@ def _write_room_audit(ws, takeoff):
         u'樓梯／電梯房間長 × 寬 × 上層樓板底高度')
     ws.Cells(5, 5).Value2 = datetime.now().strftime('%Y-%m-%d %H:%M')
     ws.Cells(6, 5).Value2 = datetime.now().strftime('%Y-%m-%d %H:%M')
-    widths = [
-        18, 12, 13, 24, 24, 28, 25, 12, 12, 12, 12, 12, 28, 30,
-        14, 10, 9, 42, 12, 16, 28, 13, 30]
-    for col, width in enumerate(widths, 1):
-        ws.Columns(col).ColumnWidth = width
-    report_range = ws.Range(u'A1:{}{}'.format(
+    for key, width in zip(ROOM_AUDIT_COLUMNS, ROOM_AUDIT_WIDTHS):
+        ws.Columns(ROOM_AUDIT.number(key)).ColumnWidth = width
+    report_range = ws.Range(u'{}1:{}{}'.format(
+        sheet_layout.column_letter(0),
         _col_letter(LEVEL_SUMMARY_GENERAL_COL),
-        max(9, last_row)))
+        max(ROOM_AUDIT_HEADER_ROW, last_row)))
     report_range.Font.Name = REPORT_FONT_NAME
     report_range.Font.Size = 9
     report_range.Font.Bold = False
-    ws.Range(u'A1:S1').Font.Size = 24
-    ws.Range(u'A1:S1').Font.Name = REPORT_FONT_NAME
-    ws.Range(u'A1:S1').Font.Bold = False
-    ws.Range(u'A3:E3').Font.Size = 12
-    ws.Range(u'A3:E3').Font.Name = REPORT_FONT_NAME
-    ws.Range(u'A3:E3').Font.Bold = False
-    ws.Range(u'A4:E6').Font.Name = REPORT_FONT_NAME
-    ws.Range(u'A4:E6').Font.Size = 9
-    ws.Range(u'A4:E6').Font.Bold = True
+    # 這裡是**第二個**格式化摘要區的地方（第一個在 _ensure_audit_sheet）。
+    # 兩邊都問同一個 layout，才不會有人改了一邊忘了另一邊。
+    summary_first = AUDIT_SUMMARY_COLUMNS[0]
+    summary_last = AUDIT_SUMMARY_COLUMNS[-1]
+    header_span = AUDIT_SUMMARY.rect(summary_first, summary_last,
+                                     AUDIT_HEADER_ROW)
+    body_span = AUDIT_SUMMARY.rect(summary_first, summary_last,
+                                   SUMMARY_FIRST_ROW, SUMMARY_LAST_ROW)
+    ws.Range(AUDIT_TITLE_SPAN).Font.Size = 24
+    ws.Range(AUDIT_TITLE_SPAN).Font.Name = REPORT_FONT_NAME
+    ws.Range(AUDIT_TITLE_SPAN).Font.Bold = False
+    ws.Range(header_span).Font.Size = 12
+    ws.Range(header_span).Font.Name = REPORT_FONT_NAME
+    ws.Range(header_span).Font.Bold = False
+    ws.Range(body_span).Font.Name = REPORT_FONT_NAME
+    ws.Range(body_span).Font.Size = 9
+    ws.Range(body_span).Font.Bold = True
     ws.Range(header_range).Font.Size = 12
     ws.Range(header_range).Font.Name = REPORT_FONT_NAME
     ws.Range(header_range).Font.Bold = False
@@ -1402,14 +1570,20 @@ def _write_room_audit(ws, takeoff):
 
 def _write_exterior_audit(ws, takeoff):
     row = SUMMARY_ROWS['exterior']
-    ws.Cells(row, 2).Value2 = takeoff['quantity']
-    ws.Cells(row, 4).Value2 = u'{} m × {} m'.format(
+    col = AUDIT_SUMMARY.number
+    ws.Cells(row, col('quantity')).Value2 = takeoff['quantity']
+    ws.Cells(row, col('formula')).Value2 = u'{} m × {} m'.format(
         _fmt(takeoff['perimeter']), _fmt(takeoff['height']))
-    ws.Cells(row, 5).Value2 = datetime.now().strftime('%Y-%m-%d %H:%M')
-    ws.Cells(7, 1).Value2 = u'室外周長來源'
-    ws.Cells(7, 2).Value2 = takeoff['source']
-    ws.Cells(7, 4).Value2 = u'MCP：{}'.format(takeoff['command'])
-    ws.Range(u'A7:E7').Interior.Color = _rgb(238, 242, 242)
+    ws.Cells(row, col('updated_at')).Value2 = datetime.now().strftime(
+        '%Y-%m-%d %H:%M')
+    ws.Cells(AUDIT_SOURCE_ROW, col('item')).Value2 = u'室外周長來源'
+    ws.Cells(AUDIT_SOURCE_ROW, col('quantity')).Value2 = takeoff['source']
+    ws.Cells(AUDIT_SOURCE_ROW, col('formula')).Value2 = u'MCP：{}'.format(
+        takeoff['command'])
+    ws.Range(AUDIT_SUMMARY.rect(AUDIT_SUMMARY_COLUMNS[0],
+                                AUDIT_SUMMARY_COLUMNS[-1],
+                                AUDIT_SOURCE_ROW)).Interior.Color = _rgb(
+        238, 242, 242)
 
 
 def _link_general_other_area(ws, block, takeoff):
@@ -1435,8 +1609,8 @@ def _link_general_other_area(ws, block, takeoff):
         if row != start_row:
             _clear_contents(ws, row, 16, row, 16)
 
-    ws.Cells(start_row, 16).Formula = u'={}!B{}'.format(
-        _quote_sheet(AUDIT_SHEET), SUMMARY_ROWS['general'])
+    ws.Cells(start_row, 16).Formula = u'=' + _sheet_ref(
+                                                        AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), SUMMARY_ROWS['general'])
     ws.Cells(start_row, 16).NumberFormat = u'0.00'
 
 
@@ -1446,10 +1620,10 @@ def _link_finish_other_area(ws, block, takeoff):
     _clear_contents(ws, start_row, 16, end_row, 16)
     ws.Cells(start_row, 4).Value2 = u'ALL'
     ws.Cells(start_row, 5).Value2 = 1
-    ws.Cells(start_row, 9).Formula = u'={}!B{}'.format(
-        _quote_sheet(AUDIT_SHEET), SUMMARY_ROWS['interior_finish'])
-    ws.Cells(start_row, 16).Formula = u'={}!B{}'.format(
-        _quote_sheet(AUDIT_SHEET), SUMMARY_ROWS['interior_finish'])
+    ws.Cells(start_row, 9).Formula = u'=' + _sheet_ref(
+                                                       AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), SUMMARY_ROWS['interior_finish'])
+    ws.Cells(start_row, 16).Formula = u'=' + _sheet_ref(
+                                                        AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), SUMMARY_ROWS['interior_finish'])
     ws.Range(ws.Cells(start_row, 5), ws.Cells(start_row, 9)).NumberFormat = u'0.000'
     ws.Cells(start_row, 16).NumberFormat = u'0.00'
 
@@ -1460,10 +1634,10 @@ def _link_exterior_other_area(ws, block, takeoff):
     _clear_contents(ws, start_row, 16, end_row, 16)
     ws.Cells(start_row, 4).Value2 = u'ALL'
     ws.Cells(start_row, 5).Value2 = 1
-    ws.Cells(start_row, 9).Formula = u'={}!B{}'.format(
-        _quote_sheet(AUDIT_SHEET), SUMMARY_ROWS['exterior'])
-    ws.Cells(start_row, 16).Formula = u'={}!B{}'.format(
-        _quote_sheet(AUDIT_SHEET), SUMMARY_ROWS['exterior'])
+    ws.Cells(start_row, 9).Formula = u'=' + _sheet_ref(
+                                                       AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), SUMMARY_ROWS['exterior'])
+    ws.Cells(start_row, 16).Formula = u'=' + _sheet_ref(
+                                                        AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), SUMMARY_ROWS['exterior'])
     ws.Range(ws.Cells(start_row, 5), ws.Cells(start_row, 9)).NumberFormat = u'0.000'
     ws.Cells(start_row, 16).NumberFormat = u'0.00'
 
@@ -1570,39 +1744,39 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
         block_start, block_end = rows['other_blocks'][mode]
         expected_unit = ITEM_UNITS[mode]
         checks = [
-            (_item_kind(subtotal.Cells(sr, 3).Text) == mode,
-             u'{}!C{} 工項名稱'.format(subtotal.Name, sr)),
-            (_text(subtotal.Cells(sr, 5).Text).upper() == expected_unit,
-             u'{}!E{} 單位'.format(subtotal.Name, sr)),
-            (_item_kind(other.Cells(other_row, 3).Text) == mode,
-             u'{}!C{} 工項名稱'.format(other.Name, other_row)),
+            (_item_kind(subtotal.Cells(sr, SUBTOTAL_COLS['name']).Text) == mode,
+             u'{} 工項名稱'.format(_addr(subtotal.Name, SUBTOTAL_COLS['name'], sr))),
+            (_text(subtotal.Cells(sr, SUBTOTAL_COLS['unit']).Text).upper() == expected_unit,
+             u'{} 單位'.format(_addr(subtotal.Name, SUBTOTAL_COLS['unit'], sr))),
+            (_item_kind(other.Cells(other_row, OTHER_COLS['name']).Text) == mode,
+             u'{} 工項名稱'.format(_addr(other.Name, OTHER_COLS['name'], other_row))),
             (_formula_equals(
-                subtotal.Cells(sr, 6), u'=ROUND(H{},0)'.format(sr)) and
+                subtotal.Cells(sr, SUBTOTAL_COLS['rounded_qty']), _rounded_qty_formula(sr)) and
              _formula_equals(
-                 subtotal.Cells(sr, 8), u'={}!P{}'.format(
-                     _quote_sheet(other.Name), other_row)),
-             u'{}!H{} → 其他面積'.format(subtotal.Name, sr)),
-            (_formula_equals(other.Cells(other_row, 3), u'={}!C{}'.format(
-                _quote_sheet(subtotal.Name), sr)),
-             u'{}!C{} → 小計'.format(other.Name, other_row)),
+                 subtotal.Cells(sr, SUBTOTAL_COLS['quantity']), u'=' + _sheet_ref(
+                                                          other.Name, OTHER_COLS['total'], other_row)),
+             u'{} → 其他面積'.format(_addr(subtotal.Name, SUBTOTAL_COLS['quantity'], sr))),
+            (_formula_equals(other.Cells(other_row, OTHER_COLS['name']), u'=' + _sheet_ref(
+                                                                          subtotal.Name, SUBTOTAL_COLS['name'], sr)),
+             u'{} → 小計'.format(_addr(other.Name, OTHER_COLS['name'], other_row))),
         ]
         if update is not None and ur:
             checks.extend([
-                (_item_kind(update.Cells(ur, 2).Text) == mode,
-                 u'{}!B{} 工項名稱'.format(update.Name, ur)),
-                (_text(update.Cells(ur, 3).Text).upper() == expected_unit,
-                 u'{}!C{} 單位'.format(update.Name, ur)),
-                (_formula_equals(update.Cells(ur, 2), u'={}!C{}'.format(
-                    _quote_sheet(subtotal.Name), sr)) and
-                 _formula_equals(update.Cells(ur, 3), u'={}!E{}'.format(
-                     _quote_sheet(subtotal.Name), sr)) and
-                 _formula_equals(update.Cells(ur, 4), u'={}!F{}'.format(
-                     _quote_sheet(subtotal.Name), sr)) and
-                 _formula_equals(update.Cells(ur, 5), u'={}!G{}'.format(
-                     _quote_sheet(subtotal.Name), sr)) and
-                 _formula_equals(update.Cells(ur, 6), u'={}!H{}'.format(
-                     _quote_sheet(subtotal.Name), sr)),
-                 u'{}!B{}:F{} → 小計'.format(update.Name, ur, ur)),
+                (_item_kind(update.Cells(ur, UPDATE_COLS['name']).Text) == mode,
+                 u'{} 工項名稱'.format(_addr(update.Name, UPDATE_COLS['name'], ur))),
+                (_text(update.Cells(ur, UPDATE_COLS['unit']).Text).upper() == expected_unit,
+                 u'{} 單位'.format(_addr(update.Name, UPDATE_COLS['unit'], ur))),
+                (_formula_equals(update.Cells(ur, UPDATE_COLS['name']), u'=' + _sheet_ref(
+                                                                        subtotal.Name, SUBTOTAL_COLS['name'], sr)) and
+                 _formula_equals(update.Cells(ur, UPDATE_COLS['unit']), u'=' + _sheet_ref(
+                                                                        subtotal.Name, SUBTOTAL_COLS['unit'], sr)) and
+                 _formula_equals(update.Cells(ur, UPDATE_COLS['rounded_qty']), u'=' + _sheet_ref(
+                                                                        subtotal.Name, SUBTOTAL_COLS['rounded_qty'], sr)) and
+                 _formula_equals(update.Cells(ur, UPDATE_COLS['source']), u'=' + _sheet_ref(
+                                                                        subtotal.Name, SUBTOTAL_COLS['source'], sr)) and
+                 _formula_equals(update.Cells(ur, UPDATE_COLS['quantity']), u'=' + _sheet_ref(
+                                                                        subtotal.Name, SUBTOTAL_COLS['quantity'], sr)),
+                 u'{}:{}{} → 小計'.format(_addr(update.Name, UPDATE_COLS['name'], ur), _col_letter(UPDATE_COLS['quantity']), ur)),
             ])
         if mode in update_modes:
             summary_row = SUMMARY_ROWS[mode]
@@ -1617,31 +1791,37 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
             audit_summary_value = _number(audit.Cells(summary_row, 2).Value2)
             checks.extend([
                 (_formula_equals(
-                    other.Cells(other_row, 16), u'={}!B{}'.format(
-                        _quote_sheet(AUDIT_SHEET), summary_row)),
-                 u'{}!P{} 公式 → 施工架計算摘要'.format(other.Name, other_row)),
+                    other.Cells(other_row, OTHER_COLS['total']), u'=' + _sheet_ref(
+                                                                  AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), summary_row)),
+                 u'{} 公式 → 施工架計算摘要'.format(_addr(other.Name, OTHER_COLS['total'], other_row))),
                 (_total_matches(
-                    _number(other.Cells(other_row, 16).Value2) or 0.0,
+                    _number(other.Cells(other_row, OTHER_COLS['total']).Value2) or 0.0,
                     expected_total, total_tol),
-                 u'{}!P{} 數值應為 {}，實際為 {}'.format(
-                     other.Name, other_row, _fmt(expected_total),
-                     _fmt(other.Cells(other_row, 16).Value2))),
+                 u'{} 數值應為 {}，實際為 {}'.format(_addr(other.Name, OTHER_COLS['total'], other_row), _fmt(expected_total),
+                     _fmt(other.Cells(other_row, OTHER_COLS['total']).Value2))),
                 (_total_matches(audit_summary_value, expected_total, total_tol),
-                 u'{}!B{} 摘要數量應為 {}，實際為 {}'.format(
-                     AUDIT_SHEET, summary_row, _fmt(expected_total),
-                     _fmt(audit_summary_value))),
+                 u'{} 摘要數量應為 {}，實際為 {}'.format(
+                     _addr(AUDIT_SHEET,
+                           AUDIT_SUMMARY.number('quantity'), summary_row),
+                     _fmt(expected_total), _fmt(audit_summary_value))),
             ])
             if mode in SUMMARY_CATEGORIES:
                 audit_rows = takeoff.get('rows') or []
                 if audit_rows:
                     summary_formula = _audit_summary_formula(
-                        SUMMARY_CATEGORIES[mode], 9 + len(audit_rows))
+                        SUMMARY_CATEGORIES[mode],
+                        ROOM_AUDIT_HEADER_ROW + len(audit_rows))
                 else:
                     summary_formula = u'=0'
                 checks.append((
-                    _formula_equals(audit.Cells(summary_row, 2), summary_formula),
-                    u'{}!B{} 摘要公式 → 逐房明細 O 欄'.format(
-                        AUDIT_SHEET, summary_row)))
+                    _formula_equals(
+                        audit.Cells(summary_row,
+                                    AUDIT_SUMMARY.number('quantity')),
+                        summary_formula),
+                    u'{} 摘要公式 → 逐房明細 {} 欄'.format(
+                        _addr(AUDIT_SHEET,
+                              AUDIT_SUMMARY.number('quantity'), summary_row),
+                        ROOM_AUDIT.col('quantity'))))
             if mode == 'general':
                 expected_levels = _takeoff_levels(takeoff)
                 expected_totals = _general_level_totals(takeoff)
@@ -1652,8 +1832,7 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
                             all(not _text(other.Cells(row, col).Text) and
                                 not _text(other.Cells(row, col).Formula)
                                 for col in range(4, 10)),
-                            u'{}!D{}:I{} 多餘樓層列應清空'.format(
-                                other.Name, row, row)))
+                            u'{}:{}{} 多餘樓層列應清空'.format(_addr(other.Name, OTHER_COLS['level'], row), _col_letter(OTHER_COLS['subtotal']), row)))
                         continue
                     expected_level = expected_levels[offset]
                     level_key = expected_level['key']
@@ -1661,28 +1840,25 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
                     audit_level_row = audit_level_rows[level_key]
                     checks.extend([
                         (_text(other.Cells(row, 4).Text) == expected_level['display'],
-                         u'{}!D{} Revit 樓層名稱'.format(other.Name, row)),
+                         u'{} Revit 樓層名稱'.format(_addr(other.Name, OTHER_COLS['level'], row))),
                         (abs((_number(other.Cells(row, 5).Value2) or 0.0) - 1.0)
                          <= SINGLE_CELL_TOLERANCE,
-                         u'{}!E{} 數量固定為 1'.format(other.Name, row)),
+                         u'{} 數量固定為 1'.format(_addr(other.Name, OTHER_COLS['count'], row))),
                         (all(not _text(other.Cells(row, col).Text) and
                              not _text(other.Cells(row, col).Formula)
                              for col in range(6, 9)),
-                         u'{}!F{}:H{} 不得二次計算'.format(
-                             other.Name, row, row)),
+                         u'{}:{}{} 不得二次計算'.format(_addr(other.Name, OTHER_COLS['length'], row), _col_letter(OTHER_COLS['height']), row)),
                         (_formula_equals(
                              other.Cells(row, 9),
                              u'={}!{}{}'.format(
                                  _quote_sheet(AUDIT_SHEET),
                                  _col_letter(LEVEL_SUMMARY_GENERAL_COL),
                                  audit_level_row)),
-                         u'{}!I{} 公式 → 施工架計算樓層小計'.format(
-                             other.Name, row)),
+                         u'{} 公式 → 施工架計算樓層小計'.format(_addr(other.Name, OTHER_COLS['subtotal'], row))),
                         (_total_matches(
                              _number(other.Cells(row, 9).Value2) or 0.0,
                              level_totals['quantity'], total_tol),
-                         u'{}!I{} 數值應為 {}，實際為 {}'.format(
-                             other.Name, row, _fmt(level_totals['quantity']),
+                         u'{} 數值應為 {}，實際為 {}'.format(_addr(other.Name, OTHER_COLS['subtotal'], row), _fmt(level_totals['quantity']),
                              _fmt(other.Cells(row, 9).Value2))),
                     ])
             else:
@@ -1693,26 +1869,23 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
                         takeoff.get('totals', {}).get('interior_finish')) or 0.0
                 checks.extend([
                     (_text(other.Cells(other_row, 4).Text) == u'ALL',
-                     u'{}!D{} 位置'.format(other.Name, other_row)),
+                     u'{} 位置'.format(_addr(other.Name, OTHER_COLS['level'], other_row))),
                     (abs((_number(other.Cells(other_row, 5).Value2) or 0.0) - 1.0)
                      <= SINGLE_CELL_TOLERANCE,
-                     u'{}!E{} 數量固定為 1'.format(other.Name, other_row)),
+                     u'{} 數量固定為 1'.format(_addr(other.Name, OTHER_COLS['count'], other_row))),
                     (all(not _text(other.Cells(other_row, col).Text) and
                          not _text(other.Cells(other_row, col).Formula)
                          for col in range(6, 9)),
-                     u'{}!F{}:H{} 不得二次計算'.format(
-                         other.Name, other_row, other_row)),
+                     u'{}:{}{} 不得二次計算'.format(_addr(other.Name, OTHER_COLS['length'], other_row), _col_letter(OTHER_COLS['height']), other_row)),
                     # 公式與數值分開報，訊息才看得出是連錯格還是數字對不上
                     (_formula_equals(
-                        other.Cells(other_row, 9), u'={}!B{}'.format(
-                            _quote_sheet(AUDIT_SHEET), summary_row)),
-                     u'{}!I{} 公式 → 施工架計算摘要'.format(
-                         other.Name, other_row)),
+                        other.Cells(other_row, 9), u'=' + _sheet_ref(
+                                                                     AUDIT_SHEET, AUDIT_SUMMARY.number('quantity'), summary_row)),
+                     u'{} 公式 → 施工架計算摘要'.format(_addr(other.Name, OTHER_COLS['subtotal'], other_row))),
                     (_total_matches(
                         _number(other.Cells(other_row, 9).Value2) or 0.0,
                         expected_quantity, total_tol),
-                     u'{}!I{} 數值應為 {}，實際為 {}'.format(
-                         other.Name, other_row, _fmt(expected_quantity),
+                     u'{} 數值應為 {}，實際為 {}'.format(_addr(other.Name, OTHER_COLS['subtotal'], other_row), _fmt(expected_quantity),
                          _fmt(other.Cells(other_row, 9).Value2))),
                 ])
         for passed, label in checks:
@@ -1734,7 +1907,7 @@ def _validate_written_workbook(wb, rows, update_modes, takeoff):
 
         if mode in update_modes:
             audit_total = _number(audit.Cells(SUMMARY_ROWS[mode], 2).Value2)
-            linked_total = _number(other.Cells(other_row, 16).Value2)
+            linked_total = _number(other.Cells(other_row, OTHER_COLS['total']).Value2)
             if audit_total is None or linked_total is None:
                 errors.append(u'數量無法讀取：{}／{}'.format(
                     ITEM_NAMES[mode], other.Name))
@@ -1858,23 +2031,22 @@ def _space_entries_from_records(data):
 
 
 def _scaffold_standalone_tables(takeoff):
-    detail_headers = [
-        u'來源Key', u'來源模型', u'複合識別', u'ElementId', u'樓層',
-        u'房號', u'房名', u'分類', u'周長(m)', u'長(m)', u'寬(m)',
-        u'高度(m)', u'高度來源', u'計入', u'數量', u'單位',
-        u'分類依據', u'長寬來源', u'警告',
-    ]
+    detail_headers = list(STANDALONE_DETAIL_HEADERS)
     detail_rows = []
     audit_rows = []
     for offset, item in enumerate(takeoff.get('rows') or []):
-        excel_row = offset + 2
+        excel_row = STANDALONE_DETAIL.first_data_row + offset
         included = u'是' if item.get('included') else u'否'
+        # 這兩條公式以前把 N/I/J/K/L 寫死，跟下面 detail_rows 的排列是兩套真相。
         if item.get('category') == 'general_scaffold':
-            quantity = u'=IF(N{0}="是",ROUND(I{0}*L{0},3),0)'.format(
-                excel_row)
+            quantity = STANDALONE_DETAIL.formula(
+                excel_row,
+                u'IF({included}="是",ROUND({perimeter}*{height},3),0)')
         elif item.get('category') == 'interior_finish_scaffold':
-            quantity = u'=IF(N{0}="是",ROUND(J{0}*K{0}*L{0},3),0)'.format(
-                excel_row)
+            quantity = STANDALONE_DETAIL.formula(
+                excel_row,
+                u'IF({included}="是",'
+                u'ROUND({length}*{width}*{height},3),0)')
         else:
             quantity = 0
         warning = u'；'.join(item.get('audit_warnings') or [])

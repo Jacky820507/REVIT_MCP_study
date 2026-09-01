@@ -54,6 +54,7 @@ from System.Text import Encoding  # noqa: E402
 from pyrevit import forms, revit, script  # noqa: E402
 
 import rc_volume_logic as logic  # noqa: E402
+import sheet_layout  # noqa: E402
 import takeoff_excel_styles  # noqa: E402
 import scaffold_height_logic  # noqa: E402
 
@@ -76,10 +77,48 @@ TITLE = u'RC體積 Excel'
 FT_TO_M = 0.3048
 SQFT_TO_SQM = 0.09290304
 CUFT_TO_CUM = 0.028316846592
-# Sheet 1: A..S are fixed, wall-type volume columns start at T.
-FIXED_REPORT_COLS = 19
 FIRST_DATA_ROW = 6
 SUMMARY_LABEL = u'RC 體積總計 (m³)'
+
+# Sheet 1 的欄位順序。公式一律用這些名字寫（見 lib\sheet_layout.py）：欄位字母
+# 由 layout 在寫檔那一刻算出來，中間插一欄不需要回頭改任何一段公式。
+SUMMARY_COLUMNS = [
+    'room_no',          # 編號
+    'room_name',        # 空間名稱
+    'room_perimeter',   # 空間周長
+    'wall_type',        # RC 牆類型
+    'length',           # 牆長
+    'height',           # 牆高
+    'thickness',        # 厚度
+    'area',             # 面積
+    'area_subtotal',    # 小計
+    'opening_name',     # 開口名稱
+    'opening_count',    # 開口數量
+    'opening_width',    # 開口長
+    'opening_height',   # 開口高
+    'opening_area',     # 開口面積
+    'opening_subtotal', # 開口小計
+    'net_area',         # 淨面積
+    'gross_volume',     # 毛體積 (m³)
+    'overlap_deduct',   # 樑柱板扣除 (m³)
+    'net_volume',       # 淨體積 (m³)
+]
+# 與 SUMMARY_COLUMNS 一一對應的表頭文字。
+SUMMARY_HEADERS = [
+    u'編號', u'空間名稱', u'空間周長', u'RC 牆類型', u'牆長', u'牆高',
+    u'厚度', u'面積', u'小計',
+    u'名稱', u'數量', u'長', u'高', u'面積', u'小計',
+    u'淨面積', u'毛體積 (m³)', u'樑柱板扣除 (m³)', u'淨體積 (m³)',
+]
+if len(SUMMARY_COLUMNS) != len(SUMMARY_HEADERS):
+    raise AssertionError(
+        u'SUMMARY_COLUMNS 與 SUMMARY_HEADERS 長度不一致（{0} vs {1}）：'
+        u'加欄位時兩邊都要加'.format(
+            len(SUMMARY_COLUMNS), len(SUMMARY_HEADERS)))
+# 每種牆型一欄接在這些固定欄之後（with_columns）。
+SUMMARY_LAYOUT = sheet_layout.SheetLayout(
+    SUMMARY_COLUMNS, first_data_row=FIRST_DATA_ROW, name=u'RC體積數量計算')
+FIXED_REPORT_COLS = SUMMARY_LAYOUT.width
 # Sheet 2 mirrors 牆面清單: A..G wall, I..M openings, O subtotal, Q..R volume,
 # and the columns this report adds start at S.
 DETAIL_FIRST_DATA_ROW = 3
@@ -979,8 +1018,7 @@ def group_walls_by_type(walls):
 
 def make_summary_rows(rooms, grouped_by_room, unassigned, wall_type_cols):
     rows = []
-    type_col_index = dict((name, index)
-                          for index, name in enumerate(wall_type_cols))
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
 
     entries = [(room, grouped_by_room.get(room['key'], []))
                for room in rooms]
@@ -993,11 +1031,11 @@ def make_summary_rows(rooms, grouped_by_room, unassigned, wall_type_cols):
 
     for room, walls in entries:
         if not walls:
-            row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-            row[0] = room['number']
-            row[1] = room['name']
-            row[2] = room['perimeter']
-            rows.append(row)
+            rows.append(full.row_from({
+                'room_no': room['number'],
+                'room_name': room['name'],
+                'room_perimeter': room['perimeter'],
+            }))
             continue
 
         for group in group_walls_by_type(walls):
@@ -1006,35 +1044,36 @@ def make_summary_rows(rooms, grouped_by_room, unassigned, wall_type_cols):
                        if wall.get('length')]
             row_count = max(1, len(openings))
             for i in range(row_count):
-                row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-                row[0] = room['number'] if i == 0 else ''
-                row[1] = room['name'] if i == 0 else ''
-                row[2] = room['perimeter'] if i == 0 else ''
-
+                row = full.blank_row()
                 if i == 0:
-                    row[3] = group['type_name']
-                    row[4] = '=' + '+'.join(lengths) if lengths else ''
-                    row[5] = fixed(group['height'])
-                    row[6] = fixed(group['thickness'], 3)
-                    row[7] = 'AREA_FORMULA'
-                    row[8] = 'AREA_SUBTOTAL_FORMULA'
-                    row[15] = 'NET_AREA_FORMULA'
-                    row[16] = 'VOLUME_FORMULA'
-                    row[17] = fixed(sum(wall.get('overlap_deduct') or 0.0
-                                        for wall in group['walls']), 3)
-                    row[18] = 'NET_VOLUME_FORMULA'
-                    col = type_col_index.get(group['type_name'])
-                    if col is not None:
-                        row[FIXED_REPORT_COLS + col] = 'TYPE_FORMULA'
+                    full.put(row, 'room_no', room['number'])
+                    full.put(row, 'room_name', room['name'])
+                    full.put(row, 'room_perimeter', room['perimeter'])
+                    full.put(row, 'wall_type', group['type_name'])
+                    full.put(row, 'length',
+                             '=' + '+'.join(lengths) if lengths else '')
+                    full.put(row, 'height', fixed(group['height']))
+                    full.put(row, 'thickness', fixed(group['thickness'], 3))
+                    full.put(row, 'area', 'AREA_FORMULA')
+                    full.put(row, 'area_subtotal', 'AREA_SUBTOTAL_FORMULA')
+                    full.put(row, 'net_area', 'NET_AREA_FORMULA')
+                    full.put(row, 'gross_volume', 'VOLUME_FORMULA')
+                    full.put(row, 'overlap_deduct',
+                             fixed(sum(wall.get('overlap_deduct') or 0.0
+                                       for wall in group['walls']), 3))
+                    full.put(row, 'net_volume', 'NET_VOLUME_FORMULA')
+                    if full.has(group['type_name']):
+                        full.put(row, group['type_name'], 'TYPE_FORMULA')
 
                 if i < len(openings):
                     opening = openings[i]
-                    row[9] = opening['name']
-                    row[10] = opening['count']
-                    row[11] = fixed(opening['width'])
-                    row[12] = fixed(opening['height'])
-                    row[13] = 'OPENING_AREA_FORMULA'
-                    row[14] = 'OPENING_SUBTOTAL_FORMULA'
+                    full.put(row, 'opening_name', opening['name'])
+                    full.put(row, 'opening_count', opening['count'])
+                    full.put(row, 'opening_width', fixed(opening['width']))
+                    full.put(row, 'opening_height', fixed(opening['height']))
+                    full.put(row, 'opening_area', 'OPENING_AREA_FORMULA')
+                    full.put(row, 'opening_subtotal',
+                             'OPENING_SUBTOTAL_FORMULA')
 
                 rows.append(row)
 
@@ -1042,36 +1081,50 @@ def make_summary_rows(rooms, grouped_by_room, unassigned, wall_type_cols):
 
 
 def fill_summary_formulas(rows, wall_type_cols):
+    """把佔位字串換成真正的公式。
+
+    公式一律用欄位名稱寫，字母由 SUMMARY_LAYOUT 產生——這裡以前是全檔案手寫欄位
+    字母最密集的地方，也是欄位一搬動就會安靜指錯的地方。
+    """
+    layout = SUMMARY_LAYOUT
+    full = layout.with_columns(wall_type_cols)
     for i, row in enumerate(rows):
         r = FIRST_DATA_ROW + i
-        if row[7] == 'AREA_FORMULA':
-            row[7] = '=E{0}*F{0}'.format(r)
-        if row[8] == 'AREA_SUBTOTAL_FORMULA':
-            row[8] = '=H{0}'.format(r)
-        if row[13] == 'OPENING_AREA_FORMULA':
-            row[13] = '=K{0}*L{0}*M{0}'.format(r)
-        if row[14] == 'OPENING_SUBTOTAL_FORMULA':
-            row[14] = '=N{0}'.format(r)
-        if row[15] == 'NET_AREA_FORMULA':
+        if layout.get(row, 'area') == 'AREA_FORMULA':
+            layout.put(row, 'area', layout.formula(r, '{length}*{height}'))
+        if layout.get(row, 'area_subtotal') == 'AREA_SUBTOTAL_FORMULA':
+            layout.put(row, 'area_subtotal', layout.formula(r, '{area}'))
+        if layout.get(row, 'opening_area') == 'OPENING_AREA_FORMULA':
+            layout.put(row, 'opening_area', layout.formula(
+                r, '{opening_count}*{opening_width}*{opening_height}'))
+        if layout.get(row, 'opening_subtotal') == 'OPENING_SUBTOTAL_FORMULA':
+            layout.put(row, 'opening_subtotal',
+                       layout.formula(r, '{opening_area}'))
+        if layout.get(row, 'net_area') == 'NET_AREA_FORMULA':
             deductions = []
-            if row[14]:
-                deductions.append('O{0}'.format(r))
+            if layout.get(row, 'opening_subtotal'):
+                deductions.append(layout.cell('opening_subtotal', r))
             look = 1
-            # Continuation rows carry only openings: no wall type in column D.
-            while i + look < len(rows) and not rows[i + look][3] \
-                    and rows[i + look][14]:
-                deductions.append('O{0}'.format(r + look))
+            # Continuation rows carry only openings: no wall type of their own.
+            while (i + look < len(rows)
+                   and not layout.get(rows[i + look], 'wall_type')
+                   and layout.get(rows[i + look], 'opening_subtotal')):
+                deductions.append(layout.cell('opening_subtotal', r + look))
                 look += 1
-            row[15] = ('=I{0}-{1}'.format(r, '-'.join(deductions))
-                       if deductions else '=I{0}'.format(r))
-        if row[16] == 'VOLUME_FORMULA':
-            row[16] = '=P{0}*G{0}'.format(r)
-        if row[18] == 'NET_VOLUME_FORMULA':
-            row[18] = '=Q{0}-R{0}'.format(r)
-        if row[3] in wall_type_cols:
-            index = wall_type_cols.index(row[3])
-            if row[FIXED_REPORT_COLS + index] == 'TYPE_FORMULA':
-                row[FIXED_REPORT_COLS + index] = '=S{0}'.format(r)
+            net_area = layout.expr(r, '{area_subtotal}')
+            if deductions:
+                net_area += '-' + '-'.join(deductions)
+            layout.put(row, 'net_area', '=' + net_area)
+        if layout.get(row, 'gross_volume') == 'VOLUME_FORMULA':
+            layout.put(row, 'gross_volume',
+                       layout.formula(r, '{net_area}*{thickness}'))
+        if layout.get(row, 'net_volume') == 'NET_VOLUME_FORMULA':
+            layout.put(row, 'net_volume',
+                       layout.formula(r, '{gross_volume}-{overlap_deduct}'))
+        wall_type = layout.get(row, 'wall_type')
+        if wall_type in wall_type_cols:
+            if full.get(row, wall_type) == 'TYPE_FORMULA':
+                full.put(row, wall_type, layout.formula(r, '{net_volume}'))
     return rows
 
 
@@ -1093,20 +1146,17 @@ def build_summary_values(rows, wall_type_cols, project_title, keywords,
             if deduct_overlaps else u'**未計算**（本次略過，未接合處會多算）')
     ] + blank_tail)
 
-    section = [''] * total_cols
-    section[0] = u'樓別名稱'
-    section[2] = u'RC 牆'
-    section[9] = u'門開口、窗開口、牆開口'
-    if total_cols > FIXED_REPORT_COLS:
-        section[FIXED_REPORT_COLS] = u'RC 牆淨體積 (m³)'
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
+    section = full.row_from({
+        'room_no': u'樓別名稱',
+        'room_perimeter': u'RC 牆',
+        'opening_name': u'門開口、窗開口、牆開口',
+    })
+    if wall_type_cols:
+        full.put(section, wall_type_cols[0], u'RC 牆淨體積 (m³)')
     values.append(section)
 
-    values.append([
-        u'編號', u'空間名稱', u'空間周長', u'RC 牆類型', u'牆長', u'牆高',
-        u'厚度', u'面積', u'小計',
-        u'名稱', u'數量', u'長', u'高', u'面積', u'小計',
-        u'淨面積', u'毛體積 (m³)', u'樑柱板扣除 (m³)', u'淨體積 (m³)'
-    ] + wall_type_cols)
+    values.append(list(SUMMARY_HEADERS) + wall_type_cols)
     values.extend(rows)
     values.append(build_summary_total_row(len(rows), wall_type_cols))
     return values
@@ -1143,15 +1193,15 @@ def summary_total_volume(rooms, grouped_by_room, unassigned):
 
 
 def build_summary_total_row(data_row_count, wall_type_cols):
-    row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-    row[0] = SUMMARY_LABEL
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
+    row = full.row_from({'room_no': SUMMARY_LABEL})
     last_data_row = FIRST_DATA_ROW + data_row_count - 1
-    for index, _name in enumerate(wall_type_cols):
-        col_name = logic.excel_col(FIXED_REPORT_COLS + index + 1)
-        row[FIXED_REPORT_COLS + index] = (
-            '=SUM({0}{1}:{0}{2})'.format(col_name, FIRST_DATA_ROW,
-                                         last_data_row)
-            if data_row_count > 0 else '=0')
+    for type_name in wall_type_cols:
+        # 每一欄加的是自己那一欄。以前這裡是 excel_col(FIXED + index + 1)，
+        # 一個 +1 就會讓總計加到隔壁去，而且不會報錯。
+        full.put(row, type_name,
+                 full.sum_of(type_name, FIRST_DATA_ROW, last_data_row)
+                 if data_row_count > 0 else '=0')
     return row
 
 
@@ -1167,83 +1217,121 @@ DETAIL_HEADERS = [
     u'樑柱板扣除 (m³)', u'淨體積 (m³)', u'扣除明細', u'接合狀態',
     u'Revit 體積 (m³)', u'差異 (m³)', u'房間分攤',
 ]
-DETAIL_COLS = len(DETAIL_HEADERS)
+# 與 DETAIL_HEADERS 一一對應的內部名稱；公式只用這些名字，不寫欄位字母。
+DETAIL_COLUMNS = [
+    'wall_id', 'wall_type', 'location_mark', 'zone', 'length', 'height',
+    'thickness', 'gap_after_wall',
+    'opening_name', 'opening_count', 'opening_width', 'opening_height',
+    'opening_area', 'gap_after_opening',
+    'opening_total', 'gap_after_opening_total',
+    'volume_expr', 'gross_volume',
+    'room_no', 'room_name', 'room_assign', 'base_constraint', 'height_source',
+    'overlap_deduct', 'net_volume', 'overlap_detail', 'join_state',
+    'revit_volume', 'revit_diff', 'allocation',
+]
+if len(DETAIL_COLUMNS) != len(DETAIL_HEADERS):
+    raise AssertionError(
+        u'DETAIL_COLUMNS 與 DETAIL_HEADERS 長度不一致（{0} vs {1}）：'
+        u'加欄位時兩邊都要加'.format(
+            len(DETAIL_COLUMNS), len(DETAIL_HEADERS)))
+DETAIL_LAYOUT = sheet_layout.SheetLayout(
+    DETAIL_COLUMNS, first_data_row=DETAIL_FIRST_DATA_ROW, name=u'牆面清單')
+DETAIL_COLS = DETAIL_LAYOUT.width
 
 
 def build_detail_values(walls):
+    layout = DETAIL_LAYOUT
     values = []
-    banner = [''] * DETAIL_COLS
-    banner[0] = u'[牆面面積]'
-    banner[8] = u'[開口]'
-    banner[14] = u'[開口合計]'
-    banner[16] = u'[牆面體積]'
-    banner[23] = u'[未接合的樑柱板重疊]'
+    banner = layout.row_from({
+        'wall_id': u'[牆面面積]',
+        'opening_name': u'[開口]',
+        'opening_total': u'[開口合計]',
+        'volume_expr': u'[牆面體積]',
+        'overlap_deduct': u'[未接合的樑柱板重疊]',
+    })
     values.append(banner)
     values.append(list(DETAIL_HEADERS))
 
     row_index = DETAIL_FIRST_DATA_ROW
     for wall in walls:
-        # Every field is read with .get(): this sheet is the last step of the
-        # export, and a missing key here would throw away the whole run.
         openings = logic.group_openings(wall.get('openings'))
         span = max(1, len(openings))
         first_row = row_index
         last_row = row_index + span - 1
         for i in range(span):
             r = row_index + i
-            row = [''] * DETAIL_COLS
+            row = layout.blank_row()
             if i == 0:
-                row[0] = wall.get('element_id', '')
-                row[1] = wall.get('type_name', '')
-                row[2] = wall.get('location_mark', '')
-                row[3] = wall.get('zone', '')
-                row[4] = fixed(wall.get('length'), 3)
-                row[5] = fixed(wall.get('height'), 3)
-                row[6] = fixed(wall.get('thickness'), 3)
-                row[14] = '=SUM(M{0}:M{1})'.format(first_row, last_row)
+                # Every field is read with .get(): this sheet is the last step
+                # of the export, and a missing key here would throw away the
+                # whole run.
+                layout.put(row, 'wall_id', wall.get('element_id', ''))
+                layout.put(row, 'wall_type', wall.get('type_name', ''))
+                layout.put(row, 'location_mark',
+                           wall.get('location_mark', ''))
+                layout.put(row, 'zone', wall.get('zone', ''))
+                layout.put(row, 'length', fixed(wall.get('length'), 3))
+                layout.put(row, 'height', fixed(wall.get('height'), 3))
+                layout.put(row, 'thickness', fixed(wall.get('thickness'), 3))
+                layout.put(row, 'opening_total',
+                           '=SUM({0})'.format(
+                               layout.rng('opening_area', first_row,
+                                          last_row)))
                 # The audit expression is a live formula, so it can never drift
                 # from the numbers in the row it is supposed to explain.
-                row[16] = ('="("&E{0}&"*"&F{0}&"-"&O{0}&")*"&G{0}&"="&R{0}'
-                           .format(r))
-                row[17] = '=(E{0}*F{0}-O{0})*G{0}'.format(r)
-                row[18] = wall.get('room_number', '')
-                row[19] = wall.get('room_name', '')
-                row[20] = wall.get('room_assign', '')
-                row[21] = wall.get('base_constraint', '')
-                row[22] = wall.get('height_source', '')
-                row[23] = fixed(wall.get('overlap_deduct') or 0.0, 3)
-                row[24] = '=R{0}-X{0}'.format(r)
-                row[25] = wall.get('overlap_detail', '')
-                row[26] = wall.get('join_state', '')
-                row[29] = wall.get('allocation_text', '')
+                layout.put(row, 'volume_expr', layout.formula(
+                    r,
+                    '"("&{length}&"*"&{height}&"-"&{opening_total}&")*"'
+                    '&{thickness}&"="&{gross_volume}'))
+                layout.put(row, 'gross_volume', layout.formula(
+                    r,
+                    '({length}*{height}-{opening_total})*{thickness}'))
+                layout.put(row, 'room_no', wall.get('room_number', ''))
+                layout.put(row, 'room_name', wall.get('room_name', ''))
+                layout.put(row, 'room_assign', wall.get('room_assign', ''))
+                layout.put(row, 'base_constraint',
+                           wall.get('base_constraint', ''))
+                layout.put(row, 'height_source',
+                           wall.get('height_source', ''))
+                layout.put(row, 'overlap_deduct',
+                           fixed(wall.get('overlap_deduct') or 0.0, 3))
+                layout.put(row, 'net_volume', layout.formula(
+                    r, '{gross_volume}-{overlap_deduct}'))
+                layout.put(row, 'overlap_detail',
+                           wall.get('overlap_detail', ''))
+                layout.put(row, 'join_state', wall.get('join_state', ''))
+                layout.put(row, 'allocation', wall.get('allocation_text', ''))
                 if wall.get('revit_volume') is not None:
-                    row[27] = fixed(wall['revit_volume'], 3)
+                    layout.put(row, 'revit_volume',
+                               fixed(wall['revit_volume'], 3))
                     # Revit's own volume is already net of joins and openings,
                     # so it is the closest independent check on the net figure.
-                    row[28] = '=AB{0}-Y{0}'.format(r)
+                    layout.put(row, 'revit_diff', layout.formula(
+                        r, '{revit_volume}-{net_volume}'))
             if i < len(openings):
                 opening = openings[i]
-                row[8] = opening['name']
-                row[9] = opening['count']
-                row[10] = fixed(opening['width'], 3)
-                row[11] = fixed(opening['height'], 3)
-                row[12] = '=K{0}*L{0}*J{0}'.format(r)
+                layout.put(row, 'opening_name', opening['name'])
+                layout.put(row, 'opening_count', opening['count'])
+                layout.put(row, 'opening_width', fixed(opening['width'], 3))
+                layout.put(row, 'opening_height', fixed(opening['height'], 3))
+                layout.put(row, 'opening_area', layout.formula(
+                    r,
+                    '{opening_width}*{opening_height}*{opening_count}'))
             elif i == 0:
-                row[8] = logic.NO_OPENING_LABEL
+                layout.put(row, 'opening_name', logic.NO_OPENING_LABEL)
             values.append(row)
         row_index += span
 
-    total = [''] * DETAIL_COLS
-    total[16] = SUMMARY_LABEL
+    total = layout.row_from({'volume_expr': SUMMARY_LABEL})
+    totalled = ('gross_volume', 'overlap_deduct', 'net_volume')
     if row_index > DETAIL_FIRST_DATA_ROW:
         last = row_index - 1
-        total[17] = '=SUM(R{0}:R{1})'.format(DETAIL_FIRST_DATA_ROW, last)
-        total[23] = '=SUM(X{0}:X{1})'.format(DETAIL_FIRST_DATA_ROW, last)
-        total[24] = '=SUM(Y{0}:Y{1})'.format(DETAIL_FIRST_DATA_ROW, last)
+        for key in totalled:
+            layout.put(total, key,
+                       layout.sum_of(key, DETAIL_FIRST_DATA_ROW, last))
     else:
-        total[17] = '=0'
-        total[23] = '=0'
-        total[24] = '=0'
+        for key in totalled:
+            layout.put(total, key, '=0')
     values.append(total)
     return values
 
@@ -1483,12 +1571,21 @@ def build_workbook(rooms, grouped_by_room, unassigned, wall_type_cols,
 
     detail_values = build_detail_values(sorted(rc_walls, key=wall_order))
 
-    summary_merge = ['A{0}:{1}{0}'.format(
-        len(summary_values), logic.excel_col(FIXED_REPORT_COLS))]
+    # 總計列把固定欄整段併成一格：從第一欄併到最後一個固定欄（淨體積）。
+    summary_merge = ['{0}{2}:{1}{2}'.format(
+        SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[0]),
+        SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[-1]),
+        len(summary_values))]
+    # 第 1 列的四個 banner 各自橫跨自己那一組欄位（見 build_detail_values）
+    detail_merge = ['{0}1:{1}1'.format(DETAIL_LAYOUT.col(first),
+                                       DETAIL_LAYOUT.col(last))
+                    for first, last in (('wall_id', 'thickness'),
+                                        ('opening_name', 'opening_area'),
+                                        ('volume_expr', 'gross_volume'),
+                                        ('overlap_deduct', 'join_state'))]
     return [
         (u'RC體積數量計算', summary_values, 5, SUMMARY_COLS_XML, summary_merge),
-        (u'牆面清單', detail_values, 2, DETAIL_COLS_XML,
-         ['A1:G1', 'I1:M1', 'Q1:R1', 'X1:AA1']),
+        (u'牆面清單', detail_values, 2, DETAIL_COLS_XML, detail_merge),
     ]
 
 

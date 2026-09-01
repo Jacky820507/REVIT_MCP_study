@@ -397,3 +397,374 @@ class EndToEndTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def stair(stair_id=1, name=u'ST-1', base=0.0, top=3200.0, base_level=1,
+          top_level=2, level_name=u'1F'):
+    return {'id': stair_id, 'name': name, 'base_elevation_mm': base,
+            'top_elevation_mm': top, 'base_level_id': base_level,
+            'top_level_id': top_level, 'base_level': level_name}
+
+
+LEVELS = [0.0, 3200.0, 6400.0, 9600.0]
+
+
+class StairClassificationTests(unittest.TestCase):
+    def test_a_storey_stair_reaching_the_next_slab_connects(self):
+        kind, detail = logic.classify_stair(stair(top=3200.0), LEVELS)
+        self.assertEqual(logic.STAIR_CONNECTS, kind)
+        self.assertIn(u'3200', detail)
+
+    def test_slab_thickness_still_counts_as_reaching(self):
+        """樓板厚度與面層常讓頂端差幾十到兩百多 mm，不留容差會把正常的
+        樓梯全判成未達。"""
+        kind, unused = logic.classify_stair(stair(top=3050.0), LEVELS)
+        self.assertEqual(logic.STAIR_CONNECTS, kind)
+
+    def test_a_three_riser_step_is_not_a_stair(self):
+        """整個修正的理由：三階的室內高差踏階也有 Stairs 元素，
+        把它當量測終點會讓附近房間全部變成合格。"""
+        kind, detail = logic.classify_stair(stair(top=450.0), LEVELS)
+        self.assertEqual(logic.STAIR_STEP, kind)
+        self.assertIn(u'450', detail)
+
+    def test_a_stair_that_climbs_but_stops_short_is_flagged_separately(self):
+        """爬了 2 公尺卻沒接到樓板，跟一個 45 公分的踏階不是同一回事——
+        前者可能是模型畫錯，值得看；後者本來就不該算。"""
+        kind, detail = logic.classify_stair(stair(top=2000.0), LEVELS)
+        self.assertEqual(logic.STAIR_SHORT, kind)
+        self.assertIn(u'1200', detail)
+
+    def test_the_top_storey_has_no_level_above_to_compare_with(self):
+        kind, unused = logic.classify_stair(
+            stair(base=9600.0, top=12800.0), LEVELS)
+        self.assertEqual(logic.STAIR_TOP, kind)
+
+    def test_a_missing_elevation_is_undecided_not_excluded(self):
+        record = stair()
+        record['top_elevation_mm'] = None
+        kind, unused = logic.classify_stair(record, LEVELS)
+        self.assertEqual(logic.STAIR_UNKNOWN, kind)
+
+    def test_a_looser_tolerance_can_turn_short_into_connects(self):
+        record = stair(top=2600.0)
+        tight, unused = logic.classify_stair(record, LEVELS)
+        loose, unused2 = logic.classify_stair(record, LEVELS,
+                                              tolerance_mm=800.0)
+        self.assertEqual(logic.STAIR_SHORT, tight)
+        self.assertEqual(logic.STAIR_CONNECTS, loose)
+
+    def test_only_connecting_stairs_are_suggested(self):
+        rows = logic.describe_stairs(
+            [stair(1, top=3200.0), stair(2, top=450.0), stair(3, top=2000.0)],
+            LEVELS)
+        self.assertEqual([1], logic.suggested_stair_ids(rows))
+
+    def test_describe_does_not_mutate_the_caller(self):
+        records = [stair()]
+        logic.describe_stairs(records, LEVELS)
+        self.assertNotIn('kind', records[0])
+
+    def test_the_label_carries_the_verdict_and_its_reason(self):
+        rows = logic.describe_stairs([stair(name=u'ST-A')], LEVELS)
+        label = logic.stair_label(rows[0])
+        self.assertIn(u'ST-A', label)
+        self.assertIn(logic.STAIR_CONNECTS, label)
+        self.assertIn(u'1F', label)
+
+    def test_the_note_says_the_verdict_is_only_a_suggestion(self):
+        self.assertIn(u'建議', logic.STAIR_NOTE)
+        self.assertIn(u'勾選', logic.STAIR_NOTE)
+
+
+class StairsForLevelTests(unittest.TestCase):
+    def _rows(self):
+        return [stair(1, base_level=1, top_level=2),
+                stair(2, base_level=2, top_level=3),
+                stair(3, base_level=3, top_level=4)]
+
+    def test_a_stair_based_on_this_level_is_used(self):
+        used, other = logic.stairs_for_level(self._rows(), 1, [1, 2, 3])
+        self.assertEqual([1], [row['id'] for row in used])
+
+    def test_a_stair_arriving_at_this_level_is_also_used(self):
+        """3F→4F 的樓梯在 4F 是往下的那一跑；兩層看到的是同一個梯間。"""
+        used, unused = logic.stairs_for_level(self._rows(), 4, [1, 2, 3])
+        self.assertEqual([3], [row['id'] for row in used])
+
+    def test_unticked_stairs_are_ignored_entirely(self):
+        used, other = logic.stairs_for_level(self._rows(), 1, [])
+        self.assertEqual([], used)
+        self.assertEqual([], other)
+
+    def test_ticked_stairs_on_other_levels_are_reported_not_silently_dropped(self):
+        """勾了卻沒被用到，使用者要知道為什麼，否則會以為工具漏算。"""
+        used, other = logic.stairs_for_level(self._rows(), 1, [1, 2, 3])
+        self.assertEqual([2, 3], [row['id'] for row in other])
+
+
+class HabitableRoomTests(unittest.TestCase):
+    def test_every_room_the_article_names_is_excluded(self):
+        """§1 十九逐字列舉的那十個，一個都不能漏——這是條文不是慣例。"""
+        for name in (u'門廳', u'走廊', u'樓梯間', u'衣帽間', u'廁所',
+                     u'盥洗室', u'浴室', u'儲藏室', u'機械室', u'車庫'):
+            kind, hit = logic.classify_room(name)
+            self.assertEqual(logic.ROOM_NON_STATUTORY, kind, name)
+            self.assertEqual(name, hit)
+
+    def test_an_ordinary_room_is_habitable(self):
+        for name in (u'辦公室', u'客廳', u'教室', u'會議室', u'廚房'):
+            kind, unused = logic.classify_room(name)
+            self.assertEqual(logic.ROOM_HABITABLE, kind, name)
+
+    def test_the_statutory_list_wins_over_convention(self):
+        """一個叫「儲藏室兼機房」的房間，要報的是條文那一條。"""
+        kind, hit = logic.classify_room(u'儲藏室兼機房')
+        self.assertEqual(logic.ROOM_NON_STATUTORY, kind)
+        self.assertEqual(u'儲藏室', hit)
+
+    def test_convention_only_rooms_are_labelled_as_such(self):
+        """陽台不在 §1 十九的列舉裡。把它報成「條文明列」會是假的。"""
+        kind, hit = logic.classify_room(u'陽台')
+        self.assertEqual(logic.ROOM_NON_CONVENTION, kind)
+        self.assertEqual(u'陽台', hit)
+
+    def test_the_longest_match_is_reported(self):
+        kind, hit = logic.classify_room(u'安全梯樓梯間',
+                                        statutory=(u'樓梯', u'樓梯間'))
+        self.assertEqual(u'樓梯間', hit)
+
+    def test_a_blank_name_is_treated_as_habitable_not_skipped(self):
+        """沒有名字不等於不是居室。當成非居室會靜默漏檢。"""
+        kind, unused = logic.classify_room(u'')
+        self.assertEqual(logic.ROOM_HABITABLE, kind)
+
+    def test_the_note_quotes_the_article(self):
+        self.assertIn(u'§1 十九', logic.HABITABLE_NOTE)
+        self.assertIn(u'烹飪', logic.HABITABLE_NOTE)
+
+
+class RefugeReachTests(unittest.TestCase):
+    def _stack(self):
+        """1F→2F→3F→4F 一整串，避難層是 1F（level id 1）。"""
+        return [stair(1, base_level=1, top_level=2),
+                stair(2, base_level=2, top_level=3),
+                stair(3, base_level=3, top_level=4)]
+
+    def test_a_stair_starting_at_the_refuge_level_qualifies(self):
+        rows = self._stack()
+        self.assertTrue(logic.reaches_refuge(rows[0], rows, 1))
+
+    def test_a_stair_higher_up_qualifies_through_the_chain(self):
+        rows = self._stack()
+        self.assertTrue(logic.reaches_refuge(rows[2], rows, 1))
+
+    def test_a_stair_with_the_chain_broken_does_not_qualify(self):
+        """5F→6F 但下方斷掉：接到了上層，卻通不到避難層。
+        §1 三十九要的是能通達避難層，不是能往上走。"""
+        rows = [stair(9, base_level=5, top_level=6)]
+        self.assertFalse(logic.reaches_refuge(rows[0], rows, 1))
+
+    def test_a_cycle_does_not_hang(self):
+        """模型畫錯時兩座樓梯可能互相指涉；無限遞迴會讓 Revit 卡死。"""
+        rows = [stair(1, base_level=2, top_level=3),
+                stair(2, base_level=3, top_level=2)]
+        self.assertFalse(logic.reaches_refuge(rows[0], rows, 1))
+
+    def test_the_refuge_test_only_tightens_never_loosens(self):
+        """踏階即使追得到避難層也不該變成建議——條文是兩個條件都要滿足。"""
+        rows = logic.describe_stairs(
+            [stair(1, base=0.0, top=450.0, base_level=1, top_level=2)],
+            LEVELS)
+        tightened = logic.apply_refuge_test(rows, 1)
+        self.assertTrue(tightened[0]['reaches_refuge'])
+        self.assertFalse(tightened[0]['suggested'])
+
+    def test_a_connecting_stair_that_cannot_reach_refuge_loses_its_suggestion(self):
+        rows = logic.describe_stairs(
+            [stair(1, base=6400.0, top=9600.0, base_level=3, top_level=4)],
+            LEVELS)
+        self.assertTrue(rows[0]['suggested'])
+        tightened = logic.apply_refuge_test(rows, 1)
+        self.assertFalse(tightened[0]['suggested'])
+        self.assertEqual(logic.STAIR_NO_REFUGE_PATH,
+                         tightened[0]['refuge_note'])
+
+    def test_apply_refuge_test_does_not_mutate_the_caller(self):
+        rows = logic.describe_stairs([stair()], LEVELS)
+        logic.apply_refuge_test(rows, 99)
+        self.assertNotIn('reaches_refuge', rows[0])
+
+    def test_the_note_quotes_the_article_and_says_why(self):
+        self.assertIn(u'§1 三十九', logic.REFUGE_NOTE)
+        self.assertIn(u'必要條件', logic.REFUGE_NOTE)
+
+
+def room(room_id=1, number=u'F103', name=u'操作室', area=20.87, level=u'D-1F',
+         level_id=1):
+    return {'id': room_id, 'room_number': number, 'room_name': name,
+            'area_m2': area, 'level': level, 'level_id': level_id}
+
+
+class RoomChecklistTests(unittest.TestCase):
+    def test_a_working_room_is_suggested(self):
+        rows = logic.describe_rooms([room()])
+        self.assertTrue(rows[0]['suggested'])
+        self.assertEqual(logic.ROOM_HABITABLE, rows[0]['kind'])
+
+    def test_a_statutory_non_habitable_room_is_not_suggested(self):
+        rows = logic.describe_rooms([room(name=u'廁所')])
+        self.assertFalse(rows[0]['suggested'])
+
+    def test_the_real_project_names_that_keywords_miss_are_still_suggested(self):
+        """實測污水處理廠 D-1F：備品室其實是儲藏室、鼓風機室其實是機械室，
+        兩者都不會被條文用詞命中。工具因此只能建議，最終由人勾——
+        這條測試就是把那個限制釘住，免得日後有人以為關鍵字夠用。"""
+        rows = logic.describe_rooms([room(name=u'備品室'),
+                                     room(name=u'鼓風機室'),
+                                     room(name=u'除臭設備區')])
+        for row in rows:
+            self.assertTrue(row['suggested'],
+                            u'{} 竟然被關鍵字命中了'.format(row['room_name']))
+
+    def test_describe_rooms_does_not_mutate_the_caller(self):
+        rooms = [room()]
+        logic.describe_rooms(rooms)
+        self.assertNotIn('kind', rooms[0])
+
+    def test_the_label_shows_level_number_name_area_and_verdict(self):
+        label = logic.room_label(logic.describe_rooms([room()])[0])
+        for part in (u'D-1F', u'F103', u'操作室', u'20.9', logic.ROOM_HABITABLE):
+            self.assertIn(part, label)
+
+    def test_the_label_names_the_keyword_that_fired(self):
+        label = logic.room_label(logic.describe_rooms([room(name=u'廁所')])[0])
+        self.assertIn(u'廁所', label)
+
+    def test_only_rooms_on_this_level_are_used(self):
+        rows = logic.describe_rooms([room(1, level_id=1), room(2, level_id=2)])
+        used = logic.rooms_for_level(rows, 1, [1, 2])
+        self.assertEqual([1], [item['id'] for item in used])
+
+    def test_unticked_rooms_are_dropped_even_on_the_right_level(self):
+        rows = logic.describe_rooms([room(1, level_id=1)])
+        self.assertEqual([], logic.rooms_for_level(rows, 1, []))
+
+
+class HeadlineTests(unittest.TestCase):
+    def _result(self, distance, verdict_room=u'F104'):
+        rooms = [{'id': 1, 'room_number': verdict_room, 'room_name': u'公共區域',
+                  'cells': set([(0, 0)])}]
+        return logic.evaluate(rooms, {(0, 0): distance}, logic.LIMIT_70_M)
+
+    def test_a_pass_states_the_worst_room_and_says_pass(self):
+        """實務上第一個問題是「最不利那條多少、在哪、過不過」，
+        不是「每一間各是多少」——設計者在圖上也只畫一條最不利路徑。"""
+        text = logic.headline(self._result(45000.0))
+        self.assertIn(u'F104', text)
+        self.assertIn(u'45.0', text)
+        self.assertIn(u'合格', text)
+
+    def test_a_failure_leads_with_the_overage(self):
+        text = logic.headline(self._result(90000.0))
+        self.assertIn(u'超過', text)
+        self.assertIn(u'90.0', text)
+
+    def test_an_unreachable_room_is_named_without_a_fake_number(self):
+        rooms = [{'id': 1, 'room_number': u'F105', 'room_name': u'鼓風機室',
+                  'cells': set([(0, 0), (9, 9)])}]
+        result = logic.evaluate(rooms, {(0, 0): 1000.0}, logic.LIMIT_70_M)
+        text = logic.headline(result)
+        self.assertIn(u'F105', text)
+        self.assertIn(logic.VERDICT_UNREACHABLE, text)
+
+    def test_nothing_to_check_says_so(self):
+        self.assertIn(u'沒有可檢核',
+                      logic.headline(logic.evaluate([], {}, logic.LIMIT_70_M)))
+
+
+class ThresholdTableTests(unittest.TestCase):
+    def test_the_real_project_number_passes_the_c_class_threshold(self):
+        """實案：桃園污水處理廠，C 類，9.55+15.1+8.15 = 32.8 m < 70 m。"""
+        rows = dict((limit, ok)
+                    for limit, unused, ok, unused2
+                    in logic.threshold_table(32800.0))
+        self.assertTrue(rows[logic.LIMIT_70_M])
+        self.assertTrue(rows[logic.LIMIT_50_M])
+        self.assertTrue(rows[logic.LIMIT_40_M])
+        self.assertFalse(rows[logic.LIMIT_30_M])
+        self.assertFalse(rows[logic.LIMIT_20_M])
+
+    def test_the_tightest_passing_threshold_is_reported(self):
+        """報「最嚴還能過哪一級」比報「選的那級過了」有用——
+        它直接說出這份平面還有多少餘地。"""
+        limit, unused = logic.tightest_passing(32800.0)
+        self.assertEqual(logic.LIMIT_40_M, limit)
+
+    def test_a_short_distance_passes_everything(self):
+        limit, unused = logic.tightest_passing(15000.0)
+        self.assertEqual(logic.LIMIT_20_M, limit)
+
+    def test_a_distance_over_every_threshold_reports_none(self):
+        self.assertIsNone(logic.tightest_passing(90000.0))
+
+    def test_exactly_on_a_threshold_passes_it(self):
+        rows = dict((limit, ok)
+                    for limit, unused, ok, unused2
+                    in logic.threshold_table(70000.0))
+        self.assertTrue(rows[logic.LIMIT_70_M])
+
+    def test_the_margin_is_signed_so_a_failure_shows_the_overage(self):
+        table = dict((limit, margin)
+                     for limit, unused, unused2, margin
+                     in logic.threshold_table(32800.0))
+        self.assertAlmostEqual(-2800.0, table[logic.LIMIT_30_M], 6)
+        self.assertAlmostEqual(37200.0, table[logic.LIMIT_70_M], 6)
+
+    def test_every_threshold_line_names_the_article_clause(self):
+        for line in logic.threshold_lines(32800.0)[1:]:
+            self.assertTrue(u'§93' in line or u'類' in line or u'用途' in line,
+                            line)
+
+    def test_no_distance_says_so_rather_than_printing_zero(self):
+        self.assertIn(u'沒有量到', logic.threshold_lines(None)[0])
+
+
+class Article94Tests(unittest.TestCase):
+    def test_stairs_become_evaluatable_subjects(self):
+        """§94 的受檢對象是樓梯而不是房間，但評定與排序程式共用——
+        所以樓梯要填進同樣的欄位，而不是另外複製一份幾乎一樣的評定程式。"""
+        rows = logic.stair_subjects(
+            [{'id': 7, 'element_id': 'X', 'mark': u'ST1', 'name': u'東側樓梯',
+              'base_level': u'D-1F'}],
+            {7: set([(0, 0), (1, 0)])})
+        self.assertEqual(1, len(rows))
+        self.assertEqual(u'ST1', rows[0]['room_number'])
+        self.assertEqual(u'東側樓梯', rows[0]['room_name'])
+        self.assertEqual(2, len(rows[0]['cells']))
+
+    def test_an_unnamed_stair_still_gets_a_label(self):
+        rows = logic.stair_subjects([{'id': 1}], {})
+        self.assertIn(u'未命名', rows[0]['room_name'])
+
+    def test_a_stair_without_cells_becomes_no_cells_not_a_crash(self):
+        rows = logic.stair_subjects([{'id': 1, 'name': u'X'}], {})
+        result = logic.evaluate(rows, {}, logic.LIMIT_70_M)
+        self.assertEqual(logic.VERDICT_NO_CELLS, result['rows'][0]['verdict'])
+
+    def test_the_note_says_it_measures_something_different(self):
+        """§93 從居室量到樓梯口，§94 從樓梯口量到屋外出入口——
+        混為一談會量錯對象。"""
+        self.assertIn(u'§94', logic.ARTICLE_94_NOTE)
+        self.assertIn(u'樓梯口', logic.ARTICLE_94_NOTE)
+        self.assertIn(u'屋外出入口', logic.ARTICLE_94_NOTE)
+        self.assertIn(u'前條', logic.ARTICLE_94_NOTE)
+
+    def test_the_blockers_explain_what_to_do(self):
+        self.assertIn(u'單層建築', logic.EXIT_NO_STAIR)
+        self.assertIn(u'功能', logic.EXIT_NO_DOOR)
+
+    def test_article_94_uses_the_same_limits_as_93(self):
+        """條文寫「不得超過前條規定」，所以門檻是同一組數字，不另立一套。"""
+        limit, unused = logic.limit_for('C')
+        self.assertEqual(logic.LIMIT_70_M, limit)

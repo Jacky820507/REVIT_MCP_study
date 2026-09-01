@@ -1,0 +1,910 @@
+{
+ "cells": [
+  {
+   "A1": {
+    "f": null,
+    "t": "工程採購數量計算表",
+    "v": null
+   },
+   "A10": {
+    "f": null,
+    "t": null,
+    "v": "103"
+   },
+   "A11": {
+    "f": null,
+    "t": "天花數量總計",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": "示範專案",
+    "v": null
+   },
+   "A3": {
+    "f": null,
+    "t": "天花數量計算表",
+    "v": null
+   },
+   "A4": {
+    "f": null,
+    "t": "工程項目",
+    "v": null
+   },
+   "A5": {
+    "f": null,
+    "t": "材料編號",
+    "v": null
+   },
+   "A6": {
+    "f": null,
+    "t": "材料名稱",
+    "v": null
+   },
+   "A7": {
+    "f": null,
+    "t": "編號",
+    "v": null
+   },
+   "A8": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "A9": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "B1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B10": {
+    "f": null,
+    "t": "走廊",
+    "v": null
+   },
+   "B11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B7": {
+    "f": null,
+    "t": "空間名稱",
+    "v": null
+   },
+   "B8": {
+    "f": null,
+    "t": "辦公室",
+    "v": null
+   },
+   "B9": {
+    "f": null,
+    "t": "會議室",
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C10": {
+    "f": null,
+    "t": null,
+    "v": "18.0"
+   },
+   "C11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C7": {
+    "f": null,
+    "t": "面積",
+    "v": null
+   },
+   "C8": {
+    "f": null,
+    "t": null,
+    "v": "48.0"
+   },
+   "C9": {
+    "f": null,
+    "t": null,
+    "v": "24.0"
+   },
+   "D1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D10": {
+    "f": "C10",
+    "t": null,
+    "v": null
+   },
+   "D11": {
+    "f": "SUM(D8:D10)",
+    "t": null,
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": "天花",
+    "v": null
+   },
+   "D5": {
+    "f": null,
+    "t": "C1",
+    "v": null
+   },
+   "D6": {
+    "f": null,
+    "t": "礦纖天花",
+    "v": null
+   },
+   "D7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D8": {
+    "f": "C8",
+    "t": null,
+    "v": null
+   },
+   "D9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E11": {
+    "f": "SUM(E8:E10)",
+    "t": null,
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E5": {
+    "f": null,
+    "t": "C2",
+    "v": null
+   },
+   "E6": {
+    "f": null,
+    "t": "矽酸鈣板天花",
+    "v": null
+   },
+   "E7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E9": {
+    "f": "C9",
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F10": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "F11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": "對應\n圖說",
+    "v": null
+   },
+   "F5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F8": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "F9": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": "備註",
+    "v": null
+   },
+   "G5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G9": {
+    "f": null,
+    "t": null,
+    "v": null
+   }
+  },
+  {
+   "A1": {
+    "f": null,
+    "t": "編號",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "A3": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "A4": {
+    "f": null,
+    "t": null,
+    "v": "103"
+   },
+   "B1": {
+    "f": null,
+    "t": "空間名稱",
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": "辦公室",
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": "會議室",
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": "走廊",
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": "樓層",
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "D1": {
+    "f": null,
+    "t": "房間 C 代碼",
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": "實體天花 C 代碼",
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": "反推 C 代碼",
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": "代碼檢核",
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H1": {
+    "f": null,
+    "t": "填入天花數量",
+    "v": null
+   },
+   "H2": {
+    "f": null,
+    "t": "是",
+    "v": null
+   },
+   "H3": {
+    "f": null,
+    "t": "是",
+    "v": null
+   },
+   "H4": {
+    "f": null,
+    "t": "是",
+    "v": null
+   },
+   "I1": {
+    "f": null,
+    "t": "數量面積(m²)",
+    "v": null
+   },
+   "I2": {
+    "f": null,
+    "t": null,
+    "v": "48.00"
+   },
+   "I3": {
+    "f": null,
+    "t": null,
+    "v": "24.00"
+   },
+   "I4": {
+    "f": null,
+    "t": null,
+    "v": "18.00"
+   },
+   "J1": {
+    "f": null,
+    "t": "面積來源",
+    "v": null
+   },
+   "J2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K1": {
+    "f": null,
+    "t": "淨高(m)",
+    "v": null
+   },
+   "K2": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "K3": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "K4": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "L1": {
+    "f": null,
+    "t": "高度來源",
+    "v": null
+   },
+   "L2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M1": {
+    "f": null,
+    "t": "實體天花類型",
+    "v": null
+   },
+   "M2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N1": {
+    "f": null,
+    "t": "填滿範圍來源",
+    "v": null
+   },
+   "N2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O1": {
+    "f": null,
+    "t": "排除的上層天花",
+    "v": null
+   },
+   "O2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P1": {
+    "f": null,
+    "t": "上層樓層",
+    "v": null
+   },
+   "P2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q1": {
+    "f": null,
+    "t": "樓板厚度(m)",
+    "v": null
+   },
+   "Q2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R1": {
+    "f": null,
+    "t": "備註",
+    "v": null
+   },
+   "R2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R4": {
+    "f": null,
+    "t": null,
+    "v": null
+   }
+  }
+ ],
+ "xml": [
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "11"
+    ],
+    [
+     "2",
+     "2",
+     "24"
+    ],
+    [
+     "3",
+     "3",
+     "13"
+    ],
+    [
+     "4",
+     "5",
+     "20"
+    ],
+    [
+     "6",
+     "6",
+     "34"
+    ],
+    [
+     "7",
+     "7",
+     "72"
+    ]
+   ],
+   "merges": [
+    "A1:G1",
+    "A2:G2",
+    "A3:G3",
+    "A4:C4",
+    "A5:C5",
+    "A6:C6",
+    "F4:F7",
+    "G4:G7",
+    "D4:E4",
+    "A11:C11"
+   ],
+   "panes": [
+    [
+     "7",
+     "A8"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet1.xml"
+  },
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "11"
+    ],
+    [
+     "2",
+     "2",
+     "22"
+    ],
+    [
+     "3",
+     "3",
+     "12"
+    ],
+    [
+     "4",
+     "4",
+     "14"
+    ],
+    [
+     "5",
+     "5",
+     "18"
+    ],
+    [
+     "6",
+     "6",
+     "18"
+    ],
+    [
+     "7",
+     "7",
+     "16"
+    ],
+    [
+     "8",
+     "8",
+     "14"
+    ],
+    [
+     "9",
+     "9",
+     "12"
+    ],
+    [
+     "10",
+     "10",
+     "30"
+    ],
+    [
+     "11",
+     "11",
+     "12"
+    ],
+    [
+     "12",
+     "12",
+     "34"
+    ],
+    [
+     "13",
+     "13",
+     "34"
+    ],
+    [
+     "14",
+     "14",
+     "52"
+    ],
+    [
+     "15",
+     "15",
+     "24"
+    ],
+    [
+     "16",
+     "16",
+     "14"
+    ],
+    [
+     "17",
+     "17",
+     "14"
+    ],
+    [
+     "18",
+     "18",
+     "52"
+    ]
+   ],
+   "merges": [],
+   "panes": [
+    [
+     "1",
+     "A2"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet2.xml"
+  }
+ ]
+}

@@ -203,6 +203,19 @@ class RoomTakeoffSourceLogicTests(unittest.TestCase):
         self.assertIn("'數量明細'!I2:I2", formulas[1])
 
 
+def _scaffold_item(number, category):
+    """``_scaffold_standalone_tables`` 需要的一列。"""
+    return {
+        'source_key': 'host', 'source_label': u'主模型',
+        'revit_id': 'host:' + number, 'local_element_id': int(number),
+        'level': '1F', 'number': number, 'name': u'房間' + number,
+        'category': category, 'perimeter': 28.0, 'length': 8.0,
+        'width': 6.0, 'height': 3.2, 'height_source': u'射線',
+        'included': True, 'unit': 'M2', 'rule': u'代碼',
+        'dimension_source': u'房間邊界', 'audit_warnings': [],
+    }
+
+
 class SpaceScaffoldWiringContractTests(unittest.TestCase):
 
     def _read(self, *parts):
@@ -258,13 +271,34 @@ class SpaceScaffoldWiringContractTests(unittest.TestCase):
         self.assertIn('options=entry_options', source)
 
     def test_scaffold_standalone_keeps_formula_and_source_identity(self):
+        """公式改成驗「產出什麼」，而不是「原始碼怎麼拼」。
+
+        2026-08-31：欄位字母改由 sheet_layout 產生之後，原本比對
+        ``'ROUND(I{0}*L{0},3)'`` 這串字面的斷言就失效了——但產出的公式一個字都
+        沒變。比對字面等於把實作細節釘死，所以改成實際跑一次再看公式本身。
+        """
         source = self._read('lib', 'scaffold_excel.py')
         self.assertIn('def _scaffold_standalone_tables(', source)
         self.assertIn("u'來源Key'", source)
         self.assertIn("u'複合識別'", source)
-        self.assertIn('ROUND(I{0}*L{0},3)', source)
-        self.assertIn('ROUND(J{0}*K{0}*L{0},3)', source)
         self.assertIn('write_standard_workbook(', source)
+
+        import revit_stub
+        with revit_stub.install(answers={}):
+            module = revit_stub.load_lib('scaffold_excel')
+            payload = module._scaffold_standalone_tables({'rows': [
+                _scaffold_item('101', 'general_scaffold'),
+                _scaffold_item('102', 'interior_finish_scaffold'),
+            ]})
+
+        quantity_col = payload['detail_headers'].index(u'數量')
+        rows = payload['detail_rows']
+        self.assertEqual(u'=IF(N2="是",ROUND(I2*L2,3),0)',
+                         rows[0][quantity_col],
+                         u'室內施工架＝周長 × 高度')
+        self.assertEqual(u'=IF(N3="是",ROUND(J3*K3*L3,3),0)',
+                         rows[1][quantity_col],
+                         u'室內裝修施工架＝長 × 寬 × 高')
 
     def test_scaffold_and_machine_room_use_shared_natural_room_order(self):
         scaffold = self._read('lib', 'scaffold_excel.py')

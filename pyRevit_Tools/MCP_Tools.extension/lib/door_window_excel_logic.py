@@ -13,6 +13,8 @@ import re
 import unicodedata
 
 import room_takeoff_sources_logic as room_order_logic
+import sheet_layout
+import takeoff_standalone
 
 
 SECTION_NAME = u'金屬門窗工程'
@@ -406,6 +408,39 @@ STANDALONE_FORMULA_HEADERS = (
 STANDALONE_AUDIT_HEADERS = (
     u'檢核項目', u'結果', u'說明')
 
+# 獨立匯出兩張分頁的欄位。公式以前把 D/F/C 這幾個字母寫死，
+# 跟上面表頭的排列順序是兩套各自維護的真相。
+STANDALONE_DETAIL_COLUMNS = [
+    'source_key', 'model', 'level', 'type_key', 'type_name', 'count',
+]
+STANDALONE_FORMULA_COLUMNS = ['type_key', 'type_name', 'quantity']
+for _names, _headers, _label in (
+        (STANDALONE_DETAIL_COLUMNS, STANDALONE_DETAIL_HEADERS, 'DETAIL'),
+        (STANDALONE_FORMULA_COLUMNS, STANDALONE_FORMULA_HEADERS, 'FORMULA')):
+    if len(_names) != len(_headers):
+        raise AssertionError(
+            u'STANDALONE_{0} 的欄位與表頭長度不一致'.format(_label))
+STANDALONE_DETAIL = sheet_layout.SheetLayout(
+    STANDALONE_DETAIL_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.DETAIL_SHEET)
+STANDALONE_FORMULA = sheet_layout.SheetLayout(
+    STANDALONE_FORMULA_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.FORMULA_SHEET)
+
+
+def _abs_detail_range(key, last_row):
+    """絕對位址的跨分頁範圍（SUMIF 需要）。"""
+    col = STANDALONE_DETAIL.col(key)
+    return u"'{0}'!${1}${2}:${1}${3}".format(
+        takeoff_standalone.DETAIL_SHEET, col,
+        STANDALONE_DETAIL.first_data_row, last_row)
+
+
+def _formula_cell(key, row):
+    return u"'{0}'!{1}".format(takeoff_standalone.FORMULA_SHEET,
+                               STANDALONE_FORMULA.cell(key, row))
+
+
 
 def standalone_tables(takeoff):
     """Build the standardized 門窗 standalone rows without Revit/Excel."""
@@ -443,11 +478,15 @@ def standalone_tables(takeoff):
         formula_rows.append([
             key,
             names.get(key, u''),
-            u'=SUMIF(\'數量明細\'!$D$2:$D${0},A{1},'
-            u'\'數量明細\'!$F$2:$F${0})'.format(detail_last, index),
+            u'=SUMIF({0},{1},{2})'.format(
+                _abs_detail_range('type_key', detail_last),
+                STANDALONE_FORMULA.cell('type_key', index),
+                _abs_detail_range('count', detail_last)),
         ])
     total_formula = (
-        u'=SUM(C2:C{})'.format(len(formula_rows) + 1)
+        u'=SUM({})'.format(STANDALONE_FORMULA.rng(
+            'quantity', STANDALONE_FORMULA.first_data_row,
+            len(formula_rows) + 1))
         if formula_rows else u'=0')
     formula_rows.append([u'合計', u'全部門窗', total_formula])
 
@@ -462,7 +501,7 @@ def standalone_tables(takeoff):
          u'；'.join(_text(item) for item in
                     ((takeoff or {}).get('sources') or []))],
         [u'總數公式', u'CHECK',
-         u'=\'公式摘要\'!C{}'.format(total_row)],
+         u'=' + _formula_cell('quantity', total_row)],
     ]
     return {
         'detail_headers': list(STANDALONE_DETAIL_HEADERS),

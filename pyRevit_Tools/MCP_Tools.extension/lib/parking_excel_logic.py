@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 import re
 import unicodedata
+import sheet_layout
+import takeoff_standalone
 
 
 TOLERANCE_MM = 50.0
@@ -358,7 +360,9 @@ def wheel_stop_formula_multiplier(formula, rows):
     car_rows = sorted(car_rows)
     if car_rows != list(range(car_rows[0], car_rows[-1] + 1)):
         return None
-    car_range = u'F{}:F{}'.format(car_rows[0], car_rows[-1])
+    car_range = u'{0}{1}:{0}{2}'.format(
+        sheet_layout.column_letter(OTHER_COUNT_COL - 1),
+        car_rows[0], car_rows[-1])
     normalized = _normalized_formula(formula)
     allowed = []
     for multiplier in (1, 2):
@@ -440,6 +444,44 @@ STANDALONE_FORMULA_HEADERS = (
     u'分類鍵', u'工項', u'模型數量公式', u'倍率', u'計價數量公式')
 STANDALONE_AUDIT_HEADERS = (u'檢核項目', u'結果', u'說明')
 
+# 獨立匯出兩張分頁的欄位。公式以前把 F/A/C/D 這幾個字母寫死，跟表頭的排列順序
+# 是兩套各自維護的真相：中間插一欄，公式不會壞掉，只會統計到隔壁欄。
+STANDALONE_DETAIL_COLUMNS = [
+    'source_key', 'source', 'level_id', 'element_id', 'type_name',
+    'category_key', 'category', 'width_mm', 'length_mm', 'grouped',
+    'status', 'level_name', 'geometry_level_id', 'geometry_level',
+    'base_elevation_mm', 'level_basis',
+]
+STANDALONE_FORMULA_COLUMNS = [
+    'category_key', 'label', 'model_qty', 'multiplier', 'billed_qty',
+]
+for _names, _headers, _label in (
+        (STANDALONE_DETAIL_COLUMNS, STANDALONE_DETAIL_HEADERS, 'DETAIL'),
+        (STANDALONE_FORMULA_COLUMNS, STANDALONE_FORMULA_HEADERS, 'FORMULA')):
+    if len(_names) != len(_headers):
+        raise AssertionError(
+            u'STANDALONE_{0} 的欄位與表頭長度不一致'.format(_label))
+STANDALONE_DETAIL = sheet_layout.SheetLayout(
+    STANDALONE_DETAIL_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.DETAIL_SHEET)
+STANDALONE_FORMULA = sheet_layout.SheetLayout(
+    STANDALONE_FORMULA_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.FORMULA_SHEET)
+
+# 使用者範本「其他數量」分頁的兩個數量欄。這裡是唯一定義處，parking_excel
+# 與這支的驗證邏輯都從這裡取，欄位字母一律導出。
+OTHER_COUNT_COL = 6      # F 數量
+OTHER_WHEEL_COL = 7      # G 輪檔倍率
+
+
+def _abs_detail_range(key, last_row):
+    """絕對位址的跨分頁範圍（COUNTIF 需要）。"""
+    col = STANDALONE_DETAIL.col(key)
+    return u"'{0}'!${1}${2}:${1}${3}".format(
+        takeoff_standalone.DETAIL_SHEET, col,
+        STANDALONE_DETAIL.first_data_row, last_row)
+
+
 
 def standalone_tables(takeoff, wheel_stop_multiplier):
     """Build standardized parking workbook rows from a collected takeoff."""
@@ -474,10 +516,12 @@ def standalone_tables(takeoff, wheel_stop_multiplier):
         formula_rows.append([
             item['key'],
             item['label'],
-            u'=COUNTIF(\'數量明細\'!$F$2:$F${},A{})'.format(
-                detail_last, index),
+            u'=COUNTIF({},{})'.format(
+                _abs_detail_range('category_key', detail_last),
+                STANDALONE_FORMULA.cell('category_key', index)),
             1,
-            u'=C{}*D{}'.format(index, index),
+            STANDALONE_FORMULA.formula(
+                index, u'{model_qty}*{multiplier}'),
         ])
     wheel_row = len(formula_rows) + 2
     first_car_row = 2
@@ -485,9 +529,11 @@ def standalone_tables(takeoff, wheel_stop_multiplier):
     formula_rows.append([
         u'wheel_stop',
         u'塑膠車輪檔',
-        u'=SUM(C{}:C{})'.format(first_car_row, last_car_row),
+        STANDALONE_FORMULA.sum_of(
+            'model_qty', first_car_row, last_car_row),
         int(wheel_stop_multiplier),
-        u'=C{}*D{}'.format(wheel_row, wheel_row),
+        STANDALONE_FORMULA.formula(
+            wheel_row, u'{model_qty}*{multiplier}'),
     ])
 
     source_keys = set(
@@ -512,7 +558,11 @@ def standalone_tables(takeoff, wheel_stop_multiplier):
         [u'既有主檔契約', u'INFO', u'小計／其他數量'],
         [u'來源身分', u'PASS', u'、'.join(source_keys) or u'(無資料)'],
         [u'停車位總數', u'CHECK',
-         u'=SUM(\'公式摘要\'!C2:C{})'.format(len(ITEMS) + 1)],
+         u"=SUM('{0}'!{1})".format(
+             takeoff_standalone.FORMULA_SHEET,
+             STANDALONE_FORMULA.rng(
+                 'model_qty', STANDALONE_FORMULA.first_data_row,
+                 len(ITEMS) + 1))],
         [u'未分類', u'BLOCK' if unclassified else u'PASS',
          u'{} 個'.format(len(unclassified))],
         [u'忽略非車位元件', u'INFO', u'{} 個'.format(len(ignored))],

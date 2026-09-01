@@ -383,3 +383,409 @@ def summary_lines(result, limit_reasons=None, endpoint=u'', cell_mm=0.0):
                  u'（容許值二分之一）。本工具只算出此門檻，未量測重複長度。'
                  .format(result.get('overlap_limit_mm', 0.0) / 1000.0))
     return lines
+
+
+# --- 哪些樓梯算「直通樓梯」 ------------------------------------------------
+
+STAIR_CONNECTS = u'連通上層'
+STAIR_SHORT = u'未達上層'
+STAIR_STEP = u'高差踏階'
+STAIR_TOP = u'基準層之上無樓層'
+STAIR_UNKNOWN = u'無法判定'
+
+# 頂端與上一層樓板高程差在這個範圍內，視為「真的接上去了」。
+# 樓板厚度、面層與結構偏移常讓兩者差幾十到兩百多 mm，不留容差會把正常的
+# 樓梯全判成未達。
+DEFAULT_REACH_TOLERANCE_MM = 300.0
+
+# 上面沒有樓層可比對時的輔助判準：爬升低於這個高度的多半是室內高差踏階，
+# 不是通往另一個樓層的直通樓梯。這是**啟發式**，所以只在無法做高程比對時
+# 才動用，而且結果一律只是建議。
+DEFAULT_MIN_STOREY_CLIMB_MM = 1500.0
+
+STAIR_SUGGESTED = (STAIR_CONNECTS,)
+
+STAIR_NOTE = (
+    u'§93 規範的是**直通樓梯**。一座三階的室內高差踏階不是直通樓梯，'
+    u'但它同樣有 Stairs 元素——把它當成量測終點，附近的房間會全部變成合格。'
+    u'因此這裡以「頂端有沒有接到上一層樓板」判斷，並且**只給建議**：'
+    u'要算哪幾座，由你勾選。')
+
+
+def _next_level_above(elevation_mm, level_elevations, epsilon_mm=1.0):
+    """基準高程之上最近的一個樓層高程；沒有就回 ``None``。"""
+    target = _number(elevation_mm)
+    above = [_number(value) for value in level_elevations or []
+             if _number(value) > target + epsilon_mm]
+    if not above:
+        return None
+    return min(above)
+
+
+def classify_stair(record, level_elevations,
+                   tolerance_mm=DEFAULT_REACH_TOLERANCE_MM,
+                   min_climb_mm=DEFAULT_MIN_STOREY_CLIMB_MM):
+    """``(kind, detail)``——這座樓梯像不像直通樓梯。
+
+    主判準是**頂端有沒有接到上一層樓板**，因為那是客觀的高程比對；爬升高度
+    只在「基準層之上根本沒有樓層」或「確定沒接到」時當輔助標籤用。
+
+    ``record`` 需要 ``base_elevation_mm`` 與 ``top_elevation_mm``。
+    """
+    base = record.get('base_elevation_mm')
+    top = record.get('top_elevation_mm')
+    if base is None or top is None:
+        return STAIR_UNKNOWN, u'讀不到基準或頂端高程'
+
+    climb = _number(top) - _number(base)
+    next_up = _next_level_above(base, level_elevations)
+    if next_up is None:
+        return STAIR_TOP, u'爬升 {:.0f} mm，但基準層之上沒有其他樓層'.format(
+            climb)
+
+    delta = _number(top) - next_up
+    if abs(delta) <= _number(tolerance_mm, DEFAULT_REACH_TOLERANCE_MM):
+        return STAIR_CONNECTS, u'爬升 {:.0f} mm，頂端與上層樓板差 {:+.0f} mm'.format(
+            climb, delta)
+    if climb < _number(min_climb_mm, DEFAULT_MIN_STOREY_CLIMB_MM):
+        return STAIR_STEP, u'只爬升 {:.0f} mm，距上層樓板還差 {:.0f} mm'.format(
+            climb, abs(delta))
+    return STAIR_SHORT, u'爬升 {:.0f} mm，距上層樓板還差 {:.0f} mm'.format(
+        climb, abs(delta))
+
+
+def describe_stairs(records, level_elevations, **options):
+    """逐座分類，回傳帶 ``kind``／``detail``／``suggested`` 的新清單。
+
+    不改動輸入——呼叫端可能還要用原本的記錄。
+    """
+    rows = []
+    for record in records or []:
+        kind, detail = classify_stair(record, level_elevations, **options)
+        row = dict(record)
+        row['kind'] = kind
+        row['detail'] = detail
+        row['suggested'] = kind in STAIR_SUGGESTED
+        rows.append(row)
+    return rows
+
+
+def suggested_stair_ids(rows):
+    return [row['id'] for row in rows or [] if row.get('suggested')]
+
+
+def stair_label(row):
+    """勾選清單上那一行字：名稱、基準樓層、判定與理由。"""
+    return u'{}　｜　{}　｜　{}（{}）'.format(
+        row.get('name') or u'(未命名樓梯)',
+        row.get('base_level') or u'(無基準樓層)',
+        row.get('kind') or STAIR_UNKNOWN,
+        row.get('detail') or u'')
+
+
+def stairs_for_level(rows, level_id, chosen_ids):
+    """``(used, other_level)``——勾選的樓梯裡，哪些屬於這一層。
+
+    基準層或頂層任一等於被檢核的樓層就算數：一座 3F→4F 的樓梯，在 3F 是往上
+    的那一跑、在 4F 是往下的那一跑，兩層都看得到同一個梯間。
+    """
+    chosen = set(chosen_ids or ())
+    used = []
+    other = []
+    for row in rows or []:
+        if row.get('id') not in chosen:
+            continue
+        if row.get('base_level_id') == level_id \
+                or row.get('top_level_id') == level_id:
+            used.append(row)
+        else:
+            other.append(row)
+    return used, other
+
+
+# --- §1 第十九款：哪些房間是「居室」 --------------------------------------
+
+# 條文**逐字列舉**的不視為居室者。這不是慣例，是法條寫死的清單，
+# 所以與下面的慣例清單分開——「法條這樣寫」跟「大家習慣這樣做」不是同一件事，
+# 混在一起會讓使用者無法判斷哪一條可以改、哪一條改了就不合法。
+NON_HABITABLE_STATUTORY = (
+    u'門廳', u'走廊', u'樓梯間', u'衣帽間', u'廁所', u'盥洗室',
+    u'浴室', u'儲藏室', u'機械室', u'車庫',
+)
+
+# 條文沒有列舉，但實務上通常也不當居室檢討的。預設帶入，可自行增刪。
+NON_HABITABLE_CONVENTION = (
+    u'梯廳', u'電梯', u'昇降機', u'管道', u'機房', u'配電', u'空調',
+    u'陽台', u'陽臺', u'露台', u'露臺',
+)
+
+ROOM_HABITABLE = u'居室'
+ROOM_NON_STATUTORY = u'非居室（§1 十九明列）'
+ROOM_NON_CONVENTION = u'非居室（慣例，非條文明列）'
+
+HABITABLE_NOTE = (
+    u'§1 十九：「供居住、工作、集會、娛樂、烹飪等使用之房間，均稱居室。'
+    u'門廳、走廊、樓梯間、衣帽間、廁所盥洗室、浴室、儲藏室、機械室、車庫等'
+    u'不視為居室。」上排是**條文明列**的，改了就不合條文；'
+    u'下排是條文沒寫、實務上通常也不算的，可自行增刪。')
+
+
+def _matched_keyword(text, keywords):
+    """命中的關鍵字，取**最長**的那一個；沒命中回 ``u''``。
+
+    取最長是因為「樓梯間」與「樓梯」同時在清單裡時，報「樓梯間」才對得上
+    條文的用語；報「樓梯」會讓人以為工具用的是別的判準。
+    """
+    haystack = u'{}'.format(text or u'')
+    best = u''
+    for keyword in keywords or ():
+        if keyword and keyword in haystack and len(keyword) > len(best):
+            best = keyword
+    return best
+
+
+def classify_room(text, statutory=NON_HABITABLE_STATUTORY,
+                  convention=NON_HABITABLE_CONVENTION):
+    """``(kind, keyword)``——這個房間名稱算不算居室。
+
+    條文清單先比，因為它的效力比慣例高：一個叫「儲藏室兼機房」的房間，
+    要報的是條文那一條。
+    """
+    hit = _matched_keyword(text, statutory)
+    if hit:
+        return ROOM_NON_STATUTORY, hit
+    hit = _matched_keyword(text, convention)
+    if hit:
+        return ROOM_NON_CONVENTION, hit
+    return ROOM_HABITABLE, u''
+
+
+# --- §1 第三十九款：直通樓梯要能通達避難層 --------------------------------
+
+STAIR_REACHES_REFUGE = u'可通達避難層'
+STAIR_NO_REFUGE_PATH = u'通不到避難層'
+
+REFUGE_NOTE = (
+    u'§1 三十九：「直通樓梯：建築物地面以上或以下任一樓層可**直接通達避難層'
+    u'或地面**之樓梯（包括坡道）。」所以「有沒有接到上一層」只是必要條件——'
+    u'一座 5F→6F 但下方斷掉的樓梯接到了上層，卻通不到避難層。'
+    u'指定避難層之後，工具會沿著樓梯一層一層往下追，追得到才算直通樓梯。')
+
+
+def reaches_refuge(stair, stairs, refuge_level_id, seen=None):
+    """這座樓梯順著往下走，接不接得到避難層。
+
+    往下追的方式是「誰的頂層等於我的基準層」——那就是同一個梯間再往下的那一
+    跑。``seen`` 擋住環（模型畫錯時，兩座樓梯可能互相指涉而無限遞迴）。
+    """
+    if stair is None:
+        return False
+    base = stair.get('base_level_id')
+    if base is None:
+        return False
+    if base == refuge_level_id:
+        return True
+    visited = set(seen or ())
+    key = stair.get('id')
+    if key in visited:
+        return False
+    visited.add(key)
+    for other in stairs or []:
+        if other.get('top_level_id') == base:
+            if reaches_refuge(other, stairs, refuge_level_id, visited):
+                return True
+    return False
+
+
+def apply_refuge_test(rows, refuge_level_id):
+    """在既有分類上再套 §1 三十九：追不到避難層的一律取消建議。
+
+    只會**收緊**不會放寬——原本就不建議的（踏階、未達上層）不會因為追得到
+    避難層而變成建議。條文是兩個條件都要滿足，不是二選一。
+    """
+    result = []
+    for row in rows or []:
+        item = dict(row)
+        ok = reaches_refuge(row, rows, refuge_level_id)
+        item['reaches_refuge'] = ok
+        item['refuge_note'] = (STAIR_REACHES_REFUGE if ok
+                               else STAIR_NO_REFUGE_PATH)
+        if not ok:
+            item['suggested'] = False
+        result.append(item)
+    return result
+
+
+def describe_rooms(rooms, statutory=NON_HABITABLE_STATUTORY,
+                   convention=NON_HABITABLE_CONVENTION):
+    """逐間附上 §1 十九的建議判定。
+
+    **關鍵字比對在真實專案上會漏。** 設計者不會照條文用詞命名：一間「備品室」
+    實質是儲藏室、「鼓風機室」實質是機械室，兩者都不會被「儲藏室」「機械室」
+    這兩個關鍵字命中。所以這裡產生的是**建議**，最終要檢核哪幾間由人勾選——
+    這跟樓梯那邊採同一個立場，理由也一樣：猜錯的代價是靜默漏檢或誤檢。
+    """
+    rows = []
+    for room in rooms or []:
+        text = u'{} {}'.format(room.get('room_number') or u'',
+                               room.get('room_name') or u'')
+        kind, hit = classify_room(text, statutory, convention)
+        row = dict(room)
+        row['kind'] = kind
+        row['keyword'] = hit
+        row['suggested'] = kind == ROOM_HABITABLE
+        rows.append(row)
+    return rows
+
+
+def suggested_room_ids(rows):
+    return [row['id'] for row in rows or [] if row.get('suggested')]
+
+
+def room_label(row):
+    """勾選清單那一行：樓層、編號、名稱、面積與建議判定。"""
+    area = row.get('area_m2')
+    size = u'{:.1f} m²'.format(area) if area else u''
+    verdict = row.get('kind') or ROOM_HABITABLE
+    if row.get('keyword'):
+        verdict = u'{}／命中「{}」'.format(verdict, row['keyword'])
+    # 部門通常比房間名稱更接近實際用途：實測案例裡「備品室」「鼓風機室」
+    # 從名稱看不出是儲藏室與機械室，但部門欄寫的是「設備作業區」。
+    # 不拿它自動判定（同一個部門底下仍可能混著居室與非居室），只擺出來給人看。
+    department = row.get('department') or u''
+    return u'[{}] {} {}　{}　{}　→　{}'.format(
+        row.get('level') or u'?', row.get('room_number') or u'',
+        row.get('room_name') or u'(無名稱)', size,
+        u'〔{}〕'.format(department) if department else u'', verdict)
+
+
+def rooms_for_level(rows, level_id, chosen_ids):
+    """勾選的房間裡屬於這一層的那些。"""
+    chosen = set(chosen_ids or ())
+    return [row for row in rows or []
+            if row.get('id') in chosen and row.get('level_id') == level_id]
+
+
+def worst_row(result):
+    """整份結果裡最該先看的那一列。
+
+    優先序：超過 > 無法到達 > 無法取樣 > 合格中最遠的。因為實務上問的第一個
+    問題是「最不利那條是多少、在哪裡、過不過」，而不是「每一間各是多少」——
+    設計者在圖上也只畫一條最不利路徑。
+    """
+    rows = (result or {}).get('rows') or []
+    if not rows:
+        return None
+    return rows[0]
+
+
+def headline(result):
+    """一句話的結論。逐室表格之前先講這一句。"""
+    row = worst_row(result)
+    if row is None:
+        return u'沒有可檢核的居室。'
+    limit = (result or {}).get('limit_mm') or 0.0
+    distance = row.get('distance_mm')
+    where = u'{} {}'.format(row.get('room_number') or u'',
+                            row.get('room_name') or u'').strip() or u'(無名稱)'
+    verdict = row.get('verdict')
+    if verdict == VERDICT_FAIL:
+        return u'**最不利：{} — {:.1f} 公尺，超過容許值 {:.1f} 公尺**'.format(
+            where, (distance or 0.0) / 1000.0, limit / 1000.0)
+    if verdict != VERDICT_PASS:
+        # 走不到的房間**不是超標**。它的 distance 是「已到達的點裡最遠的那
+        # 個」，拿來說「超過容許值」是假話——而且是往嚴的方向假，一樣不行。
+        return u'**最需要看的是「{}」：{}**（{}）'.format(
+            where, verdict, row.get('reason') or u'')
+    return u'最不利：{} — {:.1f} 公尺，容許 {:.1f} 公尺，**合格**'.format(
+        where, (distance or 0.0) / 1000.0, limit / 1000.0)
+
+
+# --- 各類組門檻對照 --------------------------------------------------------
+
+# §93 二會用到的所有門檻，由嚴到寬。實務上量完會想知道「換一個類組會怎樣」
+# ——尤其混合用途的樓層，同一層裡不同使用單元的類組可能不同。
+ALL_THRESHOLDS = (
+    (LIMIT_20_M, u'20 m（§93 二（三）：三十公尺者於十五層以上）'),
+    (LIMIT_30_M, u'30 m（§93 二（一）：Ａ類、Ｂ-1~3、Ｄ-1、'
+                 u'有現場觀眾之電視攝影場；或（五）非防火構造一律）'),
+    (LIMIT_40_M, u'40 m（§93 二（三）（四）：五十公尺者於十五層以上、'
+                 u'集合住宅複層式無出入口樓層）'),
+    (LIMIT_50_M, u'50 m（§93 二（二）：前述以外之用途）'),
+    (LIMIT_70_M, u'70 m（§93 二（一）：Ｃ類，電視攝影場除外）'),
+)
+
+
+def threshold_table(distance_mm):
+    """量到的距離對照所有門檻。``[(limit_mm, label, ok, margin_mm)]``。
+
+    一次列出全部而不是只講選定的那一個，是因為「其他類要怎麼檢討」在實務上
+    問的其實是「這個數字換個類組還過不過」。有了餘裕就看得出來這份檢討是
+    穩過、還是壓線過——壓線過的案子改個隔間就會翻掉。
+    """
+    value = _number(distance_mm)
+    rows = []
+    for limit, label in ALL_THRESHOLDS:
+        rows.append((limit, label, value <= limit, limit - value))
+    return rows
+
+
+def threshold_lines(distance_mm):
+    """對照表的文字版，給報告用。"""
+    if distance_mm is None:
+        return [u'沒有量到距離，無法對照門檻。']
+    lines = [u'實測 {:.2f} 公尺對照 §93 二各門檻：'.format(
+        _number(distance_mm) / 1000.0)]
+    for limit, label, ok, margin in threshold_table(distance_mm):
+        lines.append(u'　{} {}　餘裕 {:+.2f} m'.format(
+            u'○' if ok else u'✕', label, margin / 1000.0))
+    return lines
+
+
+def tightest_passing(distance_mm):
+    """這個距離能通過的**最嚴**門檻；一個都過不了回 ``None``。
+
+    報「最嚴還能過哪一級」比報「選定的那級過了」有用：它直接說出這份平面
+    還有多少餘地，也讓人看出如果類組認定被打回票會不會出事。
+    """
+    for limit, label, ok, unused in threshold_table(distance_mm):
+        if ok:
+            return limit, label
+    return None
+
+
+# --- §94：避難層自樓梯口至屋外出入口 --------------------------------------
+
+ENDPOINT_OUTSIDE_EXIT = u'屋外出入口（§94，避難層適用）'
+
+ARTICLE_94_NOTE = (
+    u'§94：「避難層自**樓梯口**至屋外出入口之步行距離不得超過前條規定。」'
+    u'注意它量的是**不同的東西**——§93 從居室任一點量到樓梯口，§94 從樓梯口'
+    u'量到屋外出入口。所以這個模式的受檢對象是**樓梯**而不是房間，'
+    u'一座樓梯一列；容許值沿用 §93 二的同一組數字（條文寫「不得超過前條規定」）。')
+
+EXIT_NO_STAIR = (
+    u'這一層沒有計入的樓梯，§94 沒有「樓梯口」可以當起點。'
+    u'單層建築或該層沒有直通樓梯時，這一條本來就不適用。')
+EXIT_NO_DOOR = (
+    u'這一層找不到外牆上的門。§94 的終點是屋外出入口——'
+    u'請確認外牆的牆類型「功能」設為外部，或改用其他終點模式。')
+
+
+def stair_subjects(stairs, cells_by_id):
+    """把樓梯轉成 ``evaluate()`` 吃得下的受檢列。
+
+    §94 的受檢對象是樓梯，但評定與排序的程式是共用的，所以把樓梯的名稱與
+    編號填進同樣的欄位——不另外複製一份幾乎一樣的評定程式。
+    """
+    rows = []
+    for stair in stairs or []:
+        rows.append({
+            'id': stair.get('id'),
+            'element_id': stair.get('element_id'),
+            'room_number': stair.get('mark') or u'',
+            'room_name': stair.get('name') or u'(未命名樓梯)',
+            'level': stair.get('base_level') or u'',
+            'cells': cells_by_id.get(stair.get('id')) or set(),
+        })
+    return rows

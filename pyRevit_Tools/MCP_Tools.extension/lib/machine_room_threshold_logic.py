@@ -7,6 +7,8 @@ import re
 import unicodedata
 
 import room_takeoff_sources_logic as room_order_logic
+import sheet_layout
+import takeoff_standalone
 
 try:
     _character = unichr
@@ -751,6 +753,44 @@ STANDALONE_DETAIL_HEADERS = (
 STANDALONE_FORMULA_HEADERS = (u'項目', u'公式', u'單位')
 STANDALONE_AUDIT_HEADERS = (u'檢核項目', u'結果', u'說明')
 
+# 獨立匯出兩張分頁的欄位。公式以前把欄位字母寫死，跟上面表頭的排列
+# 順序是兩套各自維護的真相：中間插一欄，公式不會壞掉，只會統計到隔壁欄。
+STANDALONE_DETAIL_COLUMNS = [
+    'source_key', 'source_label', 'element_id',
+    'from_number', 'from_name', 'to_number', 'to_name', 'width',
+]
+STANDALONE_FORMULA_COLUMNS = ['item', 'formula', 'unit']
+for _names, _headers, _label in (
+        (STANDALONE_DETAIL_COLUMNS, STANDALONE_DETAIL_HEADERS, 'DETAIL'),
+        (STANDALONE_FORMULA_COLUMNS, STANDALONE_FORMULA_HEADERS, 'FORMULA')):
+    if len(_names) != len(_headers):
+        raise AssertionError(
+            u'STANDALONE_{0} 的欄位與表頭長度不一致：加欄位時兩邊都要加'
+            .format(_label))
+STANDALONE_DETAIL = sheet_layout.SheetLayout(
+    STANDALONE_DETAIL_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.DETAIL_SHEET)
+STANDALONE_FORMULA = sheet_layout.SheetLayout(
+    STANDALONE_FORMULA_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.FORMULA_SHEET)
+# 公式摘要的兩列：門數在第一列、總長在第二列。
+FORMULA_ROW_COUNT = STANDALONE_FORMULA.first_data_row
+FORMULA_ROW_LENGTH = STANDALONE_FORMULA.first_data_row + 1
+
+
+def _detail_range(key, last_row):
+    """分頁名與欄位字母都由常數／layout 產生。"""
+    return u"'{0}'!{1}".format(
+        takeoff_standalone.DETAIL_SHEET,
+        STANDALONE_DETAIL.rng(key, STANDALONE_DETAIL.first_data_row,
+                              last_row))
+
+
+def _formula_cell(key, row):
+    return u"'{0}'!{1}".format(takeoff_standalone.FORMULA_SHEET,
+                               STANDALONE_FORMULA.cell(key, row))
+
+
 
 def standalone_tables(selected_rooms, door_summary, scopes):
     """Build auditable machine-room-threshold standalone sheet rows."""
@@ -777,8 +817,10 @@ def standalone_tables(selected_rooms, door_summary, scopes):
         ])
     detail_last = len(detail_rows) + 1
     if detail_rows:
-        count_formula = u'=COUNTA(\'數量明細\'!C2:C{})'.format(detail_last)
-        length_formula = u'=SUM(\'數量明細\'!H2:H{})'.format(detail_last)
+        count_formula = u'=COUNTA({})'.format(
+            _detail_range('element_id', detail_last))
+        length_formula = u'=SUM({})'.format(
+            _detail_range('width', detail_last))
     else:
         count_formula = u'=0'
         length_formula = u'=0'
@@ -817,7 +859,7 @@ def standalone_tables(selected_rooms, door_summary, scopes):
     audit_rows.append([
         u'總長交叉檢核',
         u'CHECK',
-        u'=\'公式摘要\'!B3',
+        u'=' + _formula_cell('formula', FORMULA_ROW_LENGTH),
     ])
     return {
         'detail_headers': list(STANDALONE_DETAIL_HEADERS),

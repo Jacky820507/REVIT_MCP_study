@@ -3,14 +3,20 @@
     Compatibility gate for pyRevit button scripts that run on IronPython 2.7.
 
 .DESCRIPTION
-    Buttons under MCP_Tools.extension have no `#! python3` shebang, so pyRevit
-    executes them with its default IPY2712PR engine (IronPython 2.7.12), not
-    CPython. Editing them with CPython 3 habits produces code that imports and
-    unit-tests fine on a dev box and then throws at ribbon-click time.
+    Buttons under MCP_Tools.extension normally have no `#! python3` shebang, so
+    pyRevit executes them with its default IPY2712PR engine (IronPython 2.7.12),
+    not CPython. Editing them with CPython 3 habits produces code that imports
+    and unit-tests fine on a dev box and then throws at ribbon-click time.
 
     Two checks:
       1. Compile every .py in the extension with the real 2.7 engine.
       2. Grep for constructs that only exist on Python 3.
+
+    Files carrying `#! python3` in their first 5 lines are exempt, matching the
+    rule CLAUDE.md states. They run on CPython 3 (as a subprocess or under
+    pytest) and 2.7 rules do not apply to them. The exempt files are LISTED in
+    the output rather than silently skipped: an exemption is a hole in this
+    gate, so adding one has to be visible to whoever reads the result.
 
     Do NOT substitute the sibling IPY342 (IronPython 3.4.2) engine: it accepts
     things 2.7 rejects, so a pass there proves nothing.
@@ -40,12 +46,28 @@ if (-not (Test-Path $ExtensionPath)) {
     exit 2
 }
 
-$files = Get-ChildItem -Path $ExtensionPath -Recurse -Filter '*.py' -File |
+$allFiles = Get-ChildItem -Path $ExtensionPath -Recurse -Filter '*.py' -File |
     Where-Object { $_.FullName -notmatch '\\__pycache__\\' }
+
+# CLAUDE.md: a `#! python3` directive in the first 5 lines means the file runs
+# on CPython 3, so the 2.7 rules below do not apply to it.
+$files = @()
+$exempt = @()
+foreach ($candidate in $allFiles) {
+    $head = Get-Content -LiteralPath $candidate.FullName -Encoding UTF8 -TotalCount 5
+    if ($head -match '^\s*#!\s*python3\b') { $exempt += $candidate } else { $files += $candidate }
+}
 
 Write-Output "IronPython 2.7 compatibility gate"
 Write-Output "  extension : $ExtensionPath"
 Write-Output "  files     : $($files.Count)"
+if ($exempt.Count -gt 0) {
+    # Listed, never silent: every exemption is a hole in this gate.
+    Write-Output "  exempt    : $($exempt.Count) file(s) marked '#! python3' (CPython 3, not checked here)"
+    foreach ($item in $exempt) {
+        Write-Output "              $($item.FullName.Substring($ExtensionPath.Length).TrimStart('\'))"
+    }
+}
 Write-Output ''
 
 $failures = 0

@@ -4,6 +4,38 @@ from __future__ import unicode_literals
 """Collect auditable room quantities from host and selected Revit links."""
 
 import room_takeoff_sources_logic as logic
+import sheet_layout
+import takeoff_standalone
+
+# 「數量明細」分頁的欄位。公式摘要那三條公式以前把欄位字母（E/I/J）寫死，跟
+# detail_rows 的排列順序是兩套各自維護的真相：中間插一欄，公式不會壞掉，只會
+# 安靜地統計到隔壁欄。分頁名也一樣，改用 takeoff_standalone 的常數。
+SPACE_DETAIL_COLUMNS = [
+    'source_key',         # 來源Key
+    'source_label',       # 來源模型
+    'link_instance_id',   # 連結實體Id
+    'element_id',         # ElementId
+    'composite_id',       # 複合識別
+    'level',              # 樓層
+    'number',             # 房號
+    'name',               # 房名
+    'perimeter',          # Finish周長(m)
+    'area',               # 面積(m2)
+    'boundary_loops',     # 邊界迴圈
+    'boundary_segments',  # 邊界段
+    'note',               # 備註
+]
+SPACE_DETAIL_HEADERS = [
+    u'來源Key', u'來源模型', u'連結實體Id', u'ElementId', u'複合識別',
+    u'樓層', u'房號', u'房名', u'Finish周長(m)', u'面積(m2)',
+    u'邊界迴圈', u'邊界段', u'備註',
+]
+if len(SPACE_DETAIL_COLUMNS) != len(SPACE_DETAIL_HEADERS):
+    raise AssertionError(
+        u'SPACE_DETAIL 的欄位與表頭長度不一致：加欄位時兩邊都要加')
+SPACE_DETAIL = sheet_layout.SheetLayout(
+    SPACE_DETAIL_COLUMNS, first_data_row=2,
+    name=takeoff_standalone.DETAIL_SHEET)
 
 
 FT_TO_M = 0.3048
@@ -249,11 +281,7 @@ def collect_selected_rooms(host_doc, options):
 
 def space_standalone_tables(records, skipped=None):
     """Return the three standard workbook table payloads."""
-    detail_headers = [
-        u'來源Key', u'來源模型', u'連結實體Id', u'ElementId', u'複合識別',
-        u'樓層', u'房號', u'房名', u'Finish周長(m)', u'面積(m2)',
-        u'邊界迴圈', u'邊界段', u'備註',
-    ]
+    detail_headers = list(SPACE_DETAIL_HEADERS)
     detail_rows = []
     for record in records or []:
         detail_rows.append([
@@ -268,13 +296,19 @@ def space_standalone_tables(records, skipped=None):
         ])
     last_row = max(2, len(detail_rows) + 1)
     formula_headers = [u'項目', u'公式／依據', u'數值', u'單位']
+    def detail_range(key):
+        """``'數量明細'!I2:I7``——分頁名與欄位字母都由常數／layout 產生。"""
+        return u"'{0}'!{1}".format(
+            takeoff_standalone.DETAIL_SHEET,
+            SPACE_DETAIL.rng(key, SPACE_DETAIL.first_data_row, last_row))
+
     formula_rows = [
         [u'有效房間數', u'數量明細逐房列數',
-         u"=COUNTA('數量明細'!E2:E{})".format(last_row), u'間'],
+         u'=COUNTA({})'.format(detail_range('composite_id')), u'間'],
         [u'Finish周長合計', u'GetBoundarySegments(Finish) 全迴圈加總',
-         u"=SUM('數量明細'!I2:I{})".format(last_row), u'm'],
+         u'=SUM({})'.format(detail_range('perimeter')), u'm'],
         [u'面積合計', u'Revit ROOM_AREA',
-         u"=SUM('數量明細'!J2:J{})".format(last_row), u'm2'],
+         u'=SUM({})'.format(detail_range('area')), u'm2'],
     ]
     audit_headers = [
         u'狀態', u'來源Key', u'複合識別', u'房號', u'訊息',

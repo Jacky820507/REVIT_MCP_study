@@ -44,6 +44,7 @@ from System.Text import Encoding  # noqa: E402
 
 from pyrevit import forms, revit, script  # noqa: E402
 
+import sheet_layout  # noqa: E402
 import takeoff_direct_publish  # noqa: E402
 import takeoff_excel_styles  # noqa: E402
 import takeoff_entry  # noqa: E402
@@ -70,9 +71,26 @@ SCAN_CEILING_FILLED_REGIONS = False
 ROOM_CLIP_HEIGHT_M = 100.0
 MIN_SOLID_VOLUME_FT3 = 1e-9
 MIN_CLIPPED_AREA_M2 = 0.001
-FIXED_REPORT_COLS = 3
-TRAILING_REPORT_COLS = 2
 FIRST_DATA_ROW = 8
+
+# 欄位順序。公式一律用這些名字寫（見 lib\sheet_layout.py）：欄位字母由 layout
+# 在寫檔那一刻算出來，中間插一欄不需要回頭改任何一段公式。
+SUMMARY_COLUMNS = ['room_no', 'room_name', 'quantity_area']
+SUMMARY_HEADERS = [u'編號', u'空間名稱', u'面積']
+# 材料欄夾在中間，最後兩欄固定是「對應圖說」與「備註」。
+DRAWING_COLUMN = 'drawing'
+NOTES_COLUMN = 'notes'
+TRAILING_COLUMNS = [DRAWING_COLUMN, NOTES_COLUMN]
+SUMMARY_LAYOUT = sheet_layout.SheetLayout(
+    SUMMARY_COLUMNS, first_data_row=FIRST_DATA_ROW, name=u'天花數量計算')
+FIXED_REPORT_COLS = SUMMARY_LAYOUT.width
+TRAILING_REPORT_COLS = len(TRAILING_COLUMNS)
+
+
+def full_layout(material_cols):
+    """固定欄 ＋ 材料欄 ＋ 對應圖說／備註欄。"""
+    return SUMMARY_LAYOUT.with_columns(
+        list(material_cols) + TRAILING_COLUMNS)
 SUMMARY_LABEL = u'天花數量總計'
 SCRIPT_VERSION = u'2026-07-23-ceiling-residual-no-filled-area-v7'
 
@@ -2189,54 +2207,52 @@ def excel_col(index):
 
 
 def make_rows(rooms, material_cols):
-    total_cols = FIXED_REPORT_COLS + len(material_cols) + TRAILING_REPORT_COLS
-    drawing_col = total_cols - 2
-    notes_col = total_cols - 1
-    material_index = dict((name, index) for index, name in enumerate(material_cols))
+    full = full_layout(material_cols)
     rows = []
     for row_offset, room in enumerate(rooms):
         row_number = FIRST_DATA_ROW + row_offset
-        row = [''] * total_cols
-        row[0] = room['number']
-        row[1] = room['name']
-        row[2] = room.get('quantity_area') if room.get('quantity_area') is not None else ''
+        row = full.blank_row()
+        full.put(row, 'room_no', room['number'])
+        full.put(row, 'room_name', room['name'])
+        full.put(row, 'quantity_area',
+                 room.get('quantity_area')
+                 if room.get('quantity_area') is not None else '')
         quantity_by_code = room.get('quantity_by_code') or {}
         for code in room.get('eligible_codes') or []:
-            material_col = material_index.get(code)
-            if material_col is not None:
-                area = quantity_by_code.get(code)
-                if area is None or area <= MIN_CLIPPED_AREA_M2:
-                    continue
-                if (len(quantity_by_code) == 1 and
-                        abs(area - (room.get('quantity_area') or 0.0)) <= AREA_DIFF_WARN_TOLERANCE_M2):
-                    row[FIXED_REPORT_COLS + material_col] = '=C{0}'.format(row_number)
-                else:
-                    row[FIXED_REPORT_COLS + material_col] = round2(area)
+            if code not in material_cols:
+                continue
+            area = quantity_by_code.get(code)
+            if area is None or area <= MIN_CLIPPED_AREA_M2:
+                continue
+            if (len(quantity_by_code) == 1 and
+                    abs(area - (room.get('quantity_area') or 0.0)) <= AREA_DIFF_WARN_TOLERANCE_M2):
+                full.put(row, code,
+                         SUMMARY_LAYOUT.formula(row_number,
+                                                '{quantity_area}'))
+            else:
+                full.put(row, code, round2(area))
         drawing_sources = (
             [room.get('source_label')]
             if room.get('source_label') else [])
         for detail in room.get('filled_region_details') or []:
             append_unique(drawing_sources, detail.get('sources') or [])
-        row[drawing_col] = u'；'.join(drawing_sources)
-        row[notes_col] = u'；'.join(room.get('main_warnings') or [])
+        full.put(row, DRAWING_COLUMN, u'；'.join(drawing_sources))
+        full.put(row, NOTES_COLUMN,
+                 u'；'.join(room.get('main_warnings') or []))
         rows.append(row)
     return rows
 
 
 def build_summary_row(data_row_count, material_cols):
-    row = [''] * (FIXED_REPORT_COLS + len(material_cols) + TRAILING_REPORT_COLS)
-    row[0] = SUMMARY_LABEL
+    full = full_layout(material_cols)
+    row = full.row_from({'room_no': SUMMARY_LABEL})
     last_data_row = FIRST_DATA_ROW + data_row_count - 1
-    for index, _material in enumerate(material_cols):
-        col_name = excel_col(FIXED_REPORT_COLS + index + 1)
-        if data_row_count > 0:
-            row[FIXED_REPORT_COLS + index] = '=SUM({0}{1}:{0}{2})'.format(
-                col_name,
-                FIRST_DATA_ROW,
-                last_data_row
-            )
-        else:
-            row[FIXED_REPORT_COLS + index] = '=0'
+    for material in material_cols:
+        # 每一欄加的是自己那一欄。以前這裡是 excel_col(FIXED + index + 1)，
+        # 一個 +1 就會讓總計加到隔壁去，而且不會報錯。
+        full.put(row, material,
+                 full.sum_of(material, FIRST_DATA_ROW, last_data_row)
+                 if data_row_count > 0 else '=0')
     return row
 
 
@@ -2258,31 +2274,27 @@ def build_sheet_values(rows, material_cols, project_title, material_names):
     row[0] = u'天花數量計算表'
     values.append(row)
 
-    row = [''] * total_cols
-    row[0] = u'工程項目'
+    full = full_layout(material_cols)
+
+    row = full.row_from({'room_no': u'工程項目',
+                         DRAWING_COLUMN: u'對應\n圖說',
+                         NOTES_COLUMN: u'備註'})
     if material_cols:
-        row[FIXED_REPORT_COLS] = u'天花'
-    row[drawing_col] = u'對應\n圖說'
-    row[notes_col] = u'備註'
+        full.put(row, material_cols[0], u'天花')
     values.append(row)
 
-    row = [''] * total_cols
-    row[0] = u'材料編號'
-    for index, code in enumerate(material_cols):
-        row[FIXED_REPORT_COLS + index] = code
+    row = full.row_from({'room_no': u'材料編號'})
+    for code in material_cols:
+        full.put(row, code, code)
     values.append(row)
 
-    row = [''] * total_cols
-    row[0] = u'材料名稱'
-    for index, code in enumerate(material_cols):
-        row[FIXED_REPORT_COLS + index] = material_names.get(clean(code).upper(), '')
+    row = full.row_from({'room_no': u'材料名稱'})
+    for code in material_cols:
+        full.put(row, code, material_names.get(clean(code).upper(), ''))
     values.append(row)
 
-    row = [''] * total_cols
-    row[0] = u'編號'
-    row[1] = u'空間名稱'
-    row[2] = u'面積'
-    values.append(row)
+    values.append(list(SUMMARY_HEADERS)
+                  + [''] * (len(material_cols) + TRAILING_REPORT_COLS))
 
     values.extend(rows)
     values.append(build_summary_row(len(rows), material_cols))
@@ -2450,13 +2462,17 @@ def main_sheet_xml(values):
             row_attrs += ' ht="30" customHeight="1"'
         rows_xml.append('<row{0}>{1}</row>'.format(row_attrs, ''.join(cells)))
 
+    # 欄位範圍一律問 layout，不寫死字母
+    first_col = SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[0])
+    last_fixed_col = SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[-1])
+    last_col = sheet_layout.column_letter(total_cols - 1)
     merge_refs = [
-        'A1:{0}1'.format(excel_col(total_cols)),
-        'A2:{0}2'.format(excel_col(total_cols)),
-        'A3:{0}3'.format(excel_col(total_cols)),
-        'A4:{0}4'.format(excel_col(FIXED_REPORT_COLS)),
-        'A5:{0}5'.format(excel_col(FIXED_REPORT_COLS)),
-        'A6:{0}6'.format(excel_col(FIXED_REPORT_COLS)),
+        '{0}1:{1}1'.format(first_col, last_col),
+        '{0}2:{1}2'.format(first_col, last_col),
+        '{0}3:{1}3'.format(first_col, last_col),
+        '{0}4:{1}4'.format(first_col, last_fixed_col),
+        '{0}5:{1}5'.format(first_col, last_fixed_col),
+        '{0}6:{1}6'.format(first_col, last_fixed_col),
         '{0}4:{0}7'.format(excel_col(drawing_col)),
         '{0}4:{0}7'.format(excel_col(notes_col)),
     ]
@@ -2467,7 +2483,8 @@ def main_sheet_xml(values):
             excel_col(material_end)
         ))
     if summary_row_index:
-        merge_refs.append('A{0}:{1}{0}'.format(summary_row_index, excel_col(FIXED_REPORT_COLS)))
+        merge_refs.append('{0}{1}:{2}{1}'.format(
+            first_col, summary_row_index, last_fixed_col))
     merge_xml = '<mergeCells count="{0}">{1}</mergeCells>'.format(
         len(merge_refs),
         ''.join(['<mergeCell ref="{0}"/>'.format(ref) for ref in merge_refs])
@@ -2490,7 +2507,7 @@ def main_sheet_xml(values):
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        '<dimension ref="A1:{0}{1}"/>'
+        '<dimension ref="A1:{0}{1}"/>'  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '<sheetViews><sheetView workbookViewId="0">'
         '<pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/>'
         '</sheetView></sheetViews>'
@@ -2533,12 +2550,12 @@ def audit_sheet_xml(values):
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        '<dimension ref="A1:{0}{1}"/>'
+        '<dimension ref="A1:{0}{1}"/>'  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '<sheetViews><sheetView workbookViewId="0">'
         '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
         '</sheetView></sheetViews>'
         '<cols>{2}</cols><sheetData>{3}</sheetData>'
-        '<autoFilter ref="A1:{0}{1}"/>'
+        '<autoFilter ref="A1:{0}{1}"/>'  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '</worksheet>'
     ).format(excel_col(total_cols), len(values), ''.join(col_defs), ''.join(rows_xml))
 

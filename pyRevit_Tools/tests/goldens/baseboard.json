@@ -1,0 +1,670 @@
+{
+ "cells": [
+  {
+   "A1": {
+    "f": null,
+    "t": "工程採購數量計算表",
+    "v": null
+   },
+   "A10": {
+    "f": null,
+    "t": "踢腳數量總計",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": "示範專案",
+    "v": null
+   },
+   "A3": {
+    "f": null,
+    "t": "踢腳數量計算表",
+    "v": null
+   },
+   "A4": {
+    "f": null,
+    "t": "樓別名稱",
+    "v": null
+   },
+   "A5": {
+    "f": null,
+    "t": "空間\n編號",
+    "v": null
+   },
+   "A6": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "A7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "A8": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "A9": {
+    "f": null,
+    "t": null,
+    "v": "103"
+   },
+   "B1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B5": {
+    "f": null,
+    "t": "空間\n名稱",
+    "v": null
+   },
+   "B6": {
+    "f": null,
+    "t": "辦公室",
+    "v": null
+   },
+   "B7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B8": {
+    "f": null,
+    "t": "會議室",
+    "v": null
+   },
+   "B9": {
+    "f": null,
+    "t": "走廊",
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C5": {
+    "f": null,
+    "t": "周長",
+    "v": null
+   },
+   "C6": {
+    "f": null,
+    "t": null,
+    "v": "24.00"
+   },
+   "C7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C8": {
+    "f": null,
+    "t": null,
+    "v": "18.00"
+   },
+   "C9": {
+    "f": null,
+    "t": null,
+    "v": "30.00"
+   },
+   "D1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": "開口",
+    "v": null
+   },
+   "D5": {
+    "f": null,
+    "t": "名稱",
+    "v": null
+   },
+   "D6": {
+    "f": null,
+    "t": "D1",
+    "v": null
+   },
+   "D7": {
+    "f": null,
+    "t": "D2",
+    "v": null
+   },
+   "D8": {
+    "f": null,
+    "t": "D1",
+    "v": null
+   },
+   "D9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E5": {
+    "f": null,
+    "t": "數量",
+    "v": null
+   },
+   "E6": {
+    "f": null,
+    "t": null,
+    "v": "2"
+   },
+   "E7": {
+    "f": null,
+    "t": null,
+    "v": "1"
+   },
+   "E8": {
+    "f": null,
+    "t": null,
+    "v": "1"
+   },
+   "E9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F5": {
+    "f": null,
+    "t": "寬",
+    "v": null
+   },
+   "F6": {
+    "f": null,
+    "t": null,
+    "v": "0.90"
+   },
+   "F7": {
+    "f": null,
+    "t": null,
+    "v": "1.20"
+   },
+   "F8": {
+    "f": null,
+    "t": null,
+    "v": "0.90"
+   },
+   "F9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G5": {
+    "f": null,
+    "t": "小計",
+    "v": null
+   },
+   "G6": {
+    "f": "E6*F6",
+    "t": null,
+    "v": null
+   },
+   "G7": {
+    "f": "E7*F7",
+    "t": null,
+    "v": null
+   },
+   "G8": {
+    "f": "E8*F8",
+    "t": null,
+    "v": null
+   },
+   "G9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H4": {
+    "f": null,
+    "t": "開口合計",
+    "v": null
+   },
+   "H5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H6": {
+    "f": "SUM(G6:G7)",
+    "t": null,
+    "v": null
+   },
+   "H7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H8": {
+    "f": "G8",
+    "t": null,
+    "v": null
+   },
+   "H9": {
+    "f": "0",
+    "t": null,
+    "v": null
+   },
+   "I1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I4": {
+    "f": null,
+    "t": "總計",
+    "v": null
+   },
+   "I5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I6": {
+    "f": "C6-H6",
+    "t": null,
+    "v": null
+   },
+   "I7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I8": {
+    "f": "C8-H8",
+    "t": null,
+    "v": null
+   },
+   "I9": {
+    "f": "C9-H9",
+    "t": null,
+    "v": null
+   },
+   "J1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J10": {
+    "f": "SUM(J6:J9)",
+    "t": null,
+    "v": null
+   },
+   "J2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J4": {
+    "f": null,
+    "t": "PVC",
+    "v": null
+   },
+   "J5": {
+    "f": null,
+    "t": "PVC 踢腳板",
+    "v": null
+   },
+   "J6": {
+    "f": "I6",
+    "t": null,
+    "v": null
+   },
+   "J7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J9": {
+    "f": "I9",
+    "t": null,
+    "v": null
+   },
+   "K1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K10": {
+    "f": "SUM(K6:K9)",
+    "t": null,
+    "v": null
+   },
+   "K2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K4": {
+    "f": null,
+    "t": "ST",
+    "v": null
+   },
+   "K5": {
+    "f": null,
+    "t": "石材踢腳",
+    "v": null
+   },
+   "K6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K8": {
+    "f": "I8",
+    "t": null,
+    "v": null
+   },
+   "K9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L4": {
+    "f": null,
+    "t": "對應圖說",
+    "v": null
+   },
+   "L5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L6": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "L7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L8": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "L9": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   }
+  }
+ ],
+ "xml": [
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "11"
+    ],
+    [
+     "2",
+     "2",
+     "20"
+    ],
+    [
+     "3",
+     "3",
+     "12"
+    ],
+    [
+     "4",
+     "4",
+     "18"
+    ],
+    [
+     "5",
+     "5",
+     "8"
+    ],
+    [
+     "6",
+     "9",
+     "12"
+    ],
+    [
+     "10",
+     "11",
+     "16"
+    ],
+    [
+     "12",
+     "12",
+     "16"
+    ]
+   ],
+   "merges": [
+    "A1:L1",
+    "A2:L2",
+    "A3:L3",
+    "A4:C4",
+    "D4:G4",
+    "H4:H5",
+    "I4:I5",
+    "L4:L5",
+    "A10:I10"
+   ],
+   "panes": [
+    [
+     "5",
+     "A6"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet1.xml"
+  }
+ ]
+}

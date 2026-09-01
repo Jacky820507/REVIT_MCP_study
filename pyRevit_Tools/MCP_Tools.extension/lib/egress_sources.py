@@ -25,6 +25,7 @@ import area_scheme_sources as sources
 
 
 MM_PER_FOOT = 304.8
+SQ_FT_TO_SQ_M = 0.09290304
 
 # 查不到宿主牆厚時用的門洞連通半徑。RC 隔間牆常見 150～200 mm，取 300 mm 讓
 # 兩側確實接上；這個值會在報告裡列出來，不當成隱形常數。
@@ -83,23 +84,59 @@ def collect_rooms(doc, level_id=None):
             'room_number': record.get('room_number') or u'',
             'room_name': record.get('room_name') or u'',
             'level': record.get('level') or u'',
+            'level_id': record.get('level_id'),
+            'area_m2': (record.get('area_sqft') or 0.0) * SQ_FT_TO_SQ_M,
+            # 房間名稱常常看不出實際用途（「備品室」其實是儲藏室），
+            # 部門欄位往往更接近；擺進清單讓人判斷，不拿來自動判定。
+            'department': sources.parameter_text(
+                sources.built_in_parameter(record['element'],
+                                           'ROOM_DEPARTMENT')),
             'loops': record['loops'],
         })
     return rows, skipped
 
 
-def _host_wall_thickness_mm(instance):
-    """宿主牆厚（mm），查不到回 ``None``——由呼叫端決定要用什麼預設。"""
+def _host_wall(instance):
     try:
-        host = instance.Host
+        return instance.Host
     except Exception:
         return None
+
+
+def _host_wall_thickness_mm(host):
+    """宿主牆厚（mm），查不到回 ``None``——由呼叫端決定要用什麼預設。"""
     if host is None:
         return None
     try:
         return float(host.Width) * MM_PER_FOOT
     except Exception:
         return None
+
+
+def _is_exterior(host):
+    """這面牆的牆類型「功能」是不是外部。
+
+    §94 的終點是屋外出入口，而「哪扇門通到屋外」在 Revit 裡沒有直接的旗標；
+    宿主牆的 ``WallType.Function`` 是最接近而且是設計者本來就會設的欄位
+    （反射確認 ``WallFunction.Exterior`` 在 2020 與 2024 都有）。設錯或沒設
+    的專案會漏抓，所以呼叫端要把抓到幾扇回報出來讓人核對。
+    """
+    if host is None:
+        return False
+    try:
+        wall_type = host.WallType
+    except Exception:
+        wall_type = None
+    if wall_type is None:
+        return False
+    try:
+        function = wall_type.Function
+    except Exception:
+        return False
+    exterior = getattr(DB.WallFunction, 'Exterior', None)
+    if exterior is None:
+        return False
+    return function == exterior
 
 
 def collect_doors(doc, level_id=None):
@@ -124,7 +161,8 @@ def collect_doors(doc, level_id=None):
         point = sources._point_xy(instance)
         if point is None:
             continue
-        thickness = _host_wall_thickness_mm(instance)
+        host = _host_wall(instance)
+        thickness = _host_wall_thickness_mm(host)
         if thickness is None:
             radius = FALLBACK_DOOR_RADIUS_MM
             assumed = True
@@ -140,13 +178,14 @@ def collect_doors(doc, level_id=None):
             'point_xy': point,
             'radius_mm': radius,
             'radius_assumed': assumed,
+            'exterior': _is_exterior(host),
         })
     return rows
 
 
-def _stairs_level_id(stair):
-    """樓梯的基準樓層。``LevelId`` 對樓梯不一定有值，故先問專屬參數。"""
-    parameter = sources.built_in_parameter(stair, 'STAIRS_BASE_LEVEL_PARAM')
+def _stairs_level_id(stair, which='STAIRS_BASE_LEVEL_PARAM'):
+    """樓梯的基準或頂部樓層。``LevelId`` 對樓梯不一定有值，故先問專屬參數。"""
+    parameter = sources.built_in_parameter(stair, which)
     if parameter is not None:
         try:
             value = sources.id_value(parameter.AsElementId())
@@ -154,15 +193,33 @@ def _stairs_level_id(stair):
                 return value
         except Exception:
             pass
+    if which != 'STAIRS_BASE_LEVEL_PARAM':
+        return -1
     return sources._level_id(stair)
 
 
+def _stair_double(stair, getter):
+    """``Stairs`` 的高程屬性（英尺）→ 毫米；讀不到回 ``None``。"""
+    method = getattr(stair, getter, None)
+    if method is None:
+        return None
+    try:
+        return float(method) * MM_PER_FOOT
+    except Exception:
+        return None
+
+
 def collect_stairs(doc, level_id=None):
-    """樓層上的樓梯，含梯段與平台的輪廓迴圈（毫米）。
+    """專案裡的樓梯，含輪廓迴圈與**判斷它是不是直通樓梯所需的高程資料**。
 
     輪廓來自 ``GetFootprintBoundary()``，梯段與平台各自一圈；兩者都收，因為人
     可能從平台側踏上樓梯。曲線方向不影響結果——這正是不用 ``GetStairsPath()``
     的端點的理由。
+
+    ``level_id`` 預設為 ``None`` 也就是**不過濾**：要判斷一座樓梯有沒有接到上
+    一層樓板，得先把全部樓梯與樓層高程都拿出來比對，過濾要留到分類之後。
+    ``BaseElevation`` / ``TopElevation`` / ``Height`` 三個屬性經反射確認
+    2020 與 2024 都存在。
     """
     rows = []
     category = getattr(DB.BuiltInCategory, 'OST_Stairs', None)
@@ -202,6 +259,8 @@ def collect_stairs(doc, level_id=None):
                 points = _curve_loop_points(boundary)
                 if len(points) >= 3:
                     loops.append(points)
+        base_level_id = _stairs_level_id(stair)
+        top_level_id = _stairs_level_id(stair, 'STAIRS_TOP_LEVEL_PARAM')
         rows.append({
             'id': sources.id_value(stair.Id),
             'element_id': stair.Id,
@@ -209,5 +268,28 @@ def collect_stairs(doc, level_id=None):
             'mark': sources.parameter_text(
                 sources.built_in_parameter(stair, 'ALL_MODEL_MARK')),
             'loops': loops,
+            'base_level_id': base_level_id,
+            'top_level_id': top_level_id,
+            'base_elevation_mm': _stair_double(stair, 'BaseElevation'),
+            'top_elevation_mm': _stair_double(stair, 'TopElevation'),
+            'height_mm': _stair_double(stair, 'Height'),
         })
     return rows
+
+
+def loops_centroid(loops):
+    """一組迴圈所有頂點的平均位置——用來問「這座樓梯在哪個房間裡」。
+
+    取平均而不是外框中心：L 形梯間的外框中心可能落在梯段之外，平均點會偏向
+    實際有幾何的那一側。凹形極端的情況仍可能落在外面，所以呼叫端要處理
+    「找不到房間」而不是假設一定找得到。
+    """
+    xs = []
+    ys = []
+    for loop in loops or []:
+        for point in loop or []:
+            xs.append(float(point[0]))
+            ys.append(float(point[1]))
+    if not xs:
+        return None
+    return (sum(xs) / len(xs), sum(ys) / len(ys))

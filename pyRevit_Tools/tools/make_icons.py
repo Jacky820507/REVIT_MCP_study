@@ -335,6 +335,45 @@ def g_cloud(canvas, color):
     rect(canvas, 34, 50, 36, 16, color)
 
 
+def g_cloud_clear(canvas, color):
+    """A revision cloud crossed out: this button removes clouds."""
+    g_cloud(canvas, color)
+    line(canvas, 52, 28, 84, 60, 7, WHITE)
+    line(canvas, 84, 28, 52, 60, 7, WHITE)
+
+
+def g_cloud_tag(canvas, color):
+    """A revision cloud with a small annotation tag attached."""
+    g_cloud(canvas, color)
+    rect(canvas, 55, 56, 34, 28, WHITE, 3)
+    outline(canvas, 55, 56, 34, 28, 4, color)
+    rect(canvas, 62, 64, 20, 4, color)
+    rect(canvas, 62, 73, 14, 4, LIGHT)
+
+
+def g_pdf_diff(canvas, color):
+    """Two stacked sheets (old behind in grey, new in front) plus a cloud.
+
+    The stack says 'two documents compared'; the cloud says what comes out.
+    Drawn back-to-front so the front sheet's white fill occludes the back one,
+    which is what makes them read as two sheets rather than one hatched box.
+    """
+    rect(canvas, 8, 6, 40, 54, WHITE, 3)
+    outline(canvas, 8, 6, 40, 54, 4, LIGHT)
+    rect(canvas, 16, 16, 24, 4, LIGHT)
+    rect(canvas, 16, 26, 18, 4, LIGHT)
+
+    rect(canvas, 30, 26, 44, 60, WHITE, 3)
+    outline(canvas, 30, 26, 44, 60, 5, color)
+    rect(canvas, 38, 36, 28, 4, LIGHT)
+    rect(canvas, 38, 46, 20, 4, LIGHT)
+
+    circle(canvas, 47, 68, 9, color)
+    circle(canvas, 58, 64, 11, color)
+    circle(canvas, 68, 69, 8, color)
+    rect(canvas, 47, 68, 21, 9, color)
+
+
 def g_magnifier(canvas, color):
     ring(canvas, 42, 40, 22, 6, color)
     line(canvas, 58, 56, 82, 80, 8, color)
@@ -631,6 +670,26 @@ def g_door_window(canvas, color):
     outline(canvas, 50, 18, 38, 38, 5, color)
     rect(canvas, 50, 35, 38, 5, color)
     rect(canvas, 66, 18, 5, 38, color)
+
+
+def g_door_window_legend(canvas, color):
+    """Two openings on a shared baseline, with text lines under them.
+
+    The button's whole point is the arrangement, so the icon shows it: a tall
+    window and a short door standing on the *same* bottom line (not centred,
+    not top-aligned), each with its parameter text below.
+    """
+    baseline = 62
+    rect(canvas, 10, baseline - 44, 32, 44, LIGHT)        # 高的窗
+    line(canvas, 26, baseline - 44, 26, baseline, 3, color)
+    line(canvas, 10, baseline - 22, 42, baseline - 22, 3, color)
+    rect(canvas, 52, baseline - 30, 30, 30, LIGHT)        # 矮的門
+    line(canvas, 52, baseline - 30, 52, baseline, 3, color)
+    line(canvas, 6, baseline, 88, baseline, 4, color)     # 共同底線
+    for index in range(3):                                # 參數文字
+        y = baseline + 8 + index * 8
+        dashes(canvas, 10, y, 42, 3, INK, dash=8, gap=4)
+        dashes(canvas, 52, y, 82, 3, INK, dash=8, gap=4)
 
 
 def g_duplicate_marks(canvas, color):
@@ -943,6 +1002,11 @@ BUTTONS = [
      excel(lambda c, col: g_cloud(c, col))),
     ('MCP_Macros.tab/Revision.panel/ScanClouds.pushbutton',
      lambda c, col: (g_cloud(c, LIGHT), g_magnifier(c, col))),
+    ('MCP_Macros.tab/Revision.panel/PdfDiffClouds.pushbutton', g_pdf_diff),
+    ('MCP_Macros.tab/Revision.panel/ClearRevisionClouds.pushbutton',
+     g_cloud_clear),
+    ('MCP_Macros.tab/Revision.panel/PlaceRevisionCloudTags.pushbutton',
+     g_cloud_tag),
     ('MCP_Macros.tab/BIMGovernance.panel/RoomWallDoorAudit.pushbutton',
      g_relation_audit),
     ('MCP_Macros.tab/BIMGovernance.panel/TaiwanBuildingCodeIntegrity.pushbutton',
@@ -990,6 +1054,8 @@ BUTTONS = [
      excel(lambda c, col: (g_table(c, col), g_update_mark(c, col)))),
     ('MCP_Macros.tab/Takeoff.panel/TallPartitionExcel.pushbutton',
      excel(g_tall_wall)),
+    ('MCP_Macros.tab/Visual.panel/DoorWindowLegend.pushbutton',
+     g_door_window_legend),
     ('MCP_Macros.tab/Visual.panel/ClearOverrides.pushbutton', g_palette),
     ('MCP_Macros.tab/Visual.panel/DependentViewCropScope.pushbutton',
      g_dependent_crop),

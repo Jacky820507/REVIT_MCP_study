@@ -31,6 +31,7 @@ from System.Text import Encoding  # noqa: E402
 
 from pyrevit import forms, revit, script  # noqa: E402
 
+import sheet_layout  # noqa: E402
 import takeoff_direct_publish  # noqa: E402
 import takeoff_excel_styles  # noqa: E402
 import takeoff_entry  # noqa: E402
@@ -74,9 +75,42 @@ SLAB_XY_PADDING_FT = 300.0 / 304.8
 ATTACHED_GEOMETRY_DELTA_M = 0.15
 # 牆頂超出目標樓層這個距離以上，視為跨樓層高牆，不套目標高度
 TALL_WALL_TOLERANCE_M = 0.35
-FIXED_REPORT_COLS = 15
 FIRST_DATA_ROW = 6
 SUMMARY_LABEL = '輕隔間數量總計'
+
+# 欄位順序。公式一律用這些名字寫（見 lib\sheet_layout.py）：欄位字母由 layout
+# 在寫檔那一刻算出來，中間插一欄不需要回頭改任何一段公式。
+SUMMARY_COLUMNS = [
+    'room_no',          # 編號
+    'room_name',        # 空間名稱
+    'room_perimeter',   # 空間周長
+    'wall_type',        # 輕隔間牆類型
+    'length',           # 牆長
+    'height',           # 牆高
+    'area',             # 面積
+    'area_subtotal',    # 小計
+    'opening_name',     # 開口名稱
+    'opening_count',    # 開口數量
+    'opening_width',    # 開口長
+    'opening_height',   # 開口高
+    'opening_area',     # 開口面積
+    'opening_subtotal', # 開口小計
+    'total',            # 總計
+]
+# 與 SUMMARY_COLUMNS 一一對應的表頭文字。
+SUMMARY_HEADERS = [
+    '編號', '空間名稱', '空間周長', '輕隔間牆類型', '牆長', '牆高', '面積',
+    '小計', '名稱', '數量', '長', '高', '面積', '小計', '總計',
+]
+if len(SUMMARY_COLUMNS) != len(SUMMARY_HEADERS):
+    raise AssertionError(
+        'SUMMARY_COLUMNS 與 SUMMARY_HEADERS 長度不一致（{0} vs {1}）：'
+        '加欄位時兩邊都要加'.format(
+            len(SUMMARY_COLUMNS), len(SUMMARY_HEADERS)))
+# 每種牆型一欄接在這些固定欄之後（with_columns）。
+SUMMARY_LAYOUT = sheet_layout.SheetLayout(
+    SUMMARY_COLUMNS, first_data_row=FIRST_DATA_ROW, name='輕隔間數量計算')
+FIXED_REPORT_COLS = SUMMARY_LAYOUT.width
 
 # 主檔分頁名：手算驗證放逐房逐牆明細，實際數量放各 TYPE 對照
 GENERATED_SHEET = '輕隔間數量計算'
@@ -1257,17 +1291,17 @@ def build_height_catalog(grouped_by_room):
 
 def make_rows(rooms, grouped_by_room, wall_type_cols):
     rows = []
-    type_col_index = dict((name, index) for index, name in enumerate(wall_type_cols))
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
     height_catalog = build_height_catalog(grouped_by_room)
 
     for room in rooms:
         walls = grouped_by_room.get(room['element_id'], [])
         if not walls:
-            row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-            row[0] = room['number']
-            row[1] = room['name']
-            row[2] = room['perimeter']
-            rows.append(row)
+            rows.append(full.row_from({
+                'room_no': room['number'],
+                'room_name': room['name'],
+                'room_perimeter': room['perimeter'],
+            }))
             continue
 
         groups = {}
@@ -1316,30 +1350,30 @@ def make_rows(rooms, grouped_by_room, wall_type_cols):
 
             row_count = max(1, len(openings))
             for i in range(row_count):
-                row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-                row[0] = room['number'] if i == 0 else ''
-                row[1] = room['name'] if i == 0 else ''
-                row[2] = room['perimeter'] if i == 0 else ''
-
+                row = full.blank_row()
                 if i == 0:
-                    row[3] = group['type_name']
-                    row[4] = '=' + '+'.join(lengths) if lengths else ''
-                    row[5] = fixed2(group_height)
-                    row[6] = 'AREA_FORMULA'
-                    row[7] = 'SUBTOTAL_FORMULA'
-                    row[14] = 'TOTAL_FORMULA'
-                    col = type_col_index.get(group['type_name'])
-                    if col is not None:
-                        row[FIXED_REPORT_COLS + col] = 'TYPE_FORMULA'
+                    full.put(row, 'room_no', room['number'])
+                    full.put(row, 'room_name', room['name'])
+                    full.put(row, 'room_perimeter', room['perimeter'])
+                    full.put(row, 'wall_type', group['type_name'])
+                    full.put(row, 'length',
+                             '=' + '+'.join(lengths) if lengths else '')
+                    full.put(row, 'height', fixed2(group_height))
+                    full.put(row, 'area', 'AREA_FORMULA')
+                    full.put(row, 'area_subtotal', 'SUBTOTAL_FORMULA')
+                    full.put(row, 'total', 'TOTAL_FORMULA')
+                    if full.has(group['type_name']):
+                        full.put(row, group['type_name'], 'TYPE_FORMULA')
 
                 if i < len(openings):
                     op = openings[i]
-                    row[8] = op['name']
-                    row[9] = op['count']
-                    row[10] = fixed2(op['width'])
-                    row[11] = fixed2(op['height'])
-                    row[12] = 'OPENING_AREA_FORMULA'
-                    row[13] = 'OPENING_SUBTOTAL_FORMULA'
+                    full.put(row, 'opening_name', op['name'])
+                    full.put(row, 'opening_count', op['count'])
+                    full.put(row, 'opening_width', fixed2(op['width']))
+                    full.put(row, 'opening_height', fixed2(op['height']))
+                    full.put(row, 'opening_area', 'OPENING_AREA_FORMULA')
+                    full.put(row, 'opening_subtotal',
+                             'OPENING_SUBTOTAL_FORMULA')
 
                 rows.append(row)
 
@@ -1355,29 +1389,49 @@ def excel_col(index):
 
 
 def fill_formulas(rows, wall_type_cols):
+    """把佔位字串換成真正的公式。
+
+    公式一律用欄位名稱寫，字母由 SUMMARY_LAYOUT 產生——欄位一搬動，這裡以前的
+    寫死字母不會跟著動，公式不會壞掉，只會安靜地指到隔壁那一欄。
+    """
+    layout = SUMMARY_LAYOUT
+    full = layout.with_columns(wall_type_cols)
     for i, row in enumerate(rows):
         row_number = FIRST_DATA_ROW + i
-        if row[6] == 'AREA_FORMULA':
-            row[6] = '=E{0}*F{0}'.format(row_number)
-        if row[7] == 'SUBTOTAL_FORMULA':
-            row[7] = '=G{0}'.format(row_number)
-        if row[12] == 'OPENING_AREA_FORMULA':
-            row[12] = '=J{0}*K{0}*L{0}'.format(row_number)
-        if row[13] == 'OPENING_SUBTOTAL_FORMULA':
-            row[13] = '=M{0}'.format(row_number)
-        if row[14] == 'TOTAL_FORMULA':
+        if layout.get(row, 'area') == 'AREA_FORMULA':
+            layout.put(row, 'area',
+                       layout.formula(row_number, '{length}*{height}'))
+        if layout.get(row, 'area_subtotal') == 'SUBTOTAL_FORMULA':
+            layout.put(row, 'area_subtotal',
+                       layout.formula(row_number, '{area}'))
+        if layout.get(row, 'opening_area') == 'OPENING_AREA_FORMULA':
+            layout.put(row, 'opening_area', layout.formula(
+                row_number,
+                '{opening_count}*{opening_width}*{opening_height}'))
+        if layout.get(row, 'opening_subtotal') == 'OPENING_SUBTOTAL_FORMULA':
+            layout.put(row, 'opening_subtotal',
+                       layout.formula(row_number, '{opening_area}'))
+        if layout.get(row, 'total') == 'TOTAL_FORMULA':
             deductions = []
-            if row[13]:
-                deductions.append('N{0}'.format(row_number))
+            if layout.get(row, 'opening_subtotal'):
+                deductions.append(
+                    layout.cell('opening_subtotal', row_number))
             look = 1
-            while i + look < len(rows) and not rows[i + look][3] and rows[i + look][13]:
-                deductions.append('N{0}'.format(row_number + look))
+            while (i + look < len(rows)
+                   and not layout.get(rows[i + look], 'wall_type')
+                   and layout.get(rows[i + look], 'opening_subtotal')):
+                deductions.append(
+                    layout.cell('opening_subtotal', row_number + look))
                 look += 1
-            row[14] = '=H{0}-{1}'.format(row_number, '-'.join(deductions)) if deductions else '=H{0}'.format(row_number)
-        if row[3] in wall_type_cols:
-            type_index = wall_type_cols.index(row[3])
-            if row[FIXED_REPORT_COLS + type_index] == 'TYPE_FORMULA':
-                row[FIXED_REPORT_COLS + type_index] = '=O{0}'.format(row_number)
+            total = layout.expr(row_number, '{area_subtotal}')
+            if deductions:
+                total += '-' + '-'.join(deductions)
+            layout.put(row, 'total', '=' + total)
+        wall_type = layout.get(row, 'wall_type')
+        if wall_type in wall_type_cols:
+            if full.get(row, wall_type) == 'TYPE_FORMULA':
+                full.put(row, wall_type,
+                         layout.formula(row_number, '{total}'))
     return rows
 
 
@@ -1389,18 +1443,17 @@ def build_sheet_values(rows, wall_type_cols, project_title):
     values.append(['輕隔間數量計算表'] + blank_tail)
     values.append(['依房間別（全高牆=樓層至上層樓板底；貼附頂/底與低矮特殊牆依 Revit 幾何）'] + blank_tail)
 
-    section = [''] * total_cols
-    section[0] = '樓別名稱'
-    section[2] = '輕隔間牆'
-    section[8] = '門開口、窗開口'
-    if len(section) > FIXED_REPORT_COLS:
-        section[FIXED_REPORT_COLS] = '輕隔間牆面積'
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
+    section = full.row_from({
+        'room_no': '樓別名稱',
+        'room_perimeter': '輕隔間牆',
+        'opening_name': '門開口、窗開口',
+    })
+    if wall_type_cols:
+        full.put(section, wall_type_cols[0], '輕隔間牆面積')
     values.append(section)
 
-    values.append([
-        '編號', '空間名稱', '空間周長', '輕隔間牆類型', '牆長', '牆高', '面積', '小計',
-        '名稱', '數量', '長', '高', '面積', '小計', '總計'
-    ] + wall_type_cols)
+    values.append(list(SUMMARY_HEADERS) + wall_type_cols)
     values.extend(rows)
     values.append(build_summary_row(len(rows), wall_type_cols))
     return values
@@ -1408,18 +1461,15 @@ def build_sheet_values(rows, wall_type_cols, project_title):
 
 def build_summary_row(data_row_count, wall_type_cols):
     row = [''] * (FIXED_REPORT_COLS + len(wall_type_cols))
-    row[0] = SUMMARY_LABEL
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
+    full.put(row, 'room_no', SUMMARY_LABEL)
     last_data_row = FIRST_DATA_ROW + data_row_count - 1
-    for index, _type_name in enumerate(wall_type_cols):
-        col_name = excel_col(FIXED_REPORT_COLS + index + 1)
-        if data_row_count > 0:
-            row[FIXED_REPORT_COLS + index] = '=SUM({0}{1}:{0}{2})'.format(
-                col_name,
-                FIRST_DATA_ROW,
-                last_data_row
-            )
-        else:
-            row[FIXED_REPORT_COLS + index] = '=0'
+    for type_name in wall_type_cols:
+        # 每一欄加的是自己那一欄。以前這裡是 excel_col(FIXED + index + 1)，
+        # 一個 +1 就會讓總計加到隔壁去，而且不會報錯。
+        full.put(row, type_name,
+                 full.sum_of(type_name, FIRST_DATA_ROW, last_data_row)
+                 if data_row_count > 0 else '=0')
     return row
 
 
@@ -1570,18 +1620,28 @@ def sheet_xml(values, layout):
 
     # 合併：第 1~3 列整列跨欄，第 4 列四個群組區段，最後是合計列的標籤
     merges = []
-    last_col = excel_col(total_cols)
+    # 注意：這個函式的 ``layout`` 參數是版面設定 dict（列高、縮放），不是
+    # SheetLayout；欄位一律問 SUMMARY_LAYOUT。
+    first_col = SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[0])
+    last_fixed_col = SUMMARY_LAYOUT.col(SUMMARY_COLUMNS[-1])
+    last_col = sheet_layout.column_letter(total_cols - 1)
+
+    def merge(from_key, to_key, row_index):
+        return '{0}{2}:{1}{2}'.format(SUMMARY_LAYOUT.col(from_key),
+                                      SUMMARY_LAYOUT.col(to_key), row_index)
+
     for row_index in (1, 2, 3):
-        merges.append('A{0}:{1}{0}'.format(row_index, last_col))
-    merges.append('A4:B4')
-    merges.append('C4:H4')
-    merges.append('I4:{0}4'.format(excel_col(FIXED_REPORT_COLS)))
+        merges.append('{0}{1}:{2}{1}'.format(first_col, row_index, last_col))
+    # 第 4 列的四個區段，範圍要跟該區段的標題對齊（見 build_sheet_values）
+    merges.append(merge('room_no', 'room_name', 4))
+    merges.append(merge('room_perimeter', 'area_subtotal', 4))
+    merges.append(merge('opening_name', 'total', 4))
     if total_cols > FIXED_REPORT_COLS:
         merges.append('{0}4:{1}4'.format(
-            excel_col(FIXED_REPORT_COLS + 1), last_col))
+            sheet_layout.column_letter(FIXED_REPORT_COLS), last_col))
     if summary_row_index:
-        merges.append('A{0}:{1}{0}'.format(
-            summary_row_index, excel_col(FIXED_REPORT_COLS)))
+        merges.append('{0}{1}:{2}{1}'.format(
+            first_col, summary_row_index, last_fixed_col))
     merge_xml = '<mergeCells count="{0}">{1}</mergeCells>'.format(
         len(merges),
         ''.join('<mergeCell ref="{0}"/>'.format(ref) for ref in merges))
@@ -1762,10 +1822,13 @@ def update_actual_quantity_sheet(workbook_path, wall_type_cols,
         result['error'] = '本次沒有取得任何輕隔間 TYPE，未寫入實際數量分頁'
         return result
 
+    # 這裡算出來的字母會被寫進使用者真正的活頁簿（跨分頁參照「手算驗證」的
+    # 合計列），所以更不能手算欄號——一律問 layout。
+    full = SUMMARY_LAYOUT.with_columns(wall_type_cols)
     targets = {}
-    for index, type_name in enumerate(wall_type_cols):
-        col_letter = excel_col(FIXED_REPORT_COLS + index + 1)
-        targets[normalize_type_key(type_name)] = (type_name, col_letter)
+    for type_name in wall_type_cols:
+        targets[normalize_type_key(type_name)] = (type_name,
+                                                  full.col(type_name))
     remaining = dict(targets)
 
     app = None

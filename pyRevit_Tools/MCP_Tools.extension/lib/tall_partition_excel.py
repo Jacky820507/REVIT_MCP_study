@@ -141,13 +141,13 @@ def _sheet_xml(values, spec):
                      freeze, freeze + 1))
     view += u'</sheetView>'
     last = u'{}{}'.format(excel_col(total_cols), max(1, len(values)))
-    auto_filter = (u'<autoFilter ref="A1:{}"/>'.format(last)
+    auto_filter = (u'<autoFilter ref="A1:{}"/>'.format(last)  # sheet-layout: ignore（A1 是工作表原點，恆定）
                    if freeze else u'')
     return (
         u'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         u'<worksheet xmlns="http://schemas.openxmlformats.org/'
         u'spreadsheetml/2006/main">'
-        u'<dimension ref="A1:{0}"/>'
+        u'<dimension ref="A1:{0}"/>'  # sheet-layout: ignore（A1 是工作表原點，恆定）
         u'<sheetViews>{1}</sheetViews>'
         u'<cols>{2}</cols><sheetData>{3}</sheetData>{4}'
         u'</worksheet>'

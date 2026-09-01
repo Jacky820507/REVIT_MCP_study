@@ -117,7 +117,7 @@ def _sheet_xml(headers, rows):
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
         '<worksheet xmlns="http://schemas.openxmlformats.org/'
         'spreadsheetml/2006/main">',
-        '<dimension ref="A1:{}{}"/>'.format(last_column, last_row),
+        '<dimension ref="A1:{}{}"/>'.format(last_column, last_row),  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '<sheetViews><sheetView workbookViewId="0">'
         '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" '
         'state="frozen"/></sheetView></sheetViews>',
@@ -144,7 +144,7 @@ def _sheet_xml(headers, rows):
             '<row r="{}">{}</row>'.format(row_index, ''.join(cells)))
     output.extend([
         '</sheetData>',
-        '<autoFilter ref="A1:{}{}"/>'.format(last_column, last_row),
+        '<autoFilter ref="A1:{}{}"/>'.format(last_column, last_row),  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '</worksheet>',
     ])
     return ''.join(output)

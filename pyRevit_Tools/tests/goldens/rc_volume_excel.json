@@ -1,0 +1,1986 @@
+{
+ "cells": [
+  {
+   "A1": {
+    "f": null,
+    "t": "示範專案",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": "RC 牆體積數量計算表",
+    "v": null
+   },
+   "A3": {
+    "f": null,
+    "t": "依房間別（淨體積＝(牆長 × 牆高 − 開口面積) × 厚度 − 樑柱板重疊；牆高取 Revit 牆面積回推的毛高；類型篩選關鍵字：RC；樑柱板重疊已扣除未接合的重疊（已接合者 Revit 已自行切割，不重複扣）；跨房間的牆依各房間邊界長度比例分攤，同一支牆只計一次；本表顯示兩位小數，逐面全精度明細見「牆面清單」分頁）",
+    "v": null
+   },
+   "A4": {
+    "f": null,
+    "t": "樓別名稱",
+    "v": null
+   },
+   "A5": {
+    "f": null,
+    "t": "編號",
+    "v": null
+   },
+   "A6": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "A7": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "A8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "A9": {
+    "f": null,
+    "t": "RC 體積總計 (m³)",
+    "v": null
+   },
+   "B1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B5": {
+    "f": null,
+    "t": "空間名稱",
+    "v": null
+   },
+   "B6": {
+    "f": null,
+    "t": "大廳",
+    "v": null
+   },
+   "B7": {
+    "f": null,
+    "t": "機房",
+    "v": null
+   },
+   "B8": {
+    "f": null,
+    "t": "（未分配到房間的 RC 牆）",
+    "v": null
+   },
+   "B9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": "RC 牆",
+    "v": null
+   },
+   "C5": {
+    "f": null,
+    "t": "空間周長",
+    "v": null
+   },
+   "C6": {
+    "f": null,
+    "t": null,
+    "v": "24.00"
+   },
+   "C7": {
+    "f": null,
+    "t": null,
+    "v": "18.00"
+   },
+   "C8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D5": {
+    "f": null,
+    "t": "RC 牆類型",
+    "v": null
+   },
+   "D6": {
+    "f": null,
+    "t": "RC 牆 15cm",
+    "v": null
+   },
+   "D7": {
+    "f": null,
+    "t": "RC 牆 25cm",
+    "v": null
+   },
+   "D8": {
+    "f": null,
+    "t": "RC 牆 15cm",
+    "v": null
+   },
+   "D9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E5": {
+    "f": null,
+    "t": "牆長",
+    "v": null
+   },
+   "E6": {
+    "f": "6.00",
+    "t": null,
+    "v": null
+   },
+   "E7": {
+    "f": "4.00",
+    "t": null,
+    "v": null
+   },
+   "E8": {
+    "f": "2.50",
+    "t": null,
+    "v": null
+   },
+   "E9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F5": {
+    "f": null,
+    "t": "牆高",
+    "v": null
+   },
+   "F6": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "F7": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "F8": {
+    "f": null,
+    "t": null,
+    "v": "3.20"
+   },
+   "F9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G5": {
+    "f": null,
+    "t": "厚度",
+    "v": null
+   },
+   "G6": {
+    "f": null,
+    "t": null,
+    "v": "0.150"
+   },
+   "G7": {
+    "f": null,
+    "t": null,
+    "v": "0.250"
+   },
+   "G8": {
+    "f": null,
+    "t": null,
+    "v": "0.150"
+   },
+   "G9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H5": {
+    "f": null,
+    "t": "面積",
+    "v": null
+   },
+   "H6": {
+    "f": "E6*F6",
+    "t": null,
+    "v": null
+   },
+   "H7": {
+    "f": "E7*F7",
+    "t": null,
+    "v": null
+   },
+   "H8": {
+    "f": "E8*F8",
+    "t": null,
+    "v": null
+   },
+   "H9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I5": {
+    "f": null,
+    "t": "小計",
+    "v": null
+   },
+   "I6": {
+    "f": "H6",
+    "t": null,
+    "v": null
+   },
+   "I7": {
+    "f": "H7",
+    "t": null,
+    "v": null
+   },
+   "I8": {
+    "f": "H8",
+    "t": null,
+    "v": null
+   },
+   "I9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J4": {
+    "f": null,
+    "t": "門開口、窗開口、牆開口",
+    "v": null
+   },
+   "J5": {
+    "f": null,
+    "t": "名稱",
+    "v": null
+   },
+   "J6": {
+    "f": null,
+    "t": "D1",
+    "v": null
+   },
+   "J7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K5": {
+    "f": null,
+    "t": "數量",
+    "v": null
+   },
+   "K6": {
+    "f": null,
+    "t": null,
+    "v": "1"
+   },
+   "K7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L5": {
+    "f": null,
+    "t": "長",
+    "v": null
+   },
+   "L6": {
+    "f": null,
+    "t": null,
+    "v": "0.90"
+   },
+   "L7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M5": {
+    "f": null,
+    "t": "高",
+    "v": null
+   },
+   "M6": {
+    "f": null,
+    "t": null,
+    "v": "2.10"
+   },
+   "M7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N5": {
+    "f": null,
+    "t": "面積",
+    "v": null
+   },
+   "N6": {
+    "f": "K6*L6*M6",
+    "t": null,
+    "v": null
+   },
+   "N7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O5": {
+    "f": null,
+    "t": "小計",
+    "v": null
+   },
+   "O6": {
+    "f": "N6",
+    "t": null,
+    "v": null
+   },
+   "O7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P5": {
+    "f": null,
+    "t": "淨面積",
+    "v": null
+   },
+   "P6": {
+    "f": "I6-O6",
+    "t": null,
+    "v": null
+   },
+   "P7": {
+    "f": "I7",
+    "t": null,
+    "v": null
+   },
+   "P8": {
+    "f": "I8",
+    "t": null,
+    "v": null
+   },
+   "P9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q5": {
+    "f": null,
+    "t": "毛體積 (m³)",
+    "v": null
+   },
+   "Q6": {
+    "f": "P6*G6",
+    "t": null,
+    "v": null
+   },
+   "Q7": {
+    "f": "P7*G7",
+    "t": null,
+    "v": null
+   },
+   "Q8": {
+    "f": "P8*G8",
+    "t": null,
+    "v": null
+   },
+   "Q9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R5": {
+    "f": null,
+    "t": "樑柱板扣除 (m³)",
+    "v": null
+   },
+   "R6": {
+    "f": null,
+    "t": null,
+    "v": "0.000"
+   },
+   "R7": {
+    "f": null,
+    "t": null,
+    "v": "0.120"
+   },
+   "R8": {
+    "f": null,
+    "t": null,
+    "v": "0.000"
+   },
+   "R9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S5": {
+    "f": null,
+    "t": "淨體積 (m³)",
+    "v": null
+   },
+   "S6": {
+    "f": "Q6-R6",
+    "t": null,
+    "v": null
+   },
+   "S7": {
+    "f": "Q7-R7",
+    "t": null,
+    "v": null
+   },
+   "S8": {
+    "f": "Q8-R8",
+    "t": null,
+    "v": null
+   },
+   "S9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T4": {
+    "f": null,
+    "t": "RC 牆淨體積 (m³)",
+    "v": null
+   },
+   "T5": {
+    "f": null,
+    "t": "RC 牆 15cm",
+    "v": null
+   },
+   "T6": {
+    "f": "S6",
+    "t": null,
+    "v": null
+   },
+   "T7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T8": {
+    "f": "S8",
+    "t": null,
+    "v": null
+   },
+   "T9": {
+    "f": "SUM(T6:T8)",
+    "t": null,
+    "v": null
+   },
+   "U1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U5": {
+    "f": null,
+    "t": "RC 牆 25cm",
+    "v": null
+   },
+   "U6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U7": {
+    "f": "S7",
+    "t": null,
+    "v": null
+   },
+   "U8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U9": {
+    "f": "SUM(U6:U8)",
+    "t": null,
+    "v": null
+   }
+  },
+  {
+   "A1": {
+    "f": null,
+    "t": "[牆面面積]",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": "牆面ID",
+    "v": null
+   },
+   "A3": {
+    "f": null,
+    "t": null,
+    "v": "311001"
+   },
+   "A4": {
+    "f": null,
+    "t": null,
+    "v": "311002"
+   },
+   "A5": {
+    "f": null,
+    "t": null,
+    "v": "311003"
+   },
+   "A6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AA1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AA2": {
+    "f": null,
+    "t": "接合狀態",
+    "v": null
+   },
+   "AA3": {
+    "f": null,
+    "t": "joined",
+    "v": null
+   },
+   "AA4": {
+    "f": null,
+    "t": "unjoined",
+    "v": null
+   },
+   "AA5": {
+    "f": null,
+    "t": "joined",
+    "v": null
+   },
+   "AA6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AB1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AB2": {
+    "f": null,
+    "t": "Revit 體積 (m³)",
+    "v": null
+   },
+   "AB3": {
+    "f": null,
+    "t": null,
+    "v": "2.880"
+   },
+   "AB4": {
+    "f": null,
+    "t": null,
+    "v": "3.200"
+   },
+   "AB5": {
+    "f": null,
+    "t": null,
+    "v": "1.200"
+   },
+   "AB6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AC1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AC2": {
+    "f": null,
+    "t": "差異 (m³)",
+    "v": null
+   },
+   "AC3": {
+    "f": "AB3-Y3",
+    "t": null,
+    "v": null
+   },
+   "AC4": {
+    "f": "AB4-Y4",
+    "t": null,
+    "v": null
+   },
+   "AC5": {
+    "f": "AB5-Y5",
+    "t": null,
+    "v": null
+   },
+   "AC6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AD1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AD2": {
+    "f": null,
+    "t": "房間分攤",
+    "v": null
+   },
+   "AD3": {
+    "f": null,
+    "t": "101 100%",
+    "v": null
+   },
+   "AD4": {
+    "f": null,
+    "t": "102 100%",
+    "v": null
+   },
+   "AD5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "AD6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": "牆面類型",
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": "RC 牆 15cm",
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": "RC 牆 25cm",
+    "v": null
+   },
+   "B5": {
+    "f": null,
+    "t": "RC 牆 15cm",
+    "v": null
+   },
+   "B6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": "位置標記",
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": "A(1.2)/2",
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": "A(1.2)/2",
+    "v": null
+   },
+   "C5": {
+    "f": null,
+    "t": "A(1.2)/2",
+    "v": null
+   },
+   "C6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": "澆置分區",
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": "Z1",
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": "Z1",
+    "v": null
+   },
+   "D5": {
+    "f": null,
+    "t": "Z1",
+    "v": null
+   },
+   "D6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": "長 (m)",
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": "6.000"
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": "4.000"
+   },
+   "E5": {
+    "f": null,
+    "t": null,
+    "v": "2.500"
+   },
+   "E6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": "高 (m)",
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": "3.200"
+   },
+   "F4": {
+    "f": null,
+    "t": null,
+    "v": "3.200"
+   },
+   "F5": {
+    "f": null,
+    "t": null,
+    "v": "3.200"
+   },
+   "F6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": "厚度 (m)",
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": "0.150"
+   },
+   "G4": {
+    "f": null,
+    "t": null,
+    "v": "0.250"
+   },
+   "G5": {
+    "f": null,
+    "t": null,
+    "v": "0.150"
+   },
+   "G6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I1": {
+    "f": null,
+    "t": "[開口]",
+    "v": null
+   },
+   "I2": {
+    "f": null,
+    "t": "名稱",
+    "v": null
+   },
+   "I3": {
+    "f": null,
+    "t": "D1",
+    "v": null
+   },
+   "I4": {
+    "f": null,
+    "t": "無開口",
+    "v": null
+   },
+   "I5": {
+    "f": null,
+    "t": "無開口",
+    "v": null
+   },
+   "I6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J2": {
+    "f": null,
+    "t": "數量",
+    "v": null
+   },
+   "J3": {
+    "f": null,
+    "t": null,
+    "v": "1"
+   },
+   "J4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K2": {
+    "f": null,
+    "t": "寬 (m)",
+    "v": null
+   },
+   "K3": {
+    "f": null,
+    "t": null,
+    "v": "0.900"
+   },
+   "K4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L2": {
+    "f": null,
+    "t": "高 (m)",
+    "v": null
+   },
+   "L3": {
+    "f": null,
+    "t": null,
+    "v": "2.100"
+   },
+   "L4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M2": {
+    "f": null,
+    "t": "面積小計 (m²)",
+    "v": null
+   },
+   "M3": {
+    "f": "K3*L3*J3",
+    "t": null,
+    "v": null
+   },
+   "M4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "M6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "N6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "O1": {
+    "f": null,
+    "t": "[開口合計]",
+    "v": null
+   },
+   "O2": {
+    "f": null,
+    "t": "開口合計面積 (m²)",
+    "v": null
+   },
+   "O3": {
+    "f": "SUM(M3:M3)",
+    "t": null,
+    "v": null
+   },
+   "O4": {
+    "f": "SUM(M4:M4)",
+    "t": null,
+    "v": null
+   },
+   "O5": {
+    "f": "SUM(M5:M5)",
+    "t": null,
+    "v": null
+   },
+   "O6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "P6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Q1": {
+    "f": null,
+    "t": "[牆面體積]",
+    "v": null
+   },
+   "Q2": {
+    "f": null,
+    "t": "合計計算式",
+    "v": null
+   },
+   "Q3": {
+    "f": "\"(\"&E3&\"*\"&F3&\"-\"&O3&\")*\"&G3&\"=\"&R3",
+    "t": null,
+    "v": null
+   },
+   "Q4": {
+    "f": "\"(\"&E4&\"*\"&F4&\"-\"&O4&\")*\"&G4&\"=\"&R4",
+    "t": null,
+    "v": null
+   },
+   "Q5": {
+    "f": "\"(\"&E5&\"*\"&F5&\"-\"&O5&\")*\"&G5&\"=\"&R5",
+    "t": null,
+    "v": null
+   },
+   "Q6": {
+    "f": null,
+    "t": "RC 體積總計 (m³)",
+    "v": null
+   },
+   "R1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "R2": {
+    "f": null,
+    "t": "總計體積 (m³)",
+    "v": null
+   },
+   "R3": {
+    "f": "(E3*F3-O3)*G3",
+    "t": null,
+    "v": null
+   },
+   "R4": {
+    "f": "(E4*F4-O4)*G4",
+    "t": null,
+    "v": null
+   },
+   "R5": {
+    "f": "(E5*F5-O5)*G5",
+    "t": null,
+    "v": null
+   },
+   "R6": {
+    "f": "SUM(R3:R5)",
+    "t": null,
+    "v": null
+   },
+   "S1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S2": {
+    "f": null,
+    "t": "房號",
+    "v": null
+   },
+   "S3": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "S4": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "S5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "S6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "T2": {
+    "f": null,
+    "t": "空間名稱",
+    "v": null
+   },
+   "T3": {
+    "f": null,
+    "t": "大廳",
+    "v": null
+   },
+   "T4": {
+    "f": null,
+    "t": "機房",
+    "v": null
+   },
+   "T5": {
+    "f": null,
+    "t": "（未分配到房間的 RC 牆）",
+    "v": null
+   },
+   "T6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "U2": {
+    "f": null,
+    "t": "歸屬方式",
+    "v": null
+   },
+   "U3": {
+    "f": null,
+    "t": "boundary",
+    "v": null
+   },
+   "U4": {
+    "f": null,
+    "t": "boundary",
+    "v": null
+   },
+   "U5": {
+    "f": null,
+    "t": "none",
+    "v": null
+   },
+   "U6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "V1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "V2": {
+    "f": null,
+    "t": "基準約束",
+    "v": null
+   },
+   "V3": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "V4": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "V5": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "V6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "W1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "W2": {
+    "f": null,
+    "t": "高度來源",
+    "v": null
+   },
+   "W3": {
+    "f": null,
+    "t": "area-derived",
+    "v": null
+   },
+   "W4": {
+    "f": null,
+    "t": "area-derived",
+    "v": null
+   },
+   "W5": {
+    "f": null,
+    "t": "area-derived",
+    "v": null
+   },
+   "W6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "X1": {
+    "f": null,
+    "t": "[未接合的樑柱板重疊]",
+    "v": null
+   },
+   "X2": {
+    "f": null,
+    "t": "樑柱板扣除 (m³)",
+    "v": null
+   },
+   "X3": {
+    "f": null,
+    "t": null,
+    "v": "0.000"
+   },
+   "X4": {
+    "f": null,
+    "t": null,
+    "v": "0.120"
+   },
+   "X5": {
+    "f": null,
+    "t": null,
+    "v": "0.000"
+   },
+   "X6": {
+    "f": "SUM(X3:X5)",
+    "t": null,
+    "v": null
+   },
+   "Y1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Y2": {
+    "f": null,
+    "t": "淨體積 (m³)",
+    "v": null
+   },
+   "Y3": {
+    "f": "R3-X3",
+    "t": null,
+    "v": null
+   },
+   "Y4": {
+    "f": "R4-X4",
+    "t": null,
+    "v": null
+   },
+   "Y5": {
+    "f": "R5-X5",
+    "t": null,
+    "v": null
+   },
+   "Y6": {
+    "f": "SUM(Y3:Y5)",
+    "t": null,
+    "v": null
+   },
+   "Z1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Z2": {
+    "f": null,
+    "t": "扣除明細",
+    "v": null
+   },
+   "Z3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Z4": {
+    "f": null,
+    "t": "梁 B1 0.120",
+    "v": null
+   },
+   "Z5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "Z6": {
+    "f": null,
+    "t": null,
+    "v": null
+   }
+  }
+ ],
+ "xml": [
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "10"
+    ],
+    [
+     "2",
+     "2",
+     "18"
+    ],
+    [
+     "3",
+     "3",
+     "12"
+    ],
+    [
+     "4",
+     "4",
+     "26"
+    ],
+    [
+     "5",
+     "9",
+     "10"
+    ],
+    [
+     "10",
+     "10",
+     "30"
+    ],
+    [
+     "11",
+     "19",
+     "13"
+    ],
+    [
+     "20",
+     "50",
+     "18"
+    ]
+   ],
+   "merges": [
+    "A9:S9"
+   ],
+   "panes": [
+    [
+     "5",
+     "A6"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet1.xml"
+  },
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "12"
+    ],
+    [
+     "2",
+     "2",
+     "24"
+    ],
+    [
+     "3",
+     "3",
+     "18"
+    ],
+    [
+     "4",
+     "4",
+     "12"
+    ],
+    [
+     "5",
+     "8",
+     "10"
+    ],
+    [
+     "9",
+     "9",
+     "34"
+    ],
+    [
+     "10",
+     "16",
+     "12"
+    ],
+    [
+     "17",
+     "17",
+     "42"
+    ],
+    [
+     "18",
+     "25",
+     "14"
+    ],
+    [
+     "26",
+     "26",
+     "40"
+    ],
+    [
+     "27",
+     "29",
+     "14"
+    ],
+    [
+     "30",
+     "30",
+     "40"
+    ]
+   ],
+   "merges": [
+    "A1:G1",
+    "I1:M1",
+    "Q1:R1",
+    "X1:AA1"
+   ],
+   "panes": [
+    [
+     "2",
+     "A3"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet2.xml"
+  }
+ ]
+}

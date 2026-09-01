@@ -1,0 +1,795 @@
+{
+ "cells": [
+  {
+   "A1": {
+    "f": null,
+    "t": "工程採購數量計算表",
+    "v": null
+   },
+   "A10": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "A11": {
+    "f": null,
+    "t": null,
+    "v": "103"
+   },
+   "A12": {
+    "f": null,
+    "t": "地坪數量總計",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": "示範專案",
+    "v": null
+   },
+   "A3": {
+    "f": null,
+    "t": "地坪數量計算表",
+    "v": null
+   },
+   "A4": {
+    "f": null,
+    "t": "工程項目",
+    "v": null
+   },
+   "A5": {
+    "f": null,
+    "t": "材料編號",
+    "v": null
+   },
+   "A6": {
+    "f": null,
+    "t": "材料名稱",
+    "v": null
+   },
+   "A7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "A8": {
+    "f": null,
+    "t": "編號",
+    "v": null
+   },
+   "A9": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "B1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B10": {
+    "f": null,
+    "t": "會議室",
+    "v": null
+   },
+   "B11": {
+    "f": null,
+    "t": "走廊",
+    "v": null
+   },
+   "B12": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "B8": {
+    "f": null,
+    "t": "空間名稱",
+    "v": null
+   },
+   "B9": {
+    "f": null,
+    "t": "辦公室",
+    "v": null
+   },
+   "C1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C10": {
+    "f": null,
+    "t": null,
+    "v": "24.0"
+   },
+   "C11": {
+    "f": null,
+    "t": null,
+    "v": "18.0"
+   },
+   "C12": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "C8": {
+    "f": null,
+    "t": "面積",
+    "v": null
+   },
+   "C9": {
+    "f": null,
+    "t": null,
+    "v": "48.0"
+   },
+   "D1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D11": {
+    "f": "C11",
+    "t": null,
+    "v": null
+   },
+   "D12": {
+    "f": "SUM(D9:D11)",
+    "t": null,
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": "地坪",
+    "v": null
+   },
+   "D5": {
+    "f": null,
+    "t": "F1",
+    "v": null
+   },
+   "D6": {
+    "f": null,
+    "t": "{'name': '磁磚', 'code': 'F1'}",
+    "v": null
+   },
+   "D7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "D9": {
+    "f": "C9",
+    "t": null,
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E10": {
+    "f": "C10",
+    "t": null,
+    "v": null
+   },
+   "E11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E12": {
+    "f": "SUM(E9:E11)",
+    "t": null,
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E5": {
+    "f": null,
+    "t": "F2",
+    "v": null
+   },
+   "E6": {
+    "f": null,
+    "t": "{'name': '架高地板', 'code': 'F2'}",
+    "v": null
+   },
+   "E7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "E9": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F10": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "F11": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "F12": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": "對應\n圖說",
+    "v": null
+   },
+   "F5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F9": {
+    "f": null,
+    "t": "主模型",
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G10": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G11": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G12": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": "備註",
+    "v": null
+   },
+   "G5": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G6": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G7": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G8": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G9": {
+    "f": null,
+    "t": null,
+    "v": null
+   }
+  },
+  {
+   "A1": {
+    "f": null,
+    "t": "Room Id",
+    "v": null
+   },
+   "A2": {
+    "f": null,
+    "t": null,
+    "v": "1301"
+   },
+   "A3": {
+    "f": null,
+    "t": null,
+    "v": "1302"
+   },
+   "A4": {
+    "f": null,
+    "t": null,
+    "v": "1303"
+   },
+   "B1": {
+    "f": null,
+    "t": "房間編號",
+    "v": null
+   },
+   "B2": {
+    "f": null,
+    "t": null,
+    "v": "101"
+   },
+   "B3": {
+    "f": null,
+    "t": null,
+    "v": "102"
+   },
+   "B4": {
+    "f": null,
+    "t": null,
+    "v": "103"
+   },
+   "C1": {
+    "f": null,
+    "t": "房間名稱",
+    "v": null
+   },
+   "C2": {
+    "f": null,
+    "t": "辦公室",
+    "v": null
+   },
+   "C3": {
+    "f": null,
+    "t": "會議室",
+    "v": null
+   },
+   "C4": {
+    "f": null,
+    "t": "走廊",
+    "v": null
+   },
+   "D1": {
+    "f": null,
+    "t": "樓層",
+    "v": null
+   },
+   "D2": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "D3": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "D4": {
+    "f": null,
+    "t": "1FL",
+    "v": null
+   },
+   "E1": {
+    "f": null,
+    "t": "Room 面積(m²)",
+    "v": null
+   },
+   "E2": {
+    "f": null,
+    "t": null,
+    "v": "48.0"
+   },
+   "E3": {
+    "f": null,
+    "t": null,
+    "v": "24.0"
+   },
+   "E4": {
+    "f": null,
+    "t": null,
+    "v": "18.0"
+   },
+   "F1": {
+    "f": null,
+    "t": "樓板塗層原值",
+    "v": null
+   },
+   "F2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "F4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G1": {
+    "f": null,
+    "t": "F 代碼",
+    "v": null
+   },
+   "G2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "G4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H1": {
+    "f": null,
+    "t": "材料名稱",
+    "v": null
+   },
+   "H2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "H4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "I1": {
+    "f": null,
+    "t": "自動填入代碼",
+    "v": null
+   },
+   "I2": {
+    "f": null,
+    "t": "F1",
+    "v": null
+   },
+   "I3": {
+    "f": null,
+    "t": "F2",
+    "v": null
+   },
+   "I4": {
+    "f": null,
+    "t": "F1",
+    "v": null
+   },
+   "J1": {
+    "f": null,
+    "t": "基座代碼",
+    "v": null
+   },
+   "J2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "J4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K1": {
+    "f": null,
+    "t": "未辨識材料代碼",
+    "v": null
+   },
+   "K2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "K4": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L1": {
+    "f": null,
+    "t": "備註",
+    "v": null
+   },
+   "L2": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L3": {
+    "f": null,
+    "t": null,
+    "v": null
+   },
+   "L4": {
+    "f": null,
+    "t": null,
+    "v": null
+   }
+  }
+ ],
+ "xml": [
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "12"
+    ],
+    [
+     "2",
+     "2",
+     "24"
+    ],
+    [
+     "3",
+     "3",
+     "13"
+    ],
+    [
+     "4",
+     "5",
+     "20"
+    ],
+    [
+     "6",
+     "6",
+     "28"
+    ],
+    [
+     "7",
+     "7",
+     "48"
+    ]
+   ],
+   "merges": [
+    "A1:G1",
+    "A2:G2",
+    "A3:G3",
+    "A4:C4",
+    "A5:C5",
+    "A6:C6",
+    "F4:F8",
+    "G4:G8",
+    "A12:C12",
+    "D4:E4"
+   ],
+   "panes": [
+    [
+     "8",
+     "A9"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet1.xml"
+  },
+  {
+   "cols": [
+    [
+     "1",
+     "1",
+     "12"
+    ],
+    [
+     "2",
+     "2",
+     "12"
+    ],
+    [
+     "3",
+     "3",
+     "24"
+    ],
+    [
+     "4",
+     "4",
+     "16"
+    ],
+    [
+     "5",
+     "5",
+     "15"
+    ],
+    [
+     "6",
+     "6",
+     "24"
+    ],
+    [
+     "7",
+     "7",
+     "18"
+    ],
+    [
+     "8",
+     "8",
+     "44"
+    ],
+    [
+     "9",
+     "9",
+     "18"
+    ],
+    [
+     "10",
+     "10",
+     "18"
+    ],
+    [
+     "11",
+     "11",
+     "20"
+    ],
+    [
+     "12",
+     "12",
+     "58"
+    ]
+   ],
+   "merges": [],
+   "panes": [
+    [
+     "1",
+     "A2"
+    ]
+   ],
+   "sheet": "xl/worksheets/sheet2.xml"
+  }
+ ]
+}

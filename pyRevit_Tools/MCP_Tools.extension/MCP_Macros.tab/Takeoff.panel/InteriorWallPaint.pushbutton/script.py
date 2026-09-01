@@ -34,6 +34,7 @@ from System.Text import Encoding  # noqa: E402
 
 from pyrevit import forms, revit, script  # noqa: E402
 
+import sheet_layout  # noqa: E402
 import takeoff_direct_publish  # noqa: E402
 import takeoff_excel_styles  # noqa: E402
 import takeoff_entry  # noqa: E402
@@ -62,9 +63,49 @@ HEIGHT_BUCKET_SIZE_M = 0.05
 CEILING_SAMPLE_GRID = 5
 MIN_VALID_HEIGHT_M = 0.50
 MAX_VALID_HEIGHT_M = 20.0
-FIXED_REPORT_COLS = 16
 FIRST_DATA_ROW = 6
 SUMMARY_LABEL = u'內牆粉刷數量總計'
+
+# 欄位順序。公式一律用這些名字寫（見 lib\sheet_layout.py）：欄位字母由 layout
+# 在寫檔那一刻算出來，中間插一欄不需要回頭改任何一段公式。
+SUMMARY_COLUMNS = [
+    'room_no',          # 編號
+    'room_name',        # 空間名稱
+    'room_perimeter',   # 周長
+    'wall_count',       # 數量
+    'wall_length',      # 牆長
+    'height',           # 淨高
+    'wall_area',        # 面積
+    'wall_subtotal',    # 小計
+    'opening_name',     # 開口名稱
+    'opening_count',    # 開口數量
+    'opening_width',    # 開口寬
+    'opening_height',   # 開口高
+    'opening_area',     # 開口面積
+    'opening_subtotal', # 開口小計
+    'opening_total',    # 開口合計
+    'total',            # 總計
+]
+SUMMARY_HEADERS = [
+    u'編號', u'空間名稱', u'周長', u'數量', u'牆長', u'淨高', u'面積', u'小計',
+    u'名稱', u'數量', u'寬', u'高', u'面積', u'小計', u'開口合計', '',
+]
+if len(SUMMARY_COLUMNS) != len(SUMMARY_HEADERS):
+    raise AssertionError(
+        u'SUMMARY_COLUMNS 與 SUMMARY_HEADERS 長度不一致（{0} vs {1}）：'
+        u'加欄位時兩邊都要加'.format(
+            len(SUMMARY_COLUMNS), len(SUMMARY_HEADERS)))
+# 材料欄接在固定欄之後，最後再接一欄「對應圖說」。
+DRAWING_COLUMN = 'drawing'
+SUMMARY_LAYOUT = sheet_layout.SheetLayout(
+    SUMMARY_COLUMNS, first_data_row=FIRST_DATA_ROW, name=u'內牆粉刷數量計算')
+FIXED_REPORT_COLS = SUMMARY_LAYOUT.width
+
+
+def full_layout(material_cols):
+    """固定欄 ＋ 材料欄 ＋ 對應圖說欄。"""
+    return SUMMARY_LAYOUT.with_columns(
+        list(material_cols) + [DRAWING_COLUMN])
 
 
 doc = revit.doc
@@ -1614,45 +1655,47 @@ def grouped_openings(openings):
                 'count': 0,
             }
         groups[key]['count'] += 1
-    result = groups.values()
+    # list() 包起來：IronPython 2.7 的 dict.values() 本來就回 list，包了行為不變。
+    # 少了它，離線的 main() 接線測試（跑 CPython 3）會在這裡因為 view 沒有
+    # .sort() 而中斷，整顆按鈕的產表流程就測不到。
+    result = list(groups.values())
     result.sort(key=lambda item: (item['name'], item['width'], item['height']))
     return result
 
 
 def make_rows(rooms, openings_by_room, material_cols):
     rows = []
-    total_cols = FIXED_REPORT_COLS + len(material_cols) + 1
-    material_index = dict((name, index) for index, name in enumerate(material_cols))
+    full = full_layout(material_cols)
 
     for room in rooms:
         openings = grouped_openings(openings_by_room.get(room['element_id'], []))
         row_count = max(1, len(openings))
         material_codes = wall_finish_codes(room.get('wall_finish'))
         for i in range(row_count):
-            row = [''] * total_cols
+            row = full.blank_row()
             if i == 0:
-                row[0] = room['number']
-                row[1] = room['name']
-                row[2] = fixed2(room['perimeter'])
-                row[5] = fixed2(room.get('height'))
-                row[6] = 'WALL_AREA_FORMULA'
-                row[7] = 'WALL_SUBTOTAL_FORMULA'
-                row[14] = 'OPENING_TOTAL_FORMULA'
-                row[15] = 'TOTAL_FORMULA'
-                row[-1] = room.get('source_label') or ''
+                full.put(row, 'room_no', room['number'])
+                full.put(row, 'room_name', room['name'])
+                full.put(row, 'room_perimeter', fixed2(room['perimeter']))
+                full.put(row, 'height', fixed2(room.get('height')))
+                full.put(row, 'wall_area', 'WALL_AREA_FORMULA')
+                full.put(row, 'wall_subtotal', 'WALL_SUBTOTAL_FORMULA')
+                full.put(row, 'opening_total', 'OPENING_TOTAL_FORMULA')
+                full.put(row, 'total', 'TOTAL_FORMULA')
+                full.put(row, DRAWING_COLUMN, room.get('source_label') or '')
                 for code in material_codes:
-                    material_col = material_index.get(code)
-                    if material_col is not None:
-                        row[FIXED_REPORT_COLS + material_col] = 'MATERIAL_FORMULA'
+                    # 只認材料欄，不要讓一個剛好同名的代碼寫進固定欄
+                    if code in material_cols:
+                        full.put(row, code, 'MATERIAL_FORMULA')
 
             if i < len(openings):
                 opening = openings[i]
-                row[8] = opening['name']
-                row[9] = opening['count']
-                row[10] = fixed2(opening['width'])
-                row[11] = fixed2(opening['height'])
-                row[12] = 'OPENING_AREA_FORMULA'
-                row[13] = 'OPENING_SUBTOTAL_FORMULA'
+                full.put(row, 'opening_name', opening['name'])
+                full.put(row, 'opening_count', opening['count'])
+                full.put(row, 'opening_width', fixed2(opening['width']))
+                full.put(row, 'opening_height', fixed2(opening['height']))
+                full.put(row, 'opening_area', 'OPENING_AREA_FORMULA')
+                full.put(row, 'opening_subtotal', 'OPENING_SUBTOTAL_FORMULA')
 
             rows.append(row)
 
@@ -1668,52 +1711,67 @@ def excel_col(index):
 
 
 def fill_formulas(rows, material_cols):
+    """把佔位字串換成真正的公式。
+
+    公式一律用欄位名稱寫，字母由 SUMMARY_LAYOUT 產生——欄位一搬動，寫死的字母
+    不會跟著動，公式不會壞掉，只會安靜地指到隔壁那一欄。
+    """
+    layout = SUMMARY_LAYOUT
+    full = full_layout(material_cols)
     for i, row in enumerate(rows):
         row_number = FIRST_DATA_ROW + i
-        if row[6] == 'WALL_AREA_FORMULA':
-            row[6] = '=C{0}*F{0}'.format(row_number)
-        if row[7] == 'WALL_SUBTOTAL_FORMULA':
-            row[7] = '=G{0}'.format(row_number)
-        if row[12] == 'OPENING_AREA_FORMULA':
-            row[12] = '=K{0}*L{0}'.format(row_number)
-        if row[13] == 'OPENING_SUBTOTAL_FORMULA':
-            row[13] = '=M{0}*J{0}'.format(row_number)
-        if row[14] == 'OPENING_TOTAL_FORMULA':
-            start_row = row_number if row[13] else None
+        if layout.get(row, 'wall_area') == 'WALL_AREA_FORMULA':
+            layout.put(row, 'wall_area',
+                       layout.formula(row_number, '{room_perimeter}*{height}'))
+        if layout.get(row, 'wall_subtotal') == 'WALL_SUBTOTAL_FORMULA':
+            layout.put(row, 'wall_subtotal',
+                       layout.formula(row_number, '{wall_area}'))
+        if layout.get(row, 'opening_area') == 'OPENING_AREA_FORMULA':
+            layout.put(row, 'opening_area', layout.formula(
+                row_number, '{opening_width}*{opening_height}'))
+        if layout.get(row, 'opening_subtotal') == 'OPENING_SUBTOTAL_FORMULA':
+            layout.put(row, 'opening_subtotal', layout.formula(
+                row_number, '{opening_area}*{opening_count}'))
+        if layout.get(row, 'opening_total') == 'OPENING_TOTAL_FORMULA':
+            start_row = (row_number
+                         if layout.get(row, 'opening_subtotal') else None)
             end_row = start_row
             look = 1
-            while i + look < len(rows) and not rows[i + look][0] and not rows[i + look][1] and rows[i + look][13]:
+            while (i + look < len(rows)
+                   and not layout.get(rows[i + look], 'room_no')
+                   and not layout.get(rows[i + look], 'room_name')
+                   and layout.get(rows[i + look], 'opening_subtotal')):
                 end_row = row_number + look
                 look += 1
             if start_row and end_row and end_row != start_row:
-                row[14] = '=SUM(N{0}:N{1})'.format(start_row, end_row)
+                layout.put(row, 'opening_total',
+                           layout.sum_of('opening_subtotal', start_row,
+                                         end_row))
             elif start_row:
-                row[14] = '=N{0}'.format(start_row)
+                layout.put(row, 'opening_total',
+                           layout.formula(start_row, '{opening_subtotal}'))
             else:
-                row[14] = '=0'
-        if row[15] == 'TOTAL_FORMULA':
-            row[15] = '=H{0}-O{0}'.format(row_number)
-        for index, _material in enumerate(material_cols):
-            col = FIXED_REPORT_COLS + index
-            if row[col] == 'MATERIAL_FORMULA':
-                row[col] = '=P{0}'.format(row_number)
+                layout.put(row, 'opening_total', '=0')
+        if layout.get(row, 'total') == 'TOTAL_FORMULA':
+            layout.put(row, 'total', layout.formula(
+                row_number, '{wall_subtotal}-{opening_total}'))
+        for material in material_cols:
+            if full.get(row, material) == 'MATERIAL_FORMULA':
+                full.put(row, material,
+                         layout.formula(row_number, '{total}'))
     return rows
 
 
 def build_summary_row(data_row_count, material_cols):
-    row = [''] * (FIXED_REPORT_COLS + len(material_cols) + 1)
-    row[0] = SUMMARY_LABEL
+    full = full_layout(material_cols)
+    row = full.row_from({'room_no': SUMMARY_LABEL})
     last_data_row = FIRST_DATA_ROW + data_row_count - 1
-    for index, _material in enumerate(material_cols):
-        col_name = excel_col(FIXED_REPORT_COLS + index + 1)
-        if data_row_count > 0:
-            row[FIXED_REPORT_COLS + index] = '=SUM({0}{1}:{0}{2})'.format(
-                col_name,
-                FIRST_DATA_ROW,
-                last_data_row
-            )
-        else:
-            row[FIXED_REPORT_COLS + index] = '=0'
+    for material in material_cols:
+        # 每一欄加的是自己那一欄。以前這裡是 excel_col(FIXED + index + 1)，
+        # 一個 +1 就會讓總計加到隔壁去，而且不會報錯。
+        full.put(row, material,
+                 full.sum_of(material, FIRST_DATA_ROW, last_data_row)
+                 if data_row_count > 0 else '=0')
     return row
 
 
@@ -1725,41 +1783,27 @@ def build_sheet_values(rows, material_cols, project_title, material_names):
     values.append([u'工程採購數量計算表'] + blank_tail)
     values.append([project_title] + blank_tail)
 
+    full = full_layout(material_cols)
+
     title_row = [u'內牆粉刷數量計算表'] + blank_tail
-    for index, material in enumerate(material_cols):
-        title_row[FIXED_REPORT_COLS + index] = material
-    title_row[drawing_col] = u'對應\n圖說'
+    for material in material_cols:
+        full.put(title_row, material, material)
+    full.put(title_row, DRAWING_COLUMN, u'對應\n圖說')
     values.append(title_row)
 
-    section = [''] * total_cols
-    section[0] = u'樓別名稱'
-    section[3] = u'牆面'
-    section[8] = u'開口'
-    section[15] = u'總計'
-    material_name_headers = [material_names.get(clean(material).upper(), '') for material in material_cols]
-    for index, material in enumerate(material_cols):
-        section[FIXED_REPORT_COLS + index] = material_name_headers[index]
+    section = full.row_from({
+        'room_no': u'樓別名稱',
+        'wall_count': u'牆面',
+        'opening_name': u'開口',
+        'total': u'總計',
+    })
+    for material in material_cols:
+        full.put(section, material,
+                 material_names.get(clean(material).upper(), ''))
     values.append(section)
 
-    header = [
-        u'編號',
-        u'空間名稱',
-        u'周長',
-        u'數量',
-        u'牆長',
-        u'淨高',
-        u'面積',
-        u'小計',
-        u'名稱',
-        u'數量',
-        u'寬',
-        u'高',
-        u'面積',
-        u'小計',
-        u'開口合計',
-        '',
-    ] + [''] * len(material_cols) + ['']
-    values.append(header)
+    values.append(list(SUMMARY_HEADERS)
+                  + [''] * len(material_cols) + [''])
     values.extend(rows)
     values.append(build_summary_row(len(rows), material_cols))
     return values
@@ -1821,20 +1865,36 @@ def sheet_xml(values):
                 cells.append(cell)
         rows_xml.append('<row r="{0}">{1}</row>'.format(row_index, ''.join(cells)))
 
+    # 欄位範圍一律問 layout：區段的起訖要跟該區段的標題對齊
+    # （見 build_sheet_values），字母寫死的話欄位一搬動就會錯開。
+    layout = SUMMARY_LAYOUT
+    first_col = layout.col(SUMMARY_COLUMNS[0])
+    total_col = layout.col('total')
+    # drawing_col 在這個函式裡是 1 基欄號，且永遠等於最後一欄
+    last_col = sheet_layout.column_letter(total_cols - 1)
+    drawing_letter = sheet_layout.column_letter(drawing_col - 1)
+
+    def span(from_key, to_key, row_index):
+        return '{0}{2}:{1}{2}'.format(layout.col(from_key),
+                                      layout.col(to_key), row_index)
+
     merge_refs = [
-        'A1:{0}1'.format(excel_col(total_cols)),
-        'A2:{0}2'.format(excel_col(total_cols)),
-        'A3:P3',
-        'A4:C4',
-        'D4:H4',
-        'I4:O4',
-        'P4:P5',
-        '{0}3:{0}5'.format(excel_col(drawing_col)),
+        '{0}1:{1}1'.format(first_col, last_col),
+        '{0}2:{1}2'.format(first_col, last_col),
+        '{0}3:{1}3'.format(first_col, total_col),
+        span('room_no', 'room_perimeter', 4),
+        span('wall_count', 'wall_subtotal', 4),
+        span('opening_name', 'opening_total', 4),
+        '{0}4:{0}5'.format(total_col),
+        '{0}3:{0}5'.format(drawing_letter),
     ]
-    for col_index in range(FIXED_REPORT_COLS + 1, total_cols):
-        merge_refs.append('{0}4:{0}5'.format(excel_col(col_index)))
+    # 材料欄 = 固定欄之後、對應圖說欄之前（這裡拿不到 material_cols，用位置算）
+    for index in range(FIXED_REPORT_COLS, total_cols - 1):
+        merge_refs.append('{0}4:{0}5'.format(
+            sheet_layout.column_letter(index)))
     if summary_row_index:
-        merge_refs.append('A{0}:P{0}'.format(summary_row_index))
+        merge_refs.append('{0}{1}:{2}{1}'.format(
+            first_col, summary_row_index, total_col))
     merge_xml = '<mergeCells count="{0}">{1}</mergeCells>'.format(
         len(merge_refs),
         ''.join(['<mergeCell ref="{0}"/>'.format(ref) for ref in merge_refs])
@@ -1858,7 +1918,7 @@ def sheet_xml(values):
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-        '<dimension ref="A1:{0}{1}"/>'
+        '<dimension ref="A1:{0}{1}"/>'  # sheet-layout: ignore（A1 是工作表原點，恆定）
         '<sheetViews><sheetView workbookViewId="0">'
         '<pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/>'
         '</sheetView></sheetViews>'
