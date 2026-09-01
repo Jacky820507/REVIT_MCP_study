@@ -60,6 +60,7 @@ import re
 import sys
 import types
 import zipfile
+import xml.etree.ElementTree as ElementTree
 
 
 __all__ = [
@@ -471,13 +472,250 @@ class _SelectFromList(object):
                                  title=kwargs.get('title'))
 
 
-class FakeWPFWindow(object):
-    """``pyrevit.forms.WPFWindow`` 的最小替身，只夠讓模組載入與建構。
+_WPF_XAML_NS = '{http://schemas.microsoft.com/winfx/2006/xaml}'
 
-    ``lib\\`` 底下幾支會 ``class XxxWindow(forms.WPFWindow)``，光是 import 就需要
-    這個基底類別存在。這裡**不解析 XAML**，所以 XAML 裡具名元件不會變成屬性——
-    要真的驅動一個視窗的互動，得像 ``test_pdf_diff_window`` 那樣做一套會強制
-    單一父層規則的假 WPF，那是另一件事。這支只負責讓「不開視窗的那條路」跑得動。
+# 這批按鈕的視窗只用到這幾種事件；'x.Click += handler' 要能運作，屬性存取
+# 就不能落到一般的 instance __dict__，得由 __getattr__/__setattr__ 攔截。
+_EVENT_PROPERTIES = frozenset((
+    'Click', 'TextChanged', 'SelectionChanged', 'Checked', 'Unchecked',
+    'GotFocus', 'LostFocus', 'MouseDoubleClick', 'Loaded', 'Closed',
+))
+
+
+def _strip_ns(tag):
+    return tag.rsplit('}', 1)[-1] if '}' in tag else tag
+
+
+class _EventSlot(object):
+    """C# 事件（``foo.Click += handler``）的最小替身。
+
+    Python 的 ``x.Click += handler`` 會先 ``getattr(x, 'Click')``（拿到這個
+    物件），呼叫它的 ``__iadd__``，再把回傳值 ``setattr`` 回去——跟真的 WPF
+    事件語意剛好對得上，不用另外寫一套 ``+=`` 的攔截邏輯。
+    """
+
+    def __init__(self):
+        self._handlers = []
+
+    def __iadd__(self, handler):
+        self._handlers.append(handler)
+        return self
+
+    def __isub__(self, handler):
+        if handler in self._handlers:
+            self._handlers.remove(handler)
+        return self
+
+    def fire(self, sender=None, args=None):
+        for handler in list(self._handlers):
+            handler(sender, args)
+
+
+class ComboBoxItemProxy(object):
+    """XAML 裡靜態 ``<ComboBoxItem Content="..."/>`` 的替身。
+
+    按鈕的程式碼只會讀它的 ``.Content``（例如
+    ``int(_text(self.multiplierCombo.SelectedItem.Content))``），所以只做
+    這一個屬性。
+    """
+
+    def __init__(self, content):
+        self.Content = content
+
+    def __repr__(self):
+        return 'ComboBoxItem({0!r})'.format(self.Content)
+
+
+class XamlControl(object):
+    """一個具名 XAML 元素（``x:Name="foo"``）的替身。
+
+    真的 WPF 控制項有 TextBox／ComboBox／Button／TextBlock 等一堆各自的類別，
+    但這批按鈕用到的操作面很窄：``Text``、``Content``、``IsEnabled``、
+    ``IsReadOnly``、``ItemsSource``、``SelectedIndex``/``SelectedItem``，
+    加上 ``Click``/``TextChanged``/``SelectionChanged`` 三種事件。與其為每種
+    標籤各寫一個類別，這裡用一個通用控制項 duck-type 出這個操作面——跟真的
+    WPF 一樣「有那個屬性就能用」，沒用到的屬性（``Foreground``、``Margin``、
+    ``Padding`` 這類純樣式屬性）不建模，因為程式邏輯本來就不會讀它們。
+    """
+
+    def __init__(self, tag, name=None):
+        object.__setattr__(self, '_tag', tag)
+        object.__setattr__(self, '_events', {})
+        object.__setattr__(self, '_items', [])
+        object.__setattr__(self, '_item_source', None)
+        object.__setattr__(self, '_selected_index', -1)
+        object.__setattr__(self, '_text', '')
+        self.Name = name
+        self.Content = None
+        self.IsEnabled = True
+        self.IsReadOnly = False
+        self.Visibility = 'Visible'
+
+    def __repr__(self):
+        return '<XamlControl {0} {1!r}>'.format(self._tag,
+                                                 getattr(self, 'Name', None))
+
+    # -- 事件 ----------------------------------------------------------
+
+    def _event(self, name):
+        slot = self._events.get(name)
+        if slot is None:
+            slot = _EventSlot()
+            self._events[name] = slot
+        return slot
+
+    def __getattr__(self, name):
+        # 只有一般查找（instance __dict__、property）都失敗才會走到這裡。
+        if name in _EVENT_PROPERTIES:
+            return self._event(name)
+        raise AttributeError('{0} 沒有 {1} 這個屬性'.format(self, name))
+
+    def __setattr__(self, name, value):
+        if name in _EVENT_PROPERTIES:
+            # handler 已經在上面 __iadd__ 那一步被記錄了，這裡的 setattr
+            # 只是把同一個 EventSlot 寫回去，不需要真的做什麼。
+            return
+        object.__setattr__(self, name, value)
+
+    # -- Text：TextBox／TextBlock 共用，設定時觸發 TextChanged -------------
+
+    @property
+    def Text(self):
+        return self._text
+
+    @Text.setter
+    def Text(self, value):
+        changed = value != self._text
+        object.__setattr__(self, '_text', value)
+        if changed:
+            self._event('TextChanged').fire(self, None)
+
+    # -- ComboBox --------------------------------------------------------
+
+    @property
+    def Items(self):
+        # ItemsSource 一旦被設定就會蓋過 XAML 裡靜態宣告的 <ComboBoxItem>，
+        # 跟真的 WPF 行為一致。
+        return (list(self._item_source) if self._item_source is not None
+                else list(self._items))
+
+    @property
+    def ItemsSource(self):
+        return self._item_source
+
+    @ItemsSource.setter
+    def ItemsSource(self, value):
+        object.__setattr__(self, '_item_source', value)
+        count = len(self.Items)
+        if self._selected_index >= count:
+            object.__setattr__(
+                self, '_selected_index', 0 if count else -1)
+
+    @property
+    def SelectedIndex(self):
+        return self._selected_index
+
+    @SelectedIndex.setter
+    def SelectedIndex(self, value):
+        changed = value != self._selected_index
+        object.__setattr__(self, '_selected_index', value)
+        if changed:
+            self._event('SelectionChanged').fire(self, None)
+
+    @property
+    def SelectedItem(self):
+        items = self.Items
+        index = self._selected_index
+        if 0 <= index < len(items):
+            return items[index]
+        return None
+
+    @SelectedItem.setter
+    def SelectedItem(self, value):
+        try:
+            self.SelectedIndex = self.Items.index(value)
+        except ValueError:
+            self.SelectedIndex = -1
+
+    # -- 給測試用的驅動捷徑：語意等同「使用者做了這個動作」 -----------------
+
+    def click(self):
+        """模擬使用者點擊：觸發 Click 事件（不管 IsEnabled——按鈕本身該不該
+        擋，是被測程式碼的責任，不是這支假貨的責任）。"""
+        self._event('Click').fire(self, None)
+
+    def type_text(self, value):
+        """模擬使用者輸入：設值並觸發 TextChanged，跟真的 WPF 一樣。"""
+        self.Text = value
+
+    def select(self, index):
+        """模擬使用者選取下拉選單：設 SelectedIndex 並觸發 SelectionChanged。"""
+        self.SelectedIndex = index
+
+
+def _parse_xaml_controls(xaml_text):
+    """解析一份 XAML 字串，回傳 ``{x:Name: XamlControl}``。
+
+    只做這批按鈕真的會用到的兩件事：認得帶 ``x:Name`` 的元素、認得
+    ``ComboBox`` 底下靜態宣告的 ``<ComboBoxItem>`` 子項（含
+    ``IsSelected="True"`` 決定初始選取）。其餘 WPF 版面／樣式一律忽略——
+    這支管的是物件關係與資料流，不是像素，跟 ``test_pdf_diff_window`` 那支
+    假 WPF 的定位一致。
+    """
+    root = ElementTree.fromstring(xaml_text)
+    controls = {}
+
+    def walk(element):
+        tag = _strip_ns(element.tag)
+        name = element.get(_WPF_XAML_NS + 'Name')
+        control = None
+        if name:
+            control = XamlControl(tag, name)
+            if element.get('Content') is not None:
+                control.Content = element.get('Content')
+            if element.get('Text') is not None:
+                control.Text = element.get('Text')
+            if element.get('IsEnabled') == 'False':
+                control.IsEnabled = False
+            if element.get('IsReadOnly') == 'True':
+                control.IsReadOnly = True
+            controls[name] = control
+
+        if tag == 'ComboBox':
+            target = control or XamlControl(tag)
+            items = []
+            selected = -1
+            for child in element:
+                if _strip_ns(child.tag) != 'ComboBoxItem':
+                    continue
+                items.append(ComboBoxItemProxy(child.get('Content')))
+                if child.get('IsSelected') == 'True':
+                    selected = len(items) - 1
+            object.__setattr__(target, '_items', items)
+            if selected >= 0:
+                object.__setattr__(target, '_selected_index', selected)
+            # ComboBoxItem 不是獨立可互動的元件，不用再往下遞迴。
+            return
+
+        for child in element:
+            walk(child)
+
+    walk(root)
+    return controls
+
+
+class FakeWPFWindow(object):
+    """``pyrevit.forms.WPFWindow`` 的替身：真的解析 XAML，具名元素變成
+    ``self.<name>``（跟 pyRevit 的行為一致），事件（``Click`` 這類）可以被
+    ``+=`` 掛上處理常式，測試可以呼叫 ``window.someButton.click()`` 這樣的
+    捷徑模擬使用者操作，一路把 ``ParkingExcelWindow``/``DoorWindowWindow``
+    這種「``class XxxWindow(forms.WPFWindow)``」的建構子與事件處理常式都跑過。
+
+    ``lib\\`` 底下也有幾支只需要這個基底類別存在就能 import／建構，不需要
+    真的互動——那種情況下這支照樣可以用，只是沒有人去呼叫 ``.click()``。
+
+    這支測不到的：真正的版面（像素、間距、字型渲染）、以及 WPF 執行緒／
+    Dispatcher 相關的時序問題。管的是物件關係與資料流，不是畫面。
     """
 
     def __init__(self, xaml_source=None, literal_string=False, **kwargs):
@@ -486,6 +724,20 @@ class FakeWPFWindow(object):
         self.shown = 0
         self.closed = False
         self.DialogResult = None
+        if xaml_source:
+            if literal_string:
+                text = xaml_source
+            else:
+                with io.open(xaml_source, encoding='utf-8') as handle:
+                    text = handle.read()
+            for name, control in _parse_xaml_controls(text).items():
+                setattr(self, name, control)
+
+    def ShowDialog(self, *args, **kwargs):
+        """真的 .NET 方法名（PascalCase）——按鈕的 ``run()`` 呼叫的是這個，
+        不是下面那個小寫的 pythonic 別名。"""
+        self.shown += 1
+        return self.DialogResult
 
     def show_dialog(self, *args, **kwargs):
         self.shown += 1

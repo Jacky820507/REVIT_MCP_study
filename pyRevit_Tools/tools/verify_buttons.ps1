@@ -34,12 +34,26 @@
     Skip the real-compile gate (use when the IronPython 2.7.12 engine isn't
     installed on this machine).
 
+.PARAMETER IncludeMutationCheck
+    Also run tools\mutation_check.py — deliberately reintroduces known
+    regression shapes (the $V-column off-by-one, a skipped confirmation
+    dialog, a backup taken after the write instead of before) into temporary
+    copies of the source and asserts the test suite catches every one. This
+    verifies the *tests* are worth trusting, not that today's code is
+    correct, so it is opt-in rather than part of the default run: it is
+    slower (each mutation re-imports a test module and runs unittest) and its
+    useful cadence is "after adding a new wiring test" or "when in doubt
+    about test quality", not "before every deploy".
+
 .EXAMPLE
     .\pyRevit_Tools\tools\verify_buttons.ps1
+.EXAMPLE
+    .\pyRevit_Tools\tools\verify_buttons.ps1 -IncludeMutationCheck
 #>
 [CmdletBinding()]
 param(
-    [switch] $SkipIronPython
+    [switch] $SkipIronPython,
+    [switch] $IncludeMutationCheck
 )
 
 $ErrorActionPreference = 'Stop'
@@ -89,6 +103,17 @@ $testOutput | Select-Object -Last 12 | ForEach-Object { Write-Host $_ }
 $summaryLine = ($testOutput | Select-String -Pattern '^Ran \d+ tests? in' | Select-Object -Last 1)
 Add-Result 'python -m unittest (tests\)' ($testCode -eq 0) `
     ($(if ($summaryLine) { $summaryLine.ToString().Trim() } else { "exit $testCode" }))
+
+if ($IncludeMutationCheck) {
+    Write-Host ''
+    Write-Host '=== +1 突變測試（-IncludeMutationCheck，選用）===' -ForegroundColor Cyan
+    $mutOutput = & python (Join-Path $PSScriptRoot 'mutation_check.py') 2>&1
+    $mutCode = $LASTEXITCODE
+    $mutOutput | ForEach-Object { Write-Host $_ }
+    $mutSummary = ($mutOutput | Select-String -Pattern '^\d+/\d+ ' | Select-Object -Last 1)
+    Add-Result 'mutation_check.py' ($mutCode -eq 0) `
+        ($(if ($mutSummary) { $mutSummary.ToString().Trim() } else { "exit $mutCode" }))
+}
 
 Write-Host ''
 Write-Host '=== 結果 ===' -ForegroundColor Cyan

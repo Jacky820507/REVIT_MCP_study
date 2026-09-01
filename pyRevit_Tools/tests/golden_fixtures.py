@@ -50,8 +50,8 @@ GOLDEN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # 六顆已移轉 SheetLayout 的 Takeoff 按鈕
 # ---------------------------------------------------------------------------
 
-def _workbook_payload(run, outpath):
-    """把 ``TakeoffRun``/``ButtonRun`` 跑完之後的產出收成一份可序列化的 dict。"""
+def _workbook_payload(outpath):
+    """把跑完的按鈕產出（一份 .xlsx 路徑）收成一份可序列化的 dict。"""
     sheets = harness.read_sheets(outpath)
     xml = []
     import zipfile
@@ -72,18 +72,25 @@ def _workbook_payload(run, outpath):
     return {'cells': sheets, 'xml': xml}
 
 
-def rc_volume_excel():
+def _build_rc_volume_excel_file():
+    """實際跑一次 RcVolumeExcel，回傳它真的寫出來的 .xlsx 路徑。
+
+    這支跟 ``rc_volume_excel()``（golden regression 用）共用同一段建構邏輯，
+    只是這支保留檔案本身——``tools/verify_excel_recalc.py`` 要把這個檔案
+    交給真的 LibreOffice 開啟，不能只讀儲存格字典。呼叫端負責清掉檔案所在
+    的暫存目錄。
+    """
     import test_rc_volume_main_wiring as mod
     tmp = tempfile.mkdtemp(prefix='golden-')
     path = os.path.join(tmp, 'g.xlsx')
     with mod.ButtonRun(tmp, {'ask_for_string': 'RC', 'alert_yes_no': True,
                              'save_file': path}) as run:
         run.run()
-    return _workbook_payload(run, path)
+    return path
 
 
-def _workbook_contract_case(modname, casename):
-    """把 ``harness.WorkbookContract`` 子類別跑一次，取它的 make_fixture。"""
+def _build_case_file(modname, casename):
+    """跟 ``_build_rc_volume_excel_file`` 同理，給其他五顆按鈕用。"""
     mod = __import__(modname)
     case_cls = getattr(mod, casename)
     case = case_cls()
@@ -91,7 +98,34 @@ def _workbook_contract_case(modname, casename):
     case.outpath = os.path.join(case.tmpdir, case.OUT_NAME)
     with case.make_run() as run:
         run.run()
-    return _workbook_payload(run, case.outpath)
+    return case.outpath
+
+
+def rc_volume_excel():
+    return _workbook_payload(_build_rc_volume_excel_file())
+
+
+def _workbook_contract_case(modname, casename):
+    """把 ``harness.WorkbookContract`` 子類別跑一次，取它的 make_fixture。"""
+    return _workbook_payload(_build_case_file(modname, casename))
+
+
+# name -> 產生實際 .xlsx 檔案路徑的函式（呼叫端負責清理暫存目錄）。
+# ``tools/verify_excel_recalc.py`` 用這個，golden regression 用上面的
+# ``TAKEOFF_BUTTONS``（讀 cells，不留檔案）。
+TAKEOFF_BUTTON_FILES = {
+    'rc_volume_excel': _build_rc_volume_excel_file,
+    'partition_takeoff': lambda: _build_case_file(
+        'test_partition_takeoff_wiring', 'PartitionTakeoffWiringTests'),
+    'baseboard': lambda: _build_case_file(
+        'test_baseboard_wiring', 'BaseboardWiringTests'),
+    'interior_wall_paint': lambda: _build_case_file(
+        'test_interior_wall_paint_wiring', 'InteriorWallPaintWiringTests'),
+    'ceiling_takeoff': lambda: _build_case_file(
+        'test_ceiling_takeoff_wiring', 'CeilingTakeoffWiringTests'),
+    'floor_takeoff': lambda: _build_case_file(
+        'test_floor_takeoff_wiring', 'FloorTakeoffWiringTests'),
+}
 
 
 def partition_takeoff():
