@@ -60,6 +60,40 @@ A `PostToolUse` hook (`~/.claude/scripts/ironpython-guard-hook.ps1`) enforces th
 
 Path note: `MCP_Tools.extension` is reachable by two paths — the real source at `pyRevit_Tools/MCP_Tools.extension/`, and a directory junction at `%APPDATA%\pyRevit\Extensions\MCP_Tools.extension`. Editing through either path writes into this repository.
 
+## Excel Column Addressing (sheet_layout.py)
+
+Never hand-write an Excel column letter (`'F'`, `'AB'`) or a hard-coded cell/range string (`'=E{0}*F{0}'`, `Cells(row, 6)`, `'A3:E6'`) anywhere under `pyRevit_Tools/MCP_Tools.extension/`. A hand-written letter and the array index that produces the same column are two sources of truth for one fact; inserting a column moves the index but not the letter, and the formula silently starts reading the wrong cell — no exception, no crash, just a wrong number in the workbook. That was the root cause of at least two shipped regressions (a `$V` column reference surviving a column reorder, and a sheet-2 formula reading the wrong wall's data).
+
+Use `pyRevit_Tools/MCP_Tools.extension/lib/sheet_layout.py` (IronPython 2.7 safe) instead:
+
+```python
+LAYOUT = sheet_layout.SheetLayout(
+    ['room_no', 'room_name', 'length', 'height', 'area'], first_data_row=6)
+
+LAYOUT.col('area')                          # -> 'E'
+LAYOUT.cell('area', 6)                      # -> 'E6'
+LAYOUT.formula(6, '{length}*{height}')      # -> '=C6*D6'
+LAYOUT.sum_of('area', 6, 20)                # -> '=SUM(E6:E20)'
+row = LAYOUT.row_from({'room_no': '101'})   # blank row with one field set
+```
+
+For Excel COM code (`ws.Cells(row, col)`) that writes into a user's own workbook template rather than one this project lays out, the column *numbers* are fixed by that template, not by us — but the letters used in formula strings must still be derived from a named constant (e.g. `SUBTOTAL_COLS['quantity']` → `_col_letter(...)`), never typed as a literal. See `scaffold_excel.py` / `parking_excel_logic.py` for the pattern.
+
+Escape hatch: a line whose address is genuinely constant (the worksheet origin `A1` in a `<dimension ref="A1:...">` or `autoFilter` element) may keep the literal, marked with a trailing `# sheet-layout: ignore` comment.
+
+Two gates enforce this, both under `pyRevit_Tools/tests/`:
+
+- `takeoff_harness.hand_written_addresses()` — a lint scanning every `.py` in the extension for the address patterns above (docstrings and `# sheet-layout: ignore` lines excluded). Wired into `test_scaffold_template_columns.NoHandWrittenAddressesTests`, which runs as part of the normal suite.
+- `tests/test_golden_regression.py` — regenerates the actual output (cells, formulas, merged ranges, COM call sequences) of every SheetLayout-migrated button and diffs it against the frozen fixtures committed at `tests/goldens/*.json`. A silent off-by-one in a column mapping fails this even if the lint above somehow missed the literal.
+
+Before considering any change to a button under `Takeoff.panel/` or its `lib/` dependencies done, run:
+
+```powershell
+pyRevit_Tools/tools/verify_buttons.ps1
+```
+
+It chains the real IronPython 2.7.12 compile gate and the full offline suite (which includes both gates above) and prints a pass/fail table. If the change was a **deliberate** output change (not a refactor — a real formula or layout change), run `python pyRevit_Tools/tools/regen_goldens.py <fixture-name>` first, look at the printed diff summary to confirm it's the change you intended, then re-run `verify_buttons.ps1`. Regenerating a golden to make a test pass without reading the diff defeats the entire point of the fixture.
+
 ## Current Source-of-Truth Counts
 
 These counts must be derived from source, not copied by memory.
