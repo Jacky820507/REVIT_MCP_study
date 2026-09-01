@@ -1,0 +1,2 @@
+title: "圖說差異修訂雲"
+tooltip: "比對兩份向量 PDF 圖說（舊版 vs 新版），依圖號對應到 Revit 圖紙，把差異區域圈成修訂雲並把變更說明寫進 Comments；標籤確認後請另按「放置修訂雲標籤」。需要系統 Python 3 並安裝 pymupdf。"

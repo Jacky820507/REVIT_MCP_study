@@ -1,0 +1,180 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="放置修訂雲標籤"
+    Width="900" Height="720" MinWidth="700" MinHeight="560"
+    WindowStartupLocation="CenterOwner"
+    ResizeMode="CanResizeWithGrip"
+    ShowInTaskbar="False"
+    Background="#F3F6F8"
+    FontFamily="Segoe UI, Microsoft JhengHei"
+    UseLayoutRounding="True">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="Canvas" Color="#F3F6F8" />
+        <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="SurfaceAlt" Color="#F8FAFB" />
+        <SolidColorBrush x:Key="Hairline" Color="#E2E8ED" />
+        <SolidColorBrush x:Key="HairlineStrong" Color="#CBD5DD" />
+        <SolidColorBrush x:Key="Ink" Color="#1B2733" />
+        <SolidColorBrush x:Key="InkMuted" Color="#5A6B7B" />
+        <SolidColorBrush x:Key="InkSubtle" Color="#8A99A8" />
+        <SolidColorBrush x:Key="Brand" Color="#B45309" />
+        <SolidColorBrush x:Key="BrandDark" Color="#8A3F08" />
+        <SolidColorBrush x:Key="OnBrand" Color="#FFFFFF" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource InkMuted}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineStrong}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineStrong}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource Ink}" />
+            <Setter Property="Background" Value="{StaticResource Surface}" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineStrong}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="Primary" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Foreground" Value="{StaticResource OnBrand}" />
+            <Setter Property="Background" Value="{StaticResource Brand}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandDark}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource Brand}"
+                CornerRadius="4" Padding="18,12" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="放置修訂雲標籤" Foreground="White"
+                           FontSize="19" FontWeight="SemiBold" />
+                <TextBlock x:Name="documentText" Foreground="#FFF1DF"
+                           Margin="0,4,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Background="#FFF7ED"
+                BorderBrush="#F2C48C" BorderThickness="1"
+                CornerRadius="4" Padding="13,10" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="這個動作只會在既有修訂雲上放置標籤，不會重新比對 PDF，也不會新增或刪除雲狀線。"
+                           Foreground="#7C2D12" TextWrapping="Wrap" />
+                <TextBlock x:Name="scopeHintText" Style="{StaticResource Caption}"
+                           Margin="0,5,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Background="{StaticResource Surface}"
+                BorderBrush="{StaticResource Hairline}" BorderThickness="1"
+                CornerRadius="4" Padding="12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="修訂雲狀標籤"
+                               Foreground="{StaticResource InkMuted}"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <ComboBox x:Name="revisionTagCombo" Grid.Column="1"
+                              ToolTip="選擇已載入的 OST_RevisionCloudTags 類型。" />
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="篩選圖號／圖名"
+                               Foreground="{StaticResource InkMuted}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <TextBox x:Name="searchText" Grid.Column="1"
+                             ToolTip="可輸入 Revit 圖號、DWG NO. 或圖名" />
+                    <Button x:Name="selectAllButton" Grid.Column="2"
+                            Content="全選圖紙" Width="92" Margin="10,0,6,0"
+                            Click="select_all_clicked" />
+                    <Button x:Name="clearSelectionButton" Grid.Column="3"
+                            Content="全部取消" Width="92"
+                            Click="clear_selection_clicked" />
+                </Grid>
+
+                <TextBlock Grid.Row="2" x:Name="listHintText"
+                           Style="{StaticResource Caption}" Margin="0,0,0,6"
+                           Text="勾選要放置標籤的圖紙；按「全選圖紙」會涵蓋本專案所有圖紙。" />
+
+                <Border Grid.Row="3" Background="{StaticResource SurfaceAlt}"
+                        BorderBrush="{StaticResource HairlineStrong}"
+                        BorderThickness="1" CornerRadius="3">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="sheetList" Margin="8,5" />
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Background="{StaticResource Surface}"
+                BorderBrush="{StaticResource Hairline}" BorderThickness="0,1,0,0"
+                Padding="0,12,0,0" Margin="0,12,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="statusText" Grid.Column="0"
+                           Style="{StaticResource Caption}"
+                           VerticalAlignment="Center" TextWrapping="Wrap" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button x:Name="cancelButton" Content="取消" Width="82"
+                            Margin="0,0,8,0" IsCancel="True"
+                            Click="cancel_clicked" />
+                    <Button x:Name="placeButton" Content="放置標籤"
+                            Width="120" Style="{StaticResource Primary}"
+                            IsEnabled="False" Click="place_clicked" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
