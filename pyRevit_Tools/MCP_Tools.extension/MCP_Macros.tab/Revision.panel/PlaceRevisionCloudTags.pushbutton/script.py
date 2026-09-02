@@ -9,12 +9,31 @@ from __future__ import unicode_literals
 PDF 差異工具建立的是直接屬於 ViewSheet 的修訂雲；這支工具只對這種紙面雲
 放置標籤，避免把視圖座標誤當成圖紙座標。已經有任何修訂雲標籤的雲會跳過，
 所以重複執行不會為同一朵雲再加第二個標籤。
+
+## 大型專案的三個成本上限（2026-09-02）
+
+這顆按鈕原本在幾千張圖紙的案子按下去要等好幾分鐘、然後把 Revit 帶走。
+成因不是放標籤那一段，是「開視窗之前」的三個全案子掃描。改法都是把範圍
+先縮到真正相關的元素，請不要退回去：
+
+1. **先找雲、再找圖紙。** 只有真的有雲的圖紙需要昂貴的 DWG NO. 欄位掃描，
+   而那通常是幾十張，不是全部幾千張。空白列在 UI 上也只是雜訊。
+2. **只掃修訂雲標籤，不掃全部 IndependentTag。** 舊寫法走訪整份文件的
+   ``IndependentTag``——大案子裡是幾萬個門窗牆標籤，全部只為了找出其中
+   極少數的修訂雲標籤。``OST_RevisionCloudTags`` 讓 Revit 自己過濾。
+3. **``_id_value`` 的存取器只解析一次。** ``ElementId.Value`` 是 Revit 2024
+   起才有的，舊寫法在 2020–2023 上每呼叫一次就丟一次 AttributeError。
+
+WPF 事件處理常式一律包 :func:`_guard`。裡面丟出去的例外會被 WPF 的
+dispatcher 當成未處理例外，直接終止 Revit 行程（「發生嚴重錯誤」），
+訊息還看不到——包起來至少會變成一個看得懂、查得到的對話框。
 """
 
 __title__ = u'放置\n修訂雲標籤'
 __author__ = 'RevitMCP'
 
 import os
+import traceback
 
 from Autodesk.Revit import DB
 from pyrevit import forms, revit
@@ -30,17 +49,59 @@ EDGE_PADDING_FT = 12.0 * MM_TO_FT
 CLOUD_GAP_FT = 6.0 * MM_TO_FT
 
 
+def _guard(method):
+    """讓 WPF 事件處理常式裡的例外變成對話框，而不是終止 Revit。
+
+    WPF 不會替我們攔 dispatcher 上的未處理例外，Revit 也只會顯示「發生嚴重
+    錯誤，應用程式將終止」然後關掉——使用者拿不到任何可回報的訊息。
+    """
+    def handler(self, sender, args):
+        try:
+            return method(self, sender, args)
+        except Exception as error:
+            forms.alert(
+                u'操作失敗（已攔下，Revit 不會被關閉）：\n\n{}\n\n{}'.format(
+                    error, traceback.format_exc()), title=TITLE)
+    handler.__name__ = getattr(method, '__name__', 'handler')
+    handler.__doc__ = method.__doc__
+    return handler
+
+
+# 這個 harness 上的 ElementId 用哪個屬性取整數值；解析一次就記住。
+_ID_ACCESSOR = None
+
+
+def _read_id(element_id, accessor):
+    if accessor == 'IntegerValue':
+        return int(element_id.IntegerValue)
+    return int(element_id.Value)
+
+
 def _id_value(element_id):
-    """Read ElementId on R20 and newer Revit versions."""
+    """Read ElementId on R20 and newer Revit versions.
+
+    ``IntegerValue`` 在 2020–2026 都還在（2024 起標為 deprecated），
+    ``Value`` 則是 2024 才加的，所以先試前者。存取器快取起來，避免在
+    幾萬個元素的迴圈裡每圈丟一次 AttributeError。
+    """
     if element_id is None:
         return -1
-    try:
-        return int(element_id.Value)
-    except Exception:
+
+    global _ID_ACCESSOR
+    if _ID_ACCESSOR is not None:
         try:
-            return int(element_id.IntegerValue)
+            return _read_id(element_id, _ID_ACCESSOR)
         except Exception:
-            return -1
+            _ID_ACCESSOR = None
+
+    for accessor in ('IntegerValue', 'Value'):
+        try:
+            value = _read_id(element_id, accessor)
+        except Exception:
+            continue
+        _ID_ACCESSOR = accessor
+        return value
+    return -1
 
 
 def _safe_sheet_id(record):
@@ -61,40 +122,41 @@ def _sheet_cloud_records(doc):
     RevisionCloud owned by a plan/section view has a different coordinate
     system, so it is deliberately reported as out of scope instead of being
     tagged at a misleading location.
-    """
-    rows = sources.sheet_records(doc)
-    by_sheet_id = {}
-    for row in rows:
-        sheet_id = _safe_sheet_id(row)
-        if sheet_id > 0:
-            by_sheet_id[sheet_id] = row
 
+    順序很重要：**先掃雲、再取圖紙資料**。``sources.sheet_records`` 要為
+    每張圖紙讀 DWG NO. 欄位，那是這支工具最貴的操作；只有真的有雲的圖紙
+    需要它。幾千張圖紙的案子通常只有幾十張帶雲，差距是兩個數量級。
+    回傳的 records 也因此只含有雲的圖紙——沒有雲的圖紙在這個 UI 上不能做
+    任何事，列出來只是讓使用者多捲幾千列。
+    """
+    clouds_by_owner = sources.revision_clouds_by_owner(doc)
+    if not clouds_by_owner:
+        return [], 0
+
+    sheet_ids = sources.all_sheet_ids(doc)
     clouds_by_sheet = {}
     unmapped = 0
-    try:
-        clouds = list(DB.FilteredElementCollector(doc)
-                      .OfClass(DB.RevisionCloud)
-                      .WhereElementIsNotElementType()
-                      .ToElements())
-    except Exception:
-        clouds = []
+    for owner_id, clouds in clouds_by_owner.items():
+        if owner_id in sheet_ids:
+            clouds_by_sheet[owner_id] = list(clouds)
+        else:
+            unmapped += len(clouds)
 
-    for cloud in clouds:
-        try:
-            owner_id = _id_value(cloud.OwnerViewId)
-            if owner_id in by_sheet_id:
-                clouds_by_sheet.setdefault(owner_id, []).append(cloud)
-            else:
-                unmapped += 1
-        except Exception:
-            unmapped += 1
+    if not clouds_by_sheet:
+        return [], unmapped
+
+    rows = sources.sheet_records(doc, sheet_ids=clouds_by_sheet.keys())
 
     records = []
     for row in rows:
+        sheet_id = _safe_sheet_id(row)
+        clouds = clouds_by_sheet.get(sheet_id)
+        if not clouds:
+            continue
         record = dict(row)
-        record['id'] = _safe_sheet_id(row)
-        record['clouds'] = clouds_by_sheet.get(record['id'], [])
-        record['cloud_count'] = len(record['clouds'])
+        record['id'] = sheet_id
+        record['clouds'] = clouds
+        record['cloud_count'] = len(clouds)
         record['tagged_cloud_ids'] = set()
         records.append(record)
 
@@ -127,15 +189,23 @@ def _tagged_cloud_id(tag):
 
 
 def _tagged_cloud_ids_by_sheet(doc, sheet_ids):
-    """Scan tags once and return ``{sheet_id: {cloud_id, ...}}``."""
+    """Scan tags once and return ``{sheet_id: {cloud_id, ...}}``.
+
+    只掃 ``OST_RevisionCloudTags``。舊寫法用 ``OfClass(IndependentTag)``
+    走訪整份文件的標籤——大案子裡那是幾萬個門窗、房間、牆標籤，而我們只
+    想知道其中極少數的修訂雲標籤指向哪朵雲。讓 Revit 先用類別過濾，迴圈
+    的規模就從「全專案標籤數」降到「修訂雲標籤數」。
+    """
     wanted = set(sheet_ids)
     result = dict((sheet_id, set()) for sheet_id in wanted)
     if not wanted:
         return result
 
     try:
-        tags = DB.FilteredElementCollector(doc).OfClass(DB.IndependentTag) \
-            .WhereElementIsNotElementType()
+        tags = DB.FilteredElementCollector(doc) \
+            .OfCategory(DB.BuiltInCategory.OST_RevisionCloudTags) \
+            .WhereElementIsNotElementType() \
+            .ToElements()
     except Exception:
         return result
 
@@ -396,13 +466,13 @@ class PlaceRevisionCloudTagsWindow(forms.WPFWindow):
                            for record in self.records)
         if unmapped_cloud_count:
             self.scopeHintText.Text = (
-                u'圖紙上可處理 {} 朵雲；另有 {} 朵雲位於視圖或未上圖紙，'
+                u'{} 張圖紙上可處理 {} 朵雲；另有 {} 朵雲位於視圖或未上圖紙，'
                 u'為避免座標偏移，本次不處理。').format(
-                    direct_count, unmapped_cloud_count)
+                    len(self.records), direct_count, unmapped_cloud_count)
         else:
             self.scopeHintText.Text = (
-                u'圖紙上共有 {} 朵可處理的修訂雲；已有標籤的雲會自動跳過。'
-            ).format(direct_count)
+                u'{} 張圖紙上共有 {} 朵可處理的修訂雲；已有標籤的雲會自動跳過。'
+            ).format(len(self.records), direct_count)
 
         for revision_tag in self.revision_tags:
             self.revisionTagCombo.Items.Add(
@@ -442,7 +512,8 @@ class PlaceRevisionCloudTagsWindow(forms.WPFWindow):
         for record in shown:
             self.sheetList.Children.Add(self._box_for(record))
         self.listHintText.Text = (
-            u'顯示 {} / {} 張圖紙；請勾選要處理的圖紙，可複選或按「全選圖紙」。'
+            u'顯示 {} / {} 張有修訂雲的圖紙；請勾選要處理的，'
+            u'可複選或按「全選圖紙」。'
         ).format(len(shown), len(self.records))
         self._update_status()
 
@@ -470,13 +541,16 @@ class PlaceRevisionCloudTagsWindow(forms.WPFWindow):
             self.revision_tags and clouds and
             self.revisionTagCombo.SelectedIndex >= 0)
 
+    @_guard
     def _selection_changed(self, sender, args):
         if not self._bulk:
             self._update_status()
 
+    @_guard
     def filter_changed(self, sender, args):
         self._refresh()
 
+    @_guard
     def select_all_clicked(self, sender, args):
         self._bulk = True
         try:
@@ -486,6 +560,7 @@ class PlaceRevisionCloudTagsWindow(forms.WPFWindow):
             self._bulk = False
         self._update_status()
 
+    @_guard
     def clear_selection_clicked(self, sender, args):
         self._bulk = True
         try:
@@ -495,10 +570,12 @@ class PlaceRevisionCloudTagsWindow(forms.WPFWindow):
             self._bulk = False
         self._update_status()
 
+    @_guard
     def cancel_clicked(self, sender, args):
         self.result = None
         self.Close()
 
+    @_guard
     def place_clicked(self, sender, args):
         selected_records = self._selected_records()
         clouds, unused = _eligible_clouds(selected_records)
@@ -525,21 +602,15 @@ def main():
         forms.alert(u'請先開啟 Revit 專案文件，再執行放置標籤。',
                     title=TITLE, exitscript=True)
 
-    records, unmapped = _sheet_cloud_records(doc)
+    # 掃描在大案子裡仍然要幾秒；沒有進度視窗使用者只會看到 Revit 沒反應，
+    # 然後開始亂點——而亂點正是把「慢」變成「當掉」的那一步。
+    with forms.ProgressBar(title=u'掃描修訂雲與圖紙中…', indeterminate=True):
+        records, unmapped = _sheet_cloud_records(doc)
+        revision_tags = sources.revision_tag_records(doc)
+        if records:
+            _refresh_record_tagged_cloud_ids(doc, records)
+
     if not records:
-        forms.alert(u'這個專案沒有可用的圖紙。', title=TITLE)
-        return
-
-    revision_tags = sources.revision_tag_records(doc)
-    if not revision_tags:
-        forms.alert(
-            u'專案中沒有已載入的修訂雲狀標籤類型（OST_RevisionCloudTags）。\n\n'
-            u'請先載入修訂雲狀標籤族群，再重新執行本按鈕。', title=TITLE)
-        return
-
-    _refresh_record_tagged_cloud_ids(doc, records)
-
-    if not any(record.get('cloud_count') for record in records):
         if unmapped:
             forms.alert(
                 u'圖紙上目前沒有可處理的修訂雲。另有 {} 朵雲位於視圖或未上圖紙，'
@@ -547,6 +618,12 @@ def main():
                 title=TITLE)
         else:
             forms.alert(u'圖紙上目前沒有修訂雲。', title=TITLE)
+        return
+
+    if not revision_tags:
+        forms.alert(
+            u'專案中沒有已載入的修訂雲狀標籤類型（OST_RevisionCloudTags）。\n\n'
+            u'請先載入修訂雲狀標籤族群，再重新執行本按鈕。', title=TITLE)
         return
 
     try:

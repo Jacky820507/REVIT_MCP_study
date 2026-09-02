@@ -34,6 +34,7 @@ __title__ = u'圖說差異\n修訂雲'
 __author__ = 'RevitMCP'
 
 import os
+import traceback
 
 from pyrevit import forms, revit
 from System.Windows import FontWeights, TextWrapping, Thickness
@@ -78,6 +79,26 @@ _SEL_BG = SolidColorBrush(Color.FromRgb(0xE8, 0xF0, 0xF7))
 _HAIRLINE = SolidColorBrush(Color.FromRgb(0xE2, 0xE8, 0xED))
 
 
+def _guard(method):
+    """讓 WPF 事件處理常式裡的例外變成對話框，而不是終止 Revit。
+
+    這個檔案的 docstring 已經記了三次「例外發生在 WPF 事件處理常式裡會把
+    Revit 一起帶走」。前兩次的修法是把出錯的成因移掉——對，但只擋掉當時
+    那一個。這一層是最後的網子：未預期的例外至少會變成一個看得懂、可以
+    回報的對話框，而不是「發生嚴重錯誤，應用程式將終止」。
+    """
+    def handler(self, sender, args):
+        try:
+            return method(self, sender, args)
+        except Exception as error:
+            forms.alert(
+                u'操作失敗（已攔下，Revit 不會被關閉）：\n\n{}\n\n{}'.format(
+                    error, traceback.format_exc()), title=TITLE)
+    handler.__name__ = getattr(method, '__name__', 'handler')
+    handler.__doc__ = method.__doc__
+    return handler
+
+
 def _text(value, size=13, brush=_INK, bold=False, wrap=False):
     block = TextBlock()
     block.Text = value
@@ -112,6 +133,14 @@ class PdfDiffWindow(forms.WPFWindow):
         # 批次勾選期間暫停狀態更新：每個 CheckBox 的 Checked 事件都會
         # 觸發一次全量重數，213 個區域就是 213x213 次迴圈。
         self._bulk = False
+        # 目前勾選的圖紙（``id(row)`` 集合）快取，見 _selected_sheet_ids。
+        self._sheet_filter_cache = None
+        self._sheet_filter_cached = False
+        # sheet dict -> 在 self.sheets 裡的索引。用 list.index() 找的話，
+        # 每一列都要對 dict 做線性的深層比較。
+        self._sheet_index = {}
+        for index, sheet in enumerate(sheets):
+            self._sheet_index[id(sheet)] = index
 
         for label, unused in MODES:
             self.modeCombo.Items.Add(label)
@@ -145,6 +174,7 @@ class PdfDiffWindow(forms.WPFWindow):
     def _refresh_compare_enabled(self):
         self.compareButton.IsEnabled = bool(self.old_pdf and self.new_pdf)
 
+    @_guard
     def pick_old_clicked(self, sender, args):
         path = forms.pick_file(file_ext='pdf', title=u'選擇「舊版」PDF 圖說')
         if path:
@@ -152,6 +182,7 @@ class PdfDiffWindow(forms.WPFWindow):
             self._set_path(self.oldPathText, path)
             self._refresh_compare_enabled()
 
+    @_guard
     def pick_new_clicked(self, sender, args):
         path = forms.pick_file(file_ext='pdf', title=u'選擇「新版」PDF 圖說')
         if path:
@@ -174,6 +205,7 @@ class PdfDiffWindow(forms.WPFWindow):
             return None
         return self.revisions[index - 1].get('ElementId')
 
+    @_guard
     def compare_clicked(self, sender, args):
         if os.path.abspath(self.old_pdf) == os.path.abspath(self.new_pdf):
             forms.alert(u'兩邊選到同一個檔案，沒有東西可以比。', title=TITLE)
@@ -241,8 +273,15 @@ class PdfDiffWindow(forms.WPFWindow):
         return u'　'.join(parts)
 
     def _render_sheet_filters(self):
-        """建立欲標圖紙的多選清單；預設全部勾選。"""
+        """建立欲標圖紙的多選清單；預設全部勾選。
+
+        建好之後要真的掛進 ``sheetFilterList``——之前漏了這一步，勾選框全部
+        只活在 ``self.sheet_filter_boxes`` 字典裡，視窗上那一欄是空的：使用者
+        看不到、也沒辦法排除任何一張圖紙。離線測試直接用字典取用勾選框，
+        所以測試是綠的，介面卻是壞的。
+        """
         self.sheetFilterList.Children.Clear()
+        self.sheet_filter_boxes = {}
         for row in self.rows:
             box = CheckBox()
             box.Content = self._sheet_filter_label(row)
@@ -252,25 +291,55 @@ class PdfDiffWindow(forms.WPFWindow):
             box.Checked += self._sheet_filter_changed
             box.Unchecked += self._sheet_filter_changed
             self.sheet_filter_boxes[id(row)] = box
+            self.sheetFilterList.Children.Add(box)
+        self._invalidate_sheet_filter()
         self._update_sheet_filter_status()
 
-    def _selected_sheet_rows(self):
-        """回傳明確勾選的圖紙；全部取消時回 ``None`` 代表全選。"""
-        selected = []
+    def _invalidate_sheet_filter(self):
+        """勾選框動過就丟掉快取。這是唯一的失效點，見下面的說明。"""
+        self._sheet_filter_cached = False
+        self._sheet_filter_cache = None
+
+    def _selected_sheet_ids(self):
+        """回傳明確勾選的圖紙 ``id(row)`` 集合；全部取消時回 ``None``（＝全選）。
+
+        **不要回傳 row 的 list 再用 ``row in selected``。** ``list`` 的
+        ``in`` 是線性搜尋，而 row 是 dict——沒命中的每一項都會走完整的 dict
+        深層比較，而 ``row['page']`` 底下掛著整頁的 region 清單。這個查詢被
+        ``_regions_of`` 對每一列各叫一次，於是變成 O(N²) 次深層比較；
+        300 頁的 PDF 就是在這裡把視窗卡到像當掉。改成 id 集合是 O(1)。
+
+        結果會快取，因為同一次繪製裡會被問幾百次。勾選框只能透過
+        Checked/Unchecked 事件改變（WPF 對程式設定的值也會發事件），所以
+        ``_sheet_filter_changed`` 是唯一需要失效的地方；重建清單時
+        ``_render_sheet_filters`` 也會失效一次。
+        """
+        if self._sheet_filter_cached:
+            return self._sheet_filter_cache
+        selected = set()
         for row in self.rows:
             box = self.sheet_filter_boxes.get(id(row))
             if box is not None and box.IsChecked:
-                selected.append(row)
-        return selected or None
+                selected.add(id(row))
+        self._sheet_filter_cache = selected or None
+        self._sheet_filter_cached = True
+        return self._sheet_filter_cache
+
+    def _selected_sheet_rows(self):
+        """勾選的 row 清單；全部取消時回 ``None``。只給顯示用，不放進迴圈。"""
+        selected = self._selected_sheet_ids()
+        if selected is None:
+            return None
+        return [row for row in self.rows if id(row) in selected]
 
     def _row_is_sheet_selected(self, row):
-        selected = self._selected_sheet_rows()
-        return selected is None or row in selected
+        selected = self._selected_sheet_ids()
+        return selected is None or id(row) in selected
 
     def _update_sheet_filter_status(self):
         if not hasattr(self, 'sheetFilterStatus'):
             return
-        selected = self._selected_sheet_rows()
+        selected = self._selected_sheet_ids()
         if selected is None:
             self.sheetFilterStatus.Text = u'未指定圖紙：視為全部 ({})'.format(
                 len(self.rows))
@@ -278,7 +347,9 @@ class PdfDiffWindow(forms.WPFWindow):
             self.sheetFilterStatus.Text = u'已選 {} / {} 張圖紙'.format(
                 len(selected), len(self.rows))
 
+    @_guard
     def _sheet_filter_changed(self, sender, args):
+        self._invalidate_sheet_filter()
         self._update_sheet_filter_status()
         if not self._ready or not self.rows:
             return
@@ -302,21 +373,34 @@ class PdfDiffWindow(forms.WPFWindow):
         return regions
 
     def _combo_for(self, row):
+        """每一列一個「要對到哪張 Revit 圖紙」的下拉。
+
+        清單用 ``ItemsSource`` 共用同一份 list，不要每個下拉再
+        ``Items.Add`` 一輪。一個 1500 張圖紙的專案配 200 頁的 PDF，逐項加
+        就是 30 萬次跨 WPF 邊界的呼叫，全部發生在 ``compare_clicked`` 這個
+        事件處理常式裡——那正是「比對完之後 Revit 沒反應然後死掉」的地方。
+        共用同一個唯讀 list 是安全的：ItemsControl 不會去改它，而下拉本身
+        的清單面板預設就有虛擬化。
+
+        ``IsSynchronizedWithCurrentItem`` 明確設成 False。傳進去的是一般的
+        list 而不是 ``ICollectionView``，所以預設本來就不會同步；但如果哪天
+        有人把它換成 ``ICollectionView``，所有下拉會共用同一個「目前項目」
+        ——動一個就全部一起動，而後果是雲被畫到錯的圖紙上，還不會報錯。
+        """
         if row['combo'] is not None:
             return row['combo']
         combo = ComboBox()
-        for label in self._sheet_labels:
-            combo.Items.Add(label)
+        combo.ItemsSource = self._sheet_labels
+        combo.IsSynchronizedWithCurrentItem = False
         combo.SelectedIndex = 0
         if row['sheet'] is not None:
-            try:
-                combo.SelectedIndex = self.sheets.index(row['sheet']) + 1
-            except ValueError:
-                combo.SelectedIndex = 0
+            index = self._sheet_index.get(id(row['sheet']))
+            combo.SelectedIndex = 0 if index is None else index + 1
         combo.SelectionChanged += self._combo_changed
         row['combo'] = combo
         return combo
 
+    @_guard
     def _combo_changed(self, sender, args):
         self._update_status()
 
@@ -476,6 +560,7 @@ class PdfDiffWindow(forms.WPFWindow):
             for region in self._regions_of(row):
                 self._box_for(row, region)
 
+    @_guard
     def _tick_changed(self, sender, args):
         if self._bulk:
             return
@@ -644,6 +729,7 @@ class PdfDiffWindow(forms.WPFWindow):
 
     # --- handlers ---------------------------------------------------------
 
+    @_guard
     def filter_changed(self, sender, args):
         if not self._ready or not self.rows:
             return
@@ -654,6 +740,7 @@ class PdfDiffWindow(forms.WPFWindow):
             self._render_regions(self.selected_row)
         self._update_status()
 
+    @_guard
     def select_shown_clicked(self, sender, args):
         self._bulk = True
         try:
@@ -664,6 +751,7 @@ class PdfDiffWindow(forms.WPFWindow):
             self._bulk = False
         self._update_status()
 
+    @_guard
     def clear_all_clicked(self, sender, args):
         self._bulk = True
         try:
@@ -674,9 +762,11 @@ class PdfDiffWindow(forms.WPFWindow):
             self._bulk = False
         self._update_status()
 
+    @_guard
     def cancel_clicked(self, sender, args):
         self.Close()
 
+    @_guard
     def ok_clicked(self, sender, args):
         pairings = self.selected_pairings()
         if not pairings:
@@ -776,13 +866,18 @@ def main():
     if doc is None:
         forms.alert(u'請先開啟 Revit 專案文件。', title=TITLE, exitscript=True)
 
-    sheets = sources.sheet_records(doc)
+    # 這一段在幾千張圖紙的專案要好幾秒（每張都要找圖框上的 DWG NO. 欄位）。
+    # 沒有進度視窗使用者只會看到 Revit 卡住不動，然後開始亂點。
+    with forms.ProgressBar(title=u'讀取圖紙與圖號中…', indeterminate=True):
+        sheets = sources.sheet_records(doc)
+        revisions = sources.revision_records(doc)
+        reference_cloud_id = sources.selected_revision_cloud_id(
+            doc, revit.uidoc)
+
     if not sheets:
         forms.alert(u'這個專案沒有圖紙，雲形沒有地方可畫。', title=TITLE)
         return
 
-    revisions = sources.revision_records(doc)
-    reference_cloud_id = sources.selected_revision_cloud_id(doc, revit.uidoc)
     PdfDiffWindow(sheets, reference_cloud_id, revisions).ShowDialog()
 
 

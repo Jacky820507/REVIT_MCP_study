@@ -201,12 +201,23 @@ class CheckBox(_Element):
     Unchecked = _event_property('Unchecked')
 
 
+class ItemsSourceConflict(Exception):
+    """對應 WPF「使用 ItemsSource 時操作 Items 會產生無效的作業」。"""
+
+
 class _Items(object):
-    def __init__(self):
+    def __init__(self, owner):
+        self._owner = owner
         self._items = []
 
     def Add(self, item):
+        if getattr(self._owner, '_items_source', None) is not None:
+            raise ItemsSourceConflict(
+                '使用 ItemsSource 時不能再 Items.Add')
         self._items.append(item)
+
+    def _bind(self, source):
+        self._items = list(source)
 
     def __len__(self):
         return len(self._items)
@@ -218,8 +229,20 @@ class _Items(object):
 class ComboBox(_Element):
     def __init__(self, name=None):
         _Element.__init__(self, name)
-        self.Items = _Items()
+        self.Items = _Items(self)
+        self._items_source = None
         self._index = -1
+
+    @property
+    def ItemsSource(self):
+        return self._items_source
+
+    @ItemsSource.setter
+    def ItemsSource(self, value):
+        # WPF 的 Items 在綁定之後是 ItemsSource 的唯讀檢視。這裡照做，
+        # 讓「共用同一份清單」的寫法在測試裡也看得到同樣的內容。
+        self._items_source = value
+        self.Items._bind(value or [])
 
     @property
     def SelectedIndex(self):
@@ -321,7 +344,7 @@ def _install_stubs():
            forms=_Namespace(WPFWindow=WPFWindow, ProgressBar=_ProgressBar,
                             alert=lambda *a, **k: alerts.append(a),
                             pick_file=lambda *a, **k: None),
-           revit=_Namespace(doc=object()))
+           revit=_Namespace(doc=object(), uidoc=None))
     module('pyrevit.forms')
 
     class MCPBridgeError(Exception):
@@ -332,8 +355,9 @@ def _install_stubs():
            dry_run_then_apply=lambda *a, **k: None,
            show_error=lambda *a, **k: None,
            run=lambda *a, **k: None)
-    module('pdf_diff_sources', sheet_records=lambda doc: [],
-           revision_records=lambda doc: [], revision_label=lambda row: u'')
+    module('pdf_diff_sources', sheet_records=lambda doc, **k: [],
+           revision_records=lambda doc: [], revision_label=lambda row: u'',
+           selected_revision_cloud_id=lambda doc, uidoc: None)
     return alerts
 
 
@@ -497,6 +521,86 @@ class WindowRenderTests(unittest.TestCase):
                      'sheetList', 'regionList',
                      'detailLabel', 'statusText', 'okButton'):
             self.assertTrue(hasattr(window, name), name)
+
+
+class ScaleTests(unittest.TestCase):
+    """會隨專案規模爆掉的寫法。這些不是效能微調，是「大案子按下去會死」。"""
+
+    def test_sheet_filter_boxes_are_in_the_panel(self):
+        """勾選框要真的掛進 sheetFilterList，不能只活在字典裡。
+
+        原本只建立控制項、忘了 ``Children.Add``，所以視窗上「欲標圖紙」那一
+        欄是空的——使用者看不到也不能取消任何一張圖紙。這支測試本身正是
+        當初沒抓到的原因：其他測試都直接用 ``sheet_filter_boxes`` 字典取用，
+        繞過了 UI。
+        """
+        window = make_window()
+        self.assertEqual(len(window.rows),
+                         len(window.sheetFilterList.Children))
+        for row in window.rows:
+            box = window.sheet_filter_boxes[id(row)]
+            self.assertIs(window.sheetFilterList, box.Parent)
+
+    def test_rows_with_equal_content_are_filtered_independently(self):
+        """圖紙勾選要用身分判斷，不能用 ``row in list``。
+
+        ``row`` 是 dict，``list.__contains__`` 沒命中時會做完整的深層比較，
+        而 ``row['page']`` 底下掛著整頁的 region 清單。這個查詢對每一列各做
+        一次，就是 O(N²) 次深層比較——300 頁的 PDF 卡死在這裡。
+
+        內容相同的兩列還會被判成同一列，所以這同時是正確性問題：這裡的
+        兩頁圖號都配不到 Revit 圖紙，於是兩個 row dict 完全相等。
+        """
+        window = script.PdfDiffWindow([sheet(u'A2-01', u'一層平面圖')])
+        twin = page(1, u'讀不到的圖號', u'同名圖', [
+            region(u'B3', 3.0, (50.0, 50.0, 70.0, 70.0))])
+        window.result = {'pageCountA': 2, 'pageCountB': 2, 'matchedCount': 0,
+                         'onlyInA': [], 'onlyInB': [],
+                         'pages': [twin, dict(twin)]}
+        window._build_rows()
+        first, second = window.rows
+        self.assertEqual(first, second, u'測資本身要是「內容相同」才有意義')
+        self.assertIsNot(first, second)
+
+        window.sheet_filter_boxes[id(first)].IsChecked = False
+        self.assertFalse(window._row_is_sheet_selected(first))
+        self.assertTrue(window._row_is_sheet_selected(second))
+
+    def test_every_combo_shares_one_items_source(self):
+        """圖紙下拉不能每個都逐項 Items.Add。
+
+        1500 張圖紙 x 200 頁 = 30 萬次跨 WPF 邊界呼叫，而且全部發生在
+        ``compare_clicked`` 這個事件處理常式裡。共用一份 ItemsSource 之後
+        每個下拉只剩一次屬性設定。
+        """
+        window = make_window()
+        for row in window.rows:
+            combo = row['combo']
+            self.assertIs(window._sheet_labels, combo.ItemsSource)
+            self.assertEqual(len(window._sheet_labels), len(combo.Items))
+            # 共用清單但**不共用「目前項目」**——同步的話動一個下拉會讓
+            # 全部一起動，雲就畫到錯的圖紙上，而且不會報錯。
+            self.assertFalse(combo.IsSynchronizedWithCurrentItem)
+        # 綁定之後再 Items.Add 在 WPF 是 InvalidOperationException。
+        self.assertRaises(ItemsSourceConflict,
+                          window.rows[0]['combo'].Items.Add, u'x')
+
+    def test_a_failing_handler_does_not_escape_to_wpf(self):
+        """事件處理常式丟出去的例外會終止 Revit，所以一律要被攔下來。
+
+        WPF 不會替我們攔 dispatcher 上的未處理例外；Revit 只會顯示「發生
+        嚴重錯誤，應用程式將終止」然後關掉，訊息還看不到。``_guard`` 把它
+        變成一個可回報的對話框。
+        """
+        window = make_window()
+
+        def boom(*args, **kwargs):
+            raise ValueError('boom')
+
+        window._update_status = boom
+        # 沒有 _guard 的話這一行會把 ValueError 丟回 WPF 的 dispatcher。
+        window._combo_changed(None, None)
+        window._tick_changed(None, None)
 
 
 class SelectionTests(unittest.TestCase):
