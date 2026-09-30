@@ -41,6 +41,7 @@ PANEL_COLORS = {
     'Area': (13, 148, 136),         # teal   - 面積
     'BIMGovernance': (14, 116, 144), # cyan  - Agile BIM
     'Material': (37, 87, 131),      # deep blue - 材質管理
+    'CAD': (190, 24, 93),           # rose   - CAD 匯入
 }
 INK = (55, 65, 81)
 LIGHT = (148, 163, 184)
@@ -549,6 +550,20 @@ def g_area_ownership(canvas, color):
     rect(canvas, 46, 18, 5, 60, LIGHT)
 
 
+def g_cad_grid_align(canvas, color):
+    """Revit grids (solid, with bubbles) and an offset CAD grid (light)
+    being pulled onto them — the whole button is 「把 CAD 交點貼到網格交點」.
+    """
+    line(canvas, 14, 30, 80, 30, 3, LIGHT)     # CAD grid, offset up-left
+    line(canvas, 30, 14, 30, 80, 3, LIGHT)
+    line(canvas, 22, 44, 88, 44, 5, color)     # Revit grid
+    line(canvas, 44, 22, 44, 88, 5, color)
+    ring(canvas, 44, 14, 7, 3, color)
+    ring(canvas, 14, 44, 7, 3, color)
+    arrow(canvas, 32, 32, 41, 41, 4, INK, head=8)
+    circle(canvas, 44, 44, 5, INK)
+
+
 def g_cad_to_boundary(canvas, color):
     """A messy CAD sketch on the left resolving into a clean boundary loop.
 
@@ -869,6 +884,15 @@ def g_dependent_crop(canvas, color):
     outline(canvas, 40, 58, 46, 32, 5, color)
 
 
+def g_group_projection(canvas, color):
+    """Warm upper plane and cool lower plane sharing a vertical centre."""
+    polygon(canvas, [(12, 26), (48, 8), (84, 26), (48, 44)], (220, 80, 45))
+    polygon(canvas, [(12, 66), (48, 48), (84, 66), (48, 84)], (45, 115, 215))
+    line(canvas, 48, 25, 48, 66, 5, color)
+    ring(canvas, 48, 26, 8, 3, WHITE)
+    ring(canvas, 48, 66, 8, 3, WHITE)
+
+
 def g_view_scale(canvas, color):
     """A sheet with a scale bar under it — the ratio printed on every drawing.
 
@@ -950,6 +974,7 @@ def excel(fn):
 
 
 BUTTONS = [
+    ('MCP_Macros.tab/CAD.panel/CadGridAlign.pushbutton', g_cad_grid_align),
     ('MCP_Macros.tab/Area.panel/AutoPlaceAreas.pushbutton', g_area),
     ('MCP_Macros.tab/Area.panel/AreaFormula.pushbutton', g_area_formula),
     ('MCP_Macros.tab/Area.panel/CadToBoundary.pushbutton',
@@ -1066,6 +1091,7 @@ BUTTONS = [
     ('MCP_Macros.tab/Visual.panel/SwapViewMarkTypes.pushbutton',
      g_swap_mark_types),
     ('MCP_Macros.tab/Visual.panel/ViewScale.pushbutton', g_view_scale),
+    ('MCP_Macros.tab/Visual.panel/GroupProjection.pushbutton', g_group_projection),
 ]
 
 
@@ -1126,6 +1152,8 @@ def main():
     if '--panel' in sys.argv:
         only_panel = sys.argv[sys.argv.index('--panel') + 1]
     for rel_path, glyph in BUTTONS:
+        if '--button' in sys.argv and not rel_path.endswith('/' + sys.argv[sys.argv.index('--button') + 1] + '.pushbutton'):
+            continue
         if only_panel and panel_of(rel_path) != only_panel:
             continue
         folder = os.path.join(EXTENSION, *rel_path.split('/'))
