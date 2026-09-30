@@ -100,19 +100,35 @@ def _pairing_spec(view_rows, file_rows, pairing):
 
 def _read_labels(paths, label_layer):
     """``({path: [labels]}, 說明)``。失敗不擋流程。"""
-    result, problem = label_runner.run(paths, label_layer)
+    # 沒裝 ODA 也能讀軸號：同資料夾有同名 .dxf（CAD 另存 DXF 即可）就改讀它。
+    # 放進 Revit 的仍是 DWG，DXF 只用來取文字。
+    source = {}
+    for path in paths:
+        dxf = os.path.splitext(path)[0] + '.dxf'
+        if path.lower().endswith('.dwg') and os.path.exists(dxf):
+            source[path] = dxf
+        else:
+            source[path] = path
+    result, problem = label_runner.run(sorted(set(source.values())),
+                                       label_layer)
     if result is None:
         return {}, problem
+    read = result.get('files') or {}
     labels = {}
     notes = []
-    for path, entry in (result.get('files') or {}).items():
+    for path in paths:
+        entry = read.get(source[path]) or {}
         if entry.get('error'):
-            notes.append(u'{}：{}'.format(os.path.basename(path),
+            notes.append(u'{}：{}'.format(os.path.basename(source[path]),
                                           entry['error']))
             continue
         labels[os.path.normcase(path)] = entry.get('labels') or []
-    if not result.get('oda'):
-        notes.insert(0, u'本機找不到 ODA File Converter，DWG 軸號無法讀取')
+    unread_dwg = [p for p in paths
+                  if p.lower().endswith('.dwg') and source[p] == p]
+    if unread_dwg and not result.get('oda'):
+        notes.insert(0, u'本機沒有 ODA File Converter，DWG 軸號讀不到；'
+                     u'把 CAD 另存同名 .dxf 放在同資料夾即可讀取，'
+                     u'否則改用軸距比對')
     return labels, u'\n'.join(notes)
 
 
