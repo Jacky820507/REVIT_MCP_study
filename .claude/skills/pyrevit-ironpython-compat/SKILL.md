@@ -1,6 +1,6 @@
 ---
 name: pyrevit-ironpython-compat
-description: "Keeps pyRevit extension Python runnable on the IronPython 2.7 engine that actually executes it, and verifies edits against that engine instead of CPython. Use before finishing any edit to files under pyRevit_Tools/MCP_Tools.extension — button script.py, lib/*.py, or XAML code-behind — and when diagnosing a runtime TypeError, NameError, ImportError or SyntaxError raised from a pyRevit button. 觸發條件：修改 pyRevit 按鈕、script.py、lib 共用模組、按鈕跳錯誤訊息、IronPython Traceback、TypeError unexpected keyword argument、pyRevit 巨集執行失敗、Py3 語法、離線測試 pyRevit。"
+description: "確保 pyRevit 擴充功能 Python 可在實際執行它的 IronPython 2.7 引擎上運作，並以該引擎而非 CPython 驗證修改結果。完成 pyRevit_Tools/MCP_Tools.extension 下任何檔案的編輯前使用——包括 button script.py、lib/*.py 或 XAML code-behind——以及診斷 pyRevit 按鈕拋出的 runtime TypeError、NameError、ImportError 或 SyntaxError 時使用。觸發條件：修改 pyRevit 按鈕、script.py、lib 共用模組、按鈕跳出錯誤訊息、IronPython Traceback、TypeError unexpected keyword argument、pyRevit 巨集執行失敗、Py3 語法或離線測試 pyRevit。"
 ---
 
 # pyRevit IronPython Compatibility

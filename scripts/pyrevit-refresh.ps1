@@ -125,16 +125,32 @@ try {
         -ForegroundColor Yellow
 }
 
+# Some pyRevit CLI builds report exit code 0 even when recursive deletion
+# failed partway through (for example, an ACL-denied extension source file).
+# Treat filesystem state as authoritative and use the documented scoped fallback.
+$afterCli = @(Get-ChildItem $pyRevitRoot -Recurse -Filter '*MCP_Tools.dll' `
+    -ErrorAction SilentlyContinue)
+if ($cleared -and $afterCli.Count -gt 0) {
+    Write-Host '  pyRevit CLI 未清除所有舊 DLL；改用快取目錄備援清理…' `
+        -ForegroundColor Yellow
+    $cleared = $false
+}
+
 if (-not $cleared) {
-    # Only ever touch paths under %APPDATA%\pyRevit, per the domain SOP.
+    $rootFull = [System.IO.Path]::GetFullPath($pyRevitRoot).TrimEnd('\') + '\'
     Get-ChildItem $pyRevitRoot -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -match '^\d{4}$' -or $_.Name -eq 'Cache' } |
         ForEach-Object {
-            Write-Host ("  刪除 {0}" -f $_.FullName)
-            Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
+            $targetFull = [System.IO.Path]::GetFullPath($_.FullName)
+            if (-not $targetFull.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase) -or
+                $targetFull -eq $rootFull.TrimEnd('\')) {
+                throw "Refusing to clear path outside pyRevit cache root: $targetFull"
+            }
+            Write-Host ("  刪除 {0}" -f $targetFull)
+            Remove-Item -LiteralPath $targetFull -Recurse -Force -ErrorAction Stop
         }
     $cacheDir = Join-Path $pyRevitRoot 'Cache'
-    if (-not (Test-Path $cacheDir)) {
+    if (-not (Test-Path -LiteralPath $cacheDir)) {
         New-Item -ItemType Directory -Path $cacheDir | Out-Null
     }
 }

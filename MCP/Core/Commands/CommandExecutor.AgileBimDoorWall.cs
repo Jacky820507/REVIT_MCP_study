@@ -98,7 +98,7 @@ namespace RevitMCP.Core
             List<AgileMatchRule> rules = ParseAgileMatchRules(
                 parameters["rules"] as JArray, "門規格");
             List<AgileOpeningTarget> openings = CollectAgileOpenings(
-                doc, parameters, false, includeCurtain, maxDoors);
+                doc, parameters, false, includeCurtain, maxDoors, true);
             List<AgileOpeningGroup> groups = GroupAgileOpenings(openings, targetScope);
             List<AgileDoorSpecPlan> plans = groups
                 .Select(group => BuildAgileDoorSpecPlan(
@@ -136,6 +136,7 @@ namespace RevitMCP.Core
                     Level = parameters["level"]?.Value<string>(),
                     DoorIds = ParseAgileElementIds(parameters["doorIds"] as JArray),
                     IncludeCurtain = includeCurtain,
+                    DoorsOnly = true,
                     MaxDoors = maxDoors,
                     MaxResults = maxResults
                 },
@@ -717,10 +718,10 @@ namespace RevitMCP.Core
 
         private static List<AgileOpeningTarget> CollectAgileOpenings(
             Document doc, JObject parameters, bool ignoreScope,
-            bool includeCurtain, int maxCount)
+            bool includeCurtain, int maxCount, bool doorsOnly = false)
         {
-            bool includeDoors = IsAgileCategoryRequested(parameters, "doors");
-            bool includeWindows = IsAgileCategoryRequested(parameters, "windows");
+            bool includeDoors = doorsOnly || IsAgileCategoryRequested(parameters, "doors");
+            bool includeWindows = !doorsOnly && IsAgileCategoryRequested(parameters, "windows");
             HashSet<IdType> explicitIds = new HashSet<IdType>(
                 ParseAgileElementIds(parameters["elementIds"] as JArray));
             HashSet<IdType> explicitDoorIds = new HashSet<IdType>(
@@ -728,7 +729,9 @@ namespace RevitMCP.Core
             HashSet<IdType> requestedIds = explicitIds.Count > 0 ? explicitIds : explicitDoorIds;
             string levelFilter = parameters["level"]?.Value<string>()?.Trim();
             List<AgileOpeningTarget> openings = new List<AgileOpeningTarget>();
-            BuiltInCategory[] categories = { BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows };
+            BuiltInCategory[] categories = doorsOnly
+                ? new[] { BuiltInCategory.OST_Doors }
+                : new[] { BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows };
             foreach (BuiltInCategory category in categories)
             {
                 bool wanted = category == BuiltInCategory.OST_Doors

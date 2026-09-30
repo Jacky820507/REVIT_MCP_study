@@ -27,7 +27,22 @@ data = mcp.run('renumber_rooms_by_level',
                {'level': '2FL', 'startNumber': '201', 'dryRun': True})
 ```
 
-## MCP 巨集按鈕清單（66 顆）
+## 跨層群組投影（DirectContext3D）
+
+入口：**MCP 巨集 → 視覺化 → 跨層群組／投影比對**。在排水平面視圖啟動，展開下拉清單，搜尋並勾選其他平面視圖的詳圖群組，再按「更新投影」。視窗保持開啟，可同時平移、縮放 Revit 圖面。
+
+- 依來源與目標樓層的實際高程區分：上方暖色、下方冷色、同高／未知灰色。多選群組使用不同色票；圖例、滑鼠提示與結果文字均列出群組、來源視圖、樓層、ID、色碼。
+- 保留專案 XY，將群組線形投影至目前視圖剖切平面。巢狀群組遞迴讀取；不再次套用群組／實例變換。完全相同的線段以交錯色段表示多個來源，沒有移動管位。
+- 支援細部線、詳圖元件可讀曲線及巢狀實例；讀取 UP/DN 狀態供查閱。TextNote 使用近似文字輪廓，填充區域顯示邊界。族群內標籤、遮罩、填充紋樣及無法讀取的元素會在結果中提示；不是原生詳圖的完整複製。
+- 投影只屬於指定文件／視圖。切換樓層後按「讀取目前視圖」重新選擇；模型變更會停用舊投影，按「更新投影」重讀。可取消讀取；清除投影或關閉視窗會移除自己的繪圖服務。
+- 投影頂點放在目前視圖 Top Clip 前緣以減少模型深度遮蔽；DC3D 包圍範圍加上小厚度避免共面線被剔除。視窗即時顯示 RenderScene／CanExecute／包圍範圍回呼計數，供診斷空白畫布。
+- 這是暫時視覺比對，沒有建立或修改 Revit 元素，也沒有自動判定接續、撞梁柱或落水頭是否落在天溝。投影線不是可選取的 Revit 元素，其來源提示位於視窗圖例。Revit 圖像匯出可能包含當下投影，正式輸出前請清除。
+
+使用 pyRevit IronPython 2.7，不依賴 MCP 連線或更新 RevitMCP DLL。首版以本機 Revit 2020 API 簽章及離線測試驗證；**實際圖面顯示仍需實機驗收**。DirectContext3D 的服務與顯示方式參考 [Autodesk 說明](https://help.autodesk.com/cloudhelp/2026/ENU/Revit-API/files/Revit_API_Developers_Guide/Basic_Interaction_with_Revit_Elements/Views/Revit_API_Revit_API_Developers_Guide_Basic_Interaction_with_Revit_Elements_Views_Displaying_Graphics_with_DirectContext3D_html.html)。
+
+新增按鈕後須重建 pyRevit 快取：先存檔並完全關閉 Revit，再於專案根目錄執行 `scripts/pyrevit-refresh.ps1`，重新啟動 Revit。驗收順序：單選上層、單選下層、上下多選、同位置重合、切換視圖、修改來源後更新、清除與關閉視窗；確認圖例色碼、UP/DN 圖形與原圖一致。
+
+## MCP 巨集按鈕清單
 
 > **共用 WPF 視窗**：18 顆按鈕（面積面板全部、門窗編號重複、群組高度檢查、
 > 步行距離檢核、更改剖刀＆立面標記、視圖比例管理、尺寸線合併、樣板移轉）

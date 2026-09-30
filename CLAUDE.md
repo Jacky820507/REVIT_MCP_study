@@ -100,8 +100,8 @@ These counts must be derived from source, not copied by memory.
 
 | Item | Current Count | Source of Truth |
 |---|---:|---|
-| Runtime MCP tools | 193 | `registerRevitTools()` from `MCP-Server/src/tools/index.ts` |
-| Domain SOP files | 87 | `domain/*.md` except `domain/README.md`, plus `domain/references/*.md` |
+| Runtime MCP tools | 196 | `registerRevitTools()` from `MCP-Server/src/tools/index.ts` |
+| Domain SOP files | 88 | `domain/*.md` except `domain/README.md`, plus `domain/references/*.md` |
 | Claude skills | 66 | `.claude/skills/*/SKILL.md` |
 
 When these numbers change, update `CLAUDE.md`, `README.md`, `README.zh-TW.md`, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and any public site copy that makes grand-total claims. Then run `scripts/verify-qaqc.ps1 -SkipBuild -SkipDeploy`.
@@ -352,6 +352,7 @@ Read the matching file before applying a workflow or calculation.
 | parking clearance, vehicle clearance, 210cm | `domain/parking-clearance-check.md` |
 | parking count, parking space review | `domain/parking-space-review.md` |
 | PDF export, DCC, PDFExportOptions | `domain/pdf-export-comparison.md` |
+| PDF 差異比對, 圖說差異, drawing diff, 圖說變更, 新舊版比對, 修訂雲自動化, revision cloud from PDF, 向量比對, 圖號配對 | `domain/pdf-drawing-diff-revision-cloud.md` |
 | fill pattern, Revit fill pattern conversion | `domain/revit-fill-pattern-conversion.md` |
 | partition takeoff, partition quantity | `domain/revit-partition-takeoff.md` |
 | quantity takeoff, 數量計算, 輕隔間 Excel, 踢腳 Excel, 內牆粉刷 Excel, 天花 Excel, 空間表更新 Excel, auditable Excel, quantity takeoff excel, excel export, 數量表 | `domain/quantity-takeoff-excel.md` |

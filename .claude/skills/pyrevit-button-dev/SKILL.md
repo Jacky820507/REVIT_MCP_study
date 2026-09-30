@@ -1,6 +1,6 @@
 ---
 name: pyrevit-button-dev
-description: "Use when creating or fixing pyRevit MCP macro buttons, .pushbutton bundles, bundle.yaml, script.py, XAML UI, or pyRevit ribbon load/availability errors such as active-doc context failures."
+description: "當建立或修復 pyRevit MCP 巨集按鈕、.pushbutton 套件、bundle.yaml、script.py、XAML UI，或排查 pyRevit 功能區載入/可用性錯誤（例如 active-doc context 失敗）時使用。"
 ---
 
 # pyRevit Button Development

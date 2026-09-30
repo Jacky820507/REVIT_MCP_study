@@ -355,9 +355,14 @@ def _install_stubs():
            dry_run_then_apply=lambda *a, **k: None,
            show_error=lambda *a, **k: None,
            run=lambda *a, **k: None)
+    class ScanCancelled(Exception):
+        pass
+
     module('pdf_diff_sources', sheet_records=lambda doc, **k: [],
            revision_records=lambda doc: [], revision_label=lambda row: u'',
-           selected_revision_cloud_id=lambda doc, uidoc: None)
+           selected_revision_cloud_id=lambda doc, uidoc: None,
+           fill_dwg_numbers=lambda doc, rows, **k: rows,
+           ScanCancelled=ScanCancelled)
     return alerts
 
 
@@ -601,6 +606,84 @@ class ScaleTests(unittest.TestCase):
         # 沒有 _guard 的話這一行會把 ValueError 丟回 WPF 的 dispatcher。
         window._combo_changed(None, None)
         window._tick_changed(None, None)
+
+
+class LazySheetLoadingTests(unittest.TestCase):
+    """圖紙清單要延到真的需要時才讀。
+
+    按下按鈕就掃描全案子是錯的時機：那份資料要到使用者選完兩份 PDF、按下
+    「比對」之後才用得到，而使用者常常只想比其中幾張圖。實測 538 張圖紙的
+    專案因此每次都先卡住才看得到視窗。
+    """
+
+    def _compare(self, window, result):
+        window.old_pdf = 'old.pdf'
+        window.new_pdf = 'new.pdf'
+        script.runner.run_worker = lambda *a, **k: result
+        window.compare_clicked(None, None)
+
+    def test_no_sheets_are_read_when_the_window_opens(self):
+        calls = []
+        script.PdfDiffWindow(None, sheet_loader=lambda pages:
+                             calls.append(pages) or [])
+        self.assertEqual([], calls, u'開視窗就不該讀圖紙')
+
+    def test_the_loader_runs_on_compare_and_sees_the_pages(self):
+        seen = []
+        sheets = [sheet(u'A2-02', u'地下一層平面圖', u'0721B-ARD-D02001'),
+                  sheet(u'A2-01', u'一層平面圖', u'0721B-ARD-D02002')]
+
+        def loader(pages):
+            seen.append(len(pages))
+            return sheets
+
+        window = script.PdfDiffWindow(None, sheet_loader=loader)
+        self._compare(window, make_result())
+        self.assertEqual([2], seen, u'loader 應該在比對後跑一次，且拿得到頁面')
+        self.assertEqual(2, len(window.rows))
+
+    def test_a_second_compare_does_not_reload_the_sheets(self):
+        """讀過就留著——同一個 session 比第二次不該再掃一遍。"""
+        calls = []
+        sheets = [sheet(u'A2-02', u'地下一層平面圖', u'0721B-ARD-D02001')]
+
+        def loader(pages):
+            calls.append(1)
+            return sheets
+
+        window = script.PdfDiffWindow(None, sheet_loader=loader)
+        self._compare(window, make_result())
+        self._compare(window, make_result())
+        self.assertEqual(1, len(calls))
+
+    def test_cancelling_the_scan_leaves_the_window_usable(self):
+        def loader(pages):
+            raise script.sources.ScanCancelled()
+
+        window = script.PdfDiffWindow(None, sheet_loader=loader)
+        self._compare(window, make_result())
+        self.assertEqual([], window.rows)
+        self.assertEqual([], window.sheets)
+
+    def test_labels_are_rebuilt_in_place_so_bound_combos_stay_valid(self):
+        """``_sheet_labels`` 是所有下拉共用的 ItemsSource。
+
+        重建時換成新的 list 的話，已經綁上去的下拉會繼續指著舊的那一份，
+        使用者就會在下拉裡看到空的或過期的圖紙清單——不會報錯，只是選不到。
+        """
+        window = script.PdfDiffWindow(None, sheet_loader=lambda pages: [
+            sheet(u'A2-02', u'地下一層平面圖', u'0721B-ARD-D02001'),
+            sheet(u'A2-01', u'一層平面圖', u'0721B-ARD-D02002')])
+        labels = window._sheet_labels
+        self._compare(window, make_result())
+        self.assertIs(labels, window._sheet_labels)
+        self.assertEqual(3, len(labels))       # NO_SHEET + 兩張圖紙
+        self.assertIs(labels, window.rows[0]['combo'].ItemsSource)
+
+    def test_passing_sheets_directly_still_works(self):
+        """已經有圖紙資料的呼叫端（含既有測試）不受影響。"""
+        window = make_window()
+        self.assertEqual(3, len(window.sheets))
 
 
 class SelectionTests(unittest.TestCase):

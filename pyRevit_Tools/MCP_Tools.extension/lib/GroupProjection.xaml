@@ -1,0 +1,78 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="跨層群組投影" Width="560" Height="650" MinWidth="520" MinHeight="490"
+        FontFamily="Segoe UI, Microsoft JhengHei" FontSize="13" Background="#F5F6F8"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanResizeWithGrip">
+  <Window.Resources>
+    <SolidColorBrush x:Key="Ink" Color="#202530"/>
+    <SolidColorBrush x:Key="Muted" Color="#566173"/>
+    <SolidColorBrush x:Key="Accent" Color="#6650A4"/>
+    <Style TargetType="Button">
+      <Setter Property="Padding" Value="12,7"/>
+      <Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="MinHeight" Value="34"/>
+    </Style>
+    <Style TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{StaticResource Ink}"/>
+    </Style>
+  </Window.Resources>
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock Text="跨樓層・群組投影" FontSize="21" FontWeight="SemiBold"/>
+      <TextBlock x:Name="targetLabel" Margin="0,8,0,4" TextWrapping="Wrap"/>
+      <TextBlock Text="↑ 上層暖色　↓ 下層冷色　↔ 同高灰色" Foreground="{StaticResource Muted}"/>
+    </StackPanel>
+    <Grid Grid.Row="1" Margin="0,16,0,10">
+      <ToggleButton x:Name="picker" Content="選擇來源群組（可多選） ▾" Padding="12,9"
+                    HorizontalContentAlignment="Left" ToolTip="勾選其他平面視圖的詳圖群組；同名群組以視圖及 ID 區別。"/>
+      <Popup IsOpen="{Binding IsChecked, ElementName=picker, Mode=TwoWay}" PlacementTarget="{Binding ElementName=picker}"
+             Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+        <Border Background="White" BorderBrush="#C8CED8" BorderThickness="1" Padding="10"
+                Width="430" MaxHeight="370">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+              <TextBlock Text="搜尋群組／視圖／樓層" Margin="0,0,0,4"/>
+              <TextBox x:Name="search" Padding="6" TextChanged="search_changed"/>
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,6">
+                <Button Content="全選搜尋結果" Click="select_filtered"/>
+                <Button Content="全部取消" Click="select_none"/>
+              </StackPanel>
+            </StackPanel>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="250">
+              <StackPanel x:Name="choices"/>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+      </Popup>
+    </Grid>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,12">
+      <Button x:Name="applyButton" Content="更新投影" Click="apply_clicked"
+              Background="{StaticResource Accent}" Foreground="White"/>
+      <Button x:Name="clearButton" Content="清除投影" Click="clear_clicked"/>
+      <Button x:Name="refreshButton" Content="重新讀取群組" Click="refresh_clicked"
+              ToolTip="重讀目前視圖可用的跨視圖群組；更新投影時會自動採用當前視圖。"/>
+    </StackPanel>
+    <Border Grid.Row="3" Background="White" BorderBrush="#DADEE5" BorderThickness="1" CornerRadius="4" Padding="12">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="投影圖例 · 滑鼠停留可查看詳情" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="legend"/></ScrollViewer>
+      </DockPanel>
+    </Border>
+    <StackPanel Grid.Row="4" Margin="0,12,0,8">
+      <TextBlock x:Name="status" Text="勾選群組後按更新投影。" TextWrapping="Wrap"/>
+      <TextBlock x:Name="renderStatus" Margin="0,5,0,0" Foreground="{StaticResource Muted}"
+                 Text="DirectContext3D：尚未建立投影。" TextWrapping="Wrap"/>
+      <Expander Header="讀取結果與限制" Margin="0,8,0,0">
+        <TextBox x:Name="report" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="130"
+                 VerticalScrollBarVisibility="Auto" Background="White"/>
+      </Expander>
+    </StackPanel>
+    <TextBlock Grid.Row="5" FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap"
+               Text="暫時投影，關閉視窗即清除。圖例提示可辨識群組；投影線本身無 Revit 元素提示。此工具提供視覺比對，未執行碰撞或上下接續判定。"/>
+  </Grid>
+</Window>

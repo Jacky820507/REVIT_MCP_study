@@ -41,6 +41,7 @@ from System.Windows import Thickness
 from System.Windows.Controls import CheckBox
 
 import pdf_diff_sources as sources
+import scan_progress as timing
 
 
 TITLE = u'放置修訂雲標籤'
@@ -115,7 +116,12 @@ def _safe_text(value):
     return u'{}'.format(value or u'').strip()
 
 
-def _sheet_cloud_records(doc):
+def _mark(timer, name):
+    if timer is not None:
+        timer.mark(name)
+
+
+def _sheet_cloud_records(doc, progress=None, timer=None):
     """Return direct-on-sheet clouds grouped by sheet.
 
     The PDF workflow creates clouds whose OwnerViewId is the ViewSheet. A
@@ -130,10 +136,12 @@ def _sheet_cloud_records(doc):
     任何事，列出來只是讓使用者多捲幾千列。
     """
     clouds_by_owner = sources.revision_clouds_by_owner(doc)
+    _mark(timer, 'clouds')
     if not clouds_by_owner:
         return [], 0
 
     sheet_ids = sources.all_sheet_ids(doc)
+    _mark(timer, 'sheet_ids')
     clouds_by_sheet = {}
     unmapped = 0
     for owner_id, clouds in clouds_by_owner.items():
@@ -145,7 +153,9 @@ def _sheet_cloud_records(doc):
     if not clouds_by_sheet:
         return [], unmapped
 
-    rows = sources.sheet_records(doc, sheet_ids=clouds_by_sheet.keys())
+    rows = sources.sheet_records(doc, sheet_ids=clouds_by_sheet.keys(),
+                                 progress=progress)
+    _mark(timer, 'sheet_data')
 
     records = []
     for row in rows:
@@ -602,13 +612,25 @@ def main():
         forms.alert(u'請先開啟 Revit 專案文件，再執行放置標籤。',
                     title=TITLE, exitscript=True)
 
-    # 掃描在大案子裡仍然要幾秒；沒有進度視窗使用者只會看到 Revit 沒反應，
-    # 然後開始亂點——而亂點正是把「慢」變成「當掉」的那一步。
-    with forms.ProgressBar(title=u'掃描修訂雲與圖紙中…', indeterminate=True):
-        records, unmapped = _sheet_cloud_records(doc)
-        revision_tags = sources.revision_tag_records(doc)
-        if records:
-            _refresh_record_tagged_cloud_ids(doc, records)
+    # 掃描跑在 Revit 的 UI 執行緒上。進度條**必須**逐次 update_progress，
+    # 否則那個 WPF 視窗不會被抽動，會變成畫不出來也按不動的幽靈視窗，
+    # Revit 判定「沒有回應」後行程被收掉。正確用法在 scan_progress。
+    timer = timing.Timer()
+    try:
+        with timing.ScanProgress(forms, u'掃描修訂雲與圖紙') as scan:
+            records, unmapped = _sheet_cloud_records(
+                doc, progress=scan.callback, timer=timer)
+            revision_tags = sources.revision_tag_records(doc)
+            timer.mark('tag_types')
+            if records:
+                _refresh_record_tagged_cloud_ids(doc, records)
+            timer.mark('existing_tags')
+    except sources.ScanCancelled:
+        forms.alert(u'已取消，模型未變更。', title=TITLE)
+        return
+
+    timing.write_log(TITLE, timer.phases,
+                     extra='sheets={}'.format(len(records)))
 
     if not records:
         if unmapped:

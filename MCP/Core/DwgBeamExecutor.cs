@@ -29,8 +29,9 @@ namespace RevitMCP.Core
         }
 
         class LabelData { public string Text; public double X; public double Y; public double RawX; public double RawY; }
+        class CadTextData { public string Text; public string Layer; public double XMm; public double YMm; public double RawX; public double RawY; public string SourcePath; }
 
-        public static object GetDwgBeamLayers(Document doc, ICollection<ElementId>? selectedElementIds = null)
+        public static object GetDwgBeamLayers(Document doc, ICollection<ElementId>? selectedElementIds = null, JObject parameters = null)
         {
             var vp = doc.ActiveView as ViewPlan;
             if (vp == null) throw new Exception("請在平面視圖中執行");
@@ -68,14 +69,115 @@ namespace RevitMCP.Core
             var suggested = sortedLayers.FirstOrDefault(l =>
                 beamKeywords.Any(k => l.IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0));
 
+            bool includeCircles = parameters?["includeCircles"]?.Value<bool>() ?? false;
+            var requestedCircleLayers = new HashSet<string>(
+                (parameters?["layers"] as JArray ?? new JArray()).Values<string>(),
+                StringComparer.OrdinalIgnoreCase);
+            if (includeCircles && requestedCircleLayers.Count == 0)
+                requestedCircleLayers = new HashSet<string>(sortedLayers, StringComparer.OrdinalIgnoreCase);
+            var circles = new List<object>();
+            var textItems = new List<CadTextData>();
+            var sourcePaths = new List<object>();
+            if (includeCircles)
+            {
+                foreach (var cad in cads)
+                {
+                    string sourcePath = GetCadFilePath(doc, cad);
+                    sourcePaths.Add(new { cadId = cad.Id.GetIdValue(), sourcePath = sourcePath });
+                    foreach (var item in CommandExecutor.DrainRead(doc, vp, cad, requestedCircleLayers, 2000))
+                    {
+                        circles.Add(new
+                        {
+                            circleKey = item.Key,
+                            cadId = cad.Id.GetIdValue(),
+                            layer = item.Layer,
+                            xMm = item.Center.X * FtMm,
+                            yMm = item.Center.Y * FtMm,
+                            zMm = item.Center.Z * FtMm,
+                            symbolRadiusMm = item.Radius * FtMm,
+                            primitiveCount = item.Curves.Count,
+                            kind = "unknown",
+                            direction = "unknown"
+                        });
+                    }
+                }
+            }
+            else
+            {
+                foreach (var cad in cads)
+                    sourcePaths.Add(new { cadId = cad.Id.GetIdValue(), sourcePath = GetCadFilePath(doc, cad) });
+            }
+
+            bool includeText = parameters?["includeText"]?.Value<bool>() ?? false;
+            if (includeText)
+            {
+                var textLayers = new HashSet<string>(
+                    (parameters?["textLayers"] as JArray ?? new JArray()).Values<string>(),
+                    StringComparer.OrdinalIgnoreCase);
+                if (textLayers.Count == 0)
+                    textLayers = new HashSet<string>(sortedLayers, StringComparer.OrdinalIgnoreCase);
+                foreach (var cad in cads)
+                    textItems.AddRange(ReadCadTexts(doc, cad, textLayers));
+            }
+
             return new
             {
                 viewName = vp.Name,
                 cadCount = cads.Count,
                 layerCount = sortedLayers.Count,
                 layers = sortedLayers,
-                suggestedLayer = suggested
+                suggestedLayer = suggested,
+                circles = circles,
+                circleCount = circles.Count,
+                sourcePaths = sourcePaths,
+                texts = textItems,
+                textCount = textItems.Count,
+                circleWarning = includeCircles
+                    ? "圓心與 CAD 圖示半徑已擷取；管徑文字、落水頭/落水管及上下方向仍須以來源圖例/文字核對。symbolRadiusMm 不是實際外徑。"
+                    : "設定 includeCircles=true 並提供 layers 以擷取 CAD 圓。"
             };
+        }
+
+        static List<CadTextData> ReadCadTexts(Document doc, ImportInstance cad, HashSet<string> textLayers)
+        {
+            var result = new List<CadTextData>();
+            string workerPath = FindWorkerScript();
+            string filePath = GetCadFilePath(doc, cad);
+            if (workerPath == null || filePath == null) return result;
+            foreach (string layer in textLayers)
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = $"\"{workerPath}\" \"{filePath}\" \"{layer}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                string output;
+                using (var proc = Process.Start(psi))
+                {
+                    output = proc.StandardOutput.ReadToEnd();
+                    proc.WaitForExit(20000);
+                }
+                if (string.IsNullOrWhiteSpace(output)) continue;
+                var json = JObject.Parse(output);
+                if (json["error_type"]?.Value<string>() == "no_oda")
+                    throw new InvalidOperationException("NO_ODA:" + json["error"]?.Value<string>());
+                double mmPerSourceUnit = json["insunits_to_mm"]?.Value<double>() ?? 1.0;
+                var transform = cad.GetTotalTransform();
+                foreach (JObject item in json["data"] as JArray ?? new JArray())
+                {
+                    string value = item["text"]?.Value<string>()?.Trim();
+                    if (string.IsNullOrWhiteSpace(value)) continue;
+                    double rawX = item["x"]?.Value<double>() ?? 0;
+                    double rawY = item["y"]?.Value<double>() ?? 0;
+                    var point = transform.OfPoint(new XYZ(rawX * mmPerSourceUnit / FtMm, rawY * mmPerSourceUnit / FtMm, 0));
+                    result.Add(new CadTextData { Text = value, Layer = layer, XMm = point.X * FtMm, YMm = point.Y * FtMm, RawX = rawX, RawY = rawY, SourcePath = filePath });
+                }
+            }
+            return result;
         }
 
         public static object PreviewDwgBeams(Document doc, JObject p, ICollection<ElementId>? selectedElementIds = null)

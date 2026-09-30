@@ -80,6 +80,12 @@ namespace RevitMCP.Core
 
                 switch (request.CommandName.ToLower())
                 {
+                    case "scan_drainage_cad":
+                        result = ScanDrainageCad(parameters);
+                        break;
+                    case "preview_drainage_review":
+                        result = PreviewDrainageReview(parameters);
+                        break;
                     case "ping":
                         result = Ping(parameters);
                         break;
@@ -231,6 +237,10 @@ namespace RevitMCP.Core
 
                     case "preview_door_specifications":
                         result = PreviewDoorSpecifications(parameters);
+                        break;
+
+                    case "preview_door_type_candidates":
+                        result = PreviewDoorTypeCandidates(parameters);
                         break;
 
                     case "apply_door_specifications":
@@ -527,6 +537,9 @@ namespace RevitMCP.Core
                     case "export_revision_excel":
                         result = ExportRevisionExcel(parameters);
                         break;
+                    case "create_revision_clouds_on_sheets":
+                        result = CreateRevisionCloudsOnSheets(parameters);
+                        break;
 
                     case "create_dimension_by_ray":
                         result = CreateDimensionByRay(parameters);
@@ -741,7 +754,8 @@ namespace RevitMCP.Core
                     case "get_dwg_beam_layers":
                         result = DwgBeamExecutor.GetDwgBeamLayers(
                             _uiApp.ActiveUIDocument.Document,
-                            _uiApp.ActiveUIDocument.Selection.GetElementIds());
+                            _uiApp.ActiveUIDocument.Selection.GetElementIds(),
+                            parameters);
                         break;
 
                     case "get_room_surface_areas":
@@ -1029,6 +1043,76 @@ namespace RevitMCP.Core
                 }
             }
 
+            object groupDetails = null;
+            bool includeGroup = parameters["includeGroup"]?.Value<bool>() ?? false;
+            if (includeGroup)
+            {
+                try
+                {
+                    ElementId groupId = element.GroupId;
+                    Group group = groupId != ElementId.InvalidElementId ? doc.GetElement(groupId) as Group : null;
+                    if (group != null)
+                    {
+                        var members = new List<object>();
+                        foreach (ElementId memberId in group.GetMemberIds())
+                        {
+                            Element member = doc.GetElement(memberId);
+                            if (member == null) continue;
+                            XYZ location = null;
+                            var locationPoint = member.Location as LocationPoint;
+                            if (locationPoint != null) location = locationPoint.Point;
+                            else
+                            {
+                                var locationCurve = member.Location as LocationCurve;
+                                if (locationCurve?.Curve != null) location = locationCurve.Curve.Evaluate(0.5, true);
+                            }
+
+                            var memberParameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                            foreach (string name in new[] { "UP", "DN", "方向可見性", "管徑尺寸", "管徑尺寸1", "排水管位置" })
+                            {
+                                Parameter memberParameter = member.LookupParameter(name);
+                                if (memberParameter != null && memberParameter.HasValue)
+                                    memberParameters[name] = memberParameter.AsValueString() ?? memberParameter.AsString() ?? "";
+                            }
+
+                            BoundingBoxXYZ box = null;
+                            try { box = member.get_BoundingBox(_uiApp.ActiveUIDocument.ActiveView); } catch { }
+                            members.Add(new
+                            {
+                                ElementId = member.Id.GetIdValue(),
+                                UniqueId = member.UniqueId,
+                                Name = member.Name,
+                                Category = member.Category?.Name,
+                                OwnerViewId = member.OwnerViewId == ElementId.InvalidElementId ? (long?)null : member.OwnerViewId.GetIdValue(),
+                                LocationMm = location == null ? null : new { X = location.X * 304.8, Y = location.Y * 304.8, Z = location.Z * 304.8 },
+                                BoundingBoxMm = box == null ? null : new
+                                {
+                                    Min = new { X = box.Min.X * 304.8, Y = box.Min.Y * 304.8, Z = box.Min.Z * 304.8 },
+                                    Max = new { X = box.Max.X * 304.8, Y = box.Max.Y * 304.8, Z = box.Max.Z * 304.8 }
+                                },
+                                Parameters = memberParameters
+                            });
+                        }
+                        groupDetails = new
+                        {
+                            GroupId = group.Id.GetIdValue(),
+                            GroupName = group.Name,
+                            GroupTypeId = group.GroupType?.Id.GetIdValue(),
+                            MemberCount = members.Count,
+                            Members = members
+                        };
+                    }
+                    else
+                    {
+                        groupDetails = new { GroupId = (long?)null, Message = "元素不屬於詳圖群組" };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    groupDetails = new { GroupId = (long?)null, Message = "群組資料讀取失敗: " + ex.Message };
+                }
+            }
+
             return new
             {
                 ElementId = element.Id.GetIdValue(),
@@ -1036,7 +1120,8 @@ namespace RevitMCP.Core
                 Category = element.Category?.Name,
                 Type = doc.GetElement(element.GetTypeId())?.Name,
                 Level = doc.GetElement(element.LevelId)?.Name,
-                Parameters = parameterList
+                Parameters = parameterList,
+                Group = groupDetails
             };
         }
 
@@ -4333,6 +4418,3 @@ namespace RevitMCP.Core
         #endregion
     }
 }
-
-
-

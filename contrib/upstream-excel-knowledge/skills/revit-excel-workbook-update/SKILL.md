@@ -1,6 +1,6 @@
 ---
 name: revit-excel-workbook-update
-description: Use when creating or fixing Revit/pyRevit buttons that update an existing Excel workbook from Revit schedules or model counts. Covers workbook mapping, formula protection, dry-run preview, backups, Excel COM safety, subtotal/index validation, and grouped Revit element performance pitfalls.
+description: "當建立或修復從 Revit schedule 或模型數量更新既有 Excel 活頁簿的 Revit/pyRevit 按鈕時使用。涵蓋活頁簿對應、公式保護、dry-run 預覽、備份、Excel COM 安全性、subtotal/index 驗證，以及群組化 Revit 元素的效能陷阱。"
 ---
 
 # Revit to Excel workbook update

@@ -1,8 +1,6 @@
 ---
 name: detect-clashes
-description: |
-  MEP 管線與結構（CSA）碰撞偵測，使用 Curve-to-Solid 策略進行干涉分析、視覺化與報告匯出。
-  TRIGGER when: 碰撞, 干涉, clash, MEP, 管線穿牆, 套管, 穿越, penetration, 碰撞偵測, 管線衝突
+description: "MEP 管線與結構（CSA）碰撞偵測，使用 Curve-to-Solid 策略進行干涉分析、視覺化與報告匯出。觸發時機：碰撞、干涉、clash、MEP、管線穿牆、套管、穿越、penetration、碰撞偵測或管線衝突。"
 user-invocable: true
 ---
 

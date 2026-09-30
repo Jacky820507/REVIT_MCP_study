@@ -17,6 +17,7 @@ import { corridorAnalysisTools } from "./corridor-analysis-tools.js";
 import { visualizationTools } from "./visualization-tools.js";
 import { scheduleTools } from "./schedule-tools.js";
 import { mepTools } from "./mep-tools.js";
+import { drainageTools } from "./drainage-tools.js";
 
 import { curtainWallTools } from "./curtain-wall-tools.js";
 import { smokeExhaustTools } from "./smoke-exhaust-tools.js";
@@ -136,6 +137,7 @@ export function registerRevitTools(): Tool[] {
     }
 
     const rawTools = modules.flat();
+    if (["full", "architect", "mep"].includes(profile) || !PROFILE_MODULES[profile]) rawTools.push(...drainageTools);
     const toolMap = new Map<string, Tool>();
     for (const tool of rawTools) {
         toolMap.set(tool.name, tool);

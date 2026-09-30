@@ -1,6 +1,6 @@
 ---
 name: deploy-addon
-description: Deploy the built RevitMCP.dll to the correct Revit Add-ins folder for a specified version (Windows only)
+description: "將建置完成的 RevitMCP.dll 部署到指定版本的正確 Revit Add-ins 資料夾（僅限 Windows）。"
 user-invocable: true
 ---
 

@@ -704,6 +704,52 @@ export const roomTools: Tool[] = [
         },
     },
     {
+        name: "preview_door_type_candidates",
+        description: "唯讀預覽以門族型為單位的換型候選。依門的族群、類型、註記、From/To Room 名稱、宿主牆類型或指定參數比對規則，將規則指向的 targetTypeId 驗證為本專案中的門 FamilySymbol，回報目前族型影響樘數、實例、房間配對、現有/候選類型性能與衝突；不修改模型。若同一族型內的門指向不同候選或部分未命中，會阻擋整個族型，避免錯誤連動。",
+        inputSchema: {
+            type: "object",
+            properties: {
+                matchField: {
+                    type: "string",
+                    enum: ["family", "type", "mark", "from_room_name", "to_room_name", "room_name", "host_wall_type", "parameter"],
+                    default: "room_name",
+                    description: "規則比對來源；使用 parameter 時另填 sourceParameter。",
+                },
+                sourceParameter: {
+                    type: "string",
+                    description: "matchField=parameter 時的實際門/類型來源參數名稱。",
+                },
+                rules: {
+                    type: "array",
+                    description: "每項包含 match 與 targetTypeId；targetTypeId 必須是目前專案中的門 FamilySymbol Element ID，可選 id/reason。",
+                    items: {
+                        type: "object",
+                        properties: {
+                            id: { type: "string" },
+                            match: { type: "string" },
+                            targetTypeId: { type: "number" },
+                            reason: { type: "string" },
+                        },
+                        required: ["match", "targetTypeId"],
+                    },
+                },
+                performanceParameters: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "選填：要一起讀取的門類型參數，例如 防火等級、類型標記；只讀，不會寫入。",
+                },
+                level: { type: "string", description: "選填：樓層名稱或部分文字比對。" },
+                doorIds: { type: "array", items: { type: "number" }, description: "選填：指定門 Element ID，指定後只處理這些門。" },
+                includeCurtain: { type: "boolean", default: false, description: "是否包含宿主為帷幕牆的門；預設排除。" },
+                caseInsensitive: { type: "boolean", default: true },
+                collapseWhitespace: { type: "boolean", default: true },
+                maxDoors: { type: "number", default: 500, description: "最多掃描門數，範圍 1–2000。" },
+                maxResults: { type: "number", default: 500, description: "最多回傳族型候選數，範圍 1–2000。" },
+            },
+            required: ["rules"],
+        },
+    },
+    {
         name: "apply_door_specifications",
         description: "依 preview_door_specifications 的規則寫入門規格 String 參數。必須 confirm=true；mode 只能是 fill_blank 或 overwrite；寫入採單一 Transaction，任何失敗整批回復。套用前應保留 preview 的 conflict、blocked 與影響樘數結果。",
         inputSchema: {

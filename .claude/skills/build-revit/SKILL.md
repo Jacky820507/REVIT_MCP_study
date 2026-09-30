@@ -1,6 +1,6 @@
 ---
 name: build-revit
-description: Build the RevitMCP Revit add-in for one or all Revit versions (2022-2026) using the unified RevitMCP.csproj
+description: "建立 RevitMCP Revit 增益集；可使用統一的 RevitMCP.csproj 建置指定或全部 Revit 版本（2022–2026）。"
 user-invocable: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: markdown-encoding-hygiene
-description: "Use when fixing or preventing mojibake, encoding corruption, UTF-8 versus cp950 mistakes, or Markdown knowledge-file read/write issues in SKILL, Domain, Lessons, README, or other `.md` documentation."
+description: "當修復或預防亂碼、編碼損毀、UTF-8 與 cp950 錯誤，或處理 SKILL、Domain、Lessons、README 或其他 Markdown 知識檔案的讀寫問題時使用。"
 ---
 
 # Markdown Encoding Hygiene

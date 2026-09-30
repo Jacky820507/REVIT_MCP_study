@@ -35,6 +35,9 @@ function getConfiguredPort(): number {
 
 export class RevitSocketClient {
     private ws: WebSocket | null = null;
+    private connecting: Promise<void> | null = null;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private explicitlyDisconnected = false;
     private host: string = 'localhost';
     private port: number = DEFAULT_PORT;
     private reconnectInterval: number = 5000; // 5 seconds
@@ -46,6 +49,10 @@ export class RevitSocketClient {
      * add-in 會以此顯示「目前佔用連線的工具」。
      */
     public clientName: string = "unknown";
+    // 同一個 MCP Server process 重連時沿用這個 ID；不同 process 即使
+    // clientInfo.name 相同，也不能互相踢掉獨佔連線，否則會形成 409/重連風暴。
+    private readonly clientInstanceId: string =
+        `codex-mcp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     constructor(host: string = 'localhost', port?: number) {
         this.host = host;
@@ -56,18 +63,58 @@ export class RevitSocketClient {
      * Connect to Revit Plugin
      */
     async connect(): Promise<void> {
+        if (this.isConnected()) {
+            return;
+        }
+
+        // MCP host 可能同時送出多個 tool call；所有 call 必須共用同一個握手，
+        // 否則第二個 WebSocket 會被 Revit 的獨佔鎖正確拒絕為 HTTP 409。
+        if (this.connecting) {
+            return this.connecting;
+        }
+
+        this.explicitlyDisconnected = false;
+        const attempt = this.openConnection();
+        this.connecting = attempt;
+
+        try {
+            await attempt;
+        } finally {
+            if (this.connecting === attempt) {
+                this.connecting = null;
+            }
+            if (!this.isConnected()) {
+                this.scheduleReconnect();
+            }
+        }
+    }
+
+    private openConnection(): Promise<void> {
         return new Promise((resolve, reject) => {
-            const wsUrl = `ws://${this.host}:${this.port}/?client=${encodeURIComponent(this.clientName)}`;
+            const wsUrl = `ws://${this.host}:${this.port}/?client=${encodeURIComponent(this.clientName)}&instance=${encodeURIComponent(this.clientInstanceId)}`;
             console.error(`[Socket] Connecting to Revit: ${wsUrl}`);
 
-            this.ws = new WebSocket(wsUrl);
+            const socket = new WebSocket(wsUrl);
+            this.ws = socket;
+            let settled = false;
 
-            this.ws.on('open', () => {
+            const settleReject = (error: Error) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                reject(error);
+            };
+
+            socket.on('open', () => {
                 console.error('[Socket] Connected to Revit Plugin');
-                resolve();
+                if (!settled) {
+                    settled = true;
+                    resolve();
+                }
             });
 
-            this.ws.on('message', (data: WebSocket.Data) => {
+            socket.on('message', (data: WebSocket.Data) => {
                 try {
                     const rawResponse = JSON.parse(data.toString());
                     // Map PascalCase from C# to camelCase for internal use
@@ -92,31 +139,54 @@ export class RevitSocketClient {
                 }
             });
 
-            this.ws.on('error', (error) => {
+            socket.on('error', (error) => {
                 console.error('[Socket] WebSocket Error:', error);
-                reject(error);
+                settleReject(error instanceof Error ? error : new Error(String(error)));
             });
 
-            this.ws.on('close', () => {
+            socket.on('close', () => {
                 console.error('[Socket] Connection closed');
-                this.ws = null;
+                if (this.ws === socket) {
+                    this.ws = null;
+                }
 
-                // Reconnect logic
-                setTimeout(() => {
-                    console.error('[Socket] Attempting to reconnect...');
-                    this.connect().catch(err => {
-                        console.error('[Socket] Reconnection failed:', err);
-                    });
-                }, this.reconnectInterval);
+                if (!settled) {
+                    settleReject(new Error('Revit WebSocket closed before connection was established'));
+                }
+
+                this.scheduleReconnect();
             });
 
             // Connection Timeout
             setTimeout(() => {
-                if (this.ws?.readyState !== WebSocket.OPEN) {
-                    reject(new Error('Connection Timeout: Please ensure Revit Plugin is running and MCP server is enabled'));
+                if (!settled && socket.readyState !== WebSocket.OPEN) {
+                    try {
+                        socket.close();
+                    } catch {
+                        // Ignore a socket that has already been closed by ws.
+                    }
+                    settleReject(new Error('Connection Timeout: Please ensure Revit Plugin is running and MCP server is enabled'));
                 }
             }, 10000);
         });
+    }
+
+    private scheduleReconnect(): void {
+        if (this.explicitlyDisconnected || this.reconnectTimer !== null || this.isConnected() || this.connecting) {
+            return;
+        }
+
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            if (this.explicitlyDisconnected || this.isConnected() || this.connecting) {
+                return;
+            }
+
+            console.error('[Socket] Attempting to reconnect...');
+            this.connect().catch(err => {
+                console.error('[Socket] Reconnection failed:', err);
+            });
+        }, this.reconnectInterval);
     }
 
     /**
@@ -170,9 +240,16 @@ export class RevitSocketClient {
      * Disconnect
      */
     disconnect(): void {
-        if (this.ws) {
-            this.ws.close();
-            this.ws = null;
+        this.explicitlyDisconnected = true;
+        if (this.reconnectTimer !== null) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        const socket = this.ws;
+        this.ws = null;
+        if (socket) {
+            socket.close();
         }
     }
 

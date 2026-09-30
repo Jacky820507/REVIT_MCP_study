@@ -169,7 +169,19 @@ class FakeDocument(object):
         self.clouds = []
 
     def GetElement(self, element_id):
-        return self.title_block_types.get(element_id.IntegerValue)
+        """真的 ``Document.GetElement`` 認得文件裡的任何元素，假的也要。
+
+        原本只查 ``title_block_types``，於是 ``fill_dwg_numbers`` 查不到圖紙、
+        整批回 None——那會讓一支本來該抓到問題的測試變成永遠通過。
+        """
+        key = element_id.IntegerValue
+        for sheet in self.sheets:
+            if sheet.Id.IntegerValue == key:
+                return sheet
+        for block in self.title_blocks:
+            if block.Id.IntegerValue == key:
+                return block
+        return self.title_block_types.get(key)
 
 
 class FilteredElementCollector(object):
@@ -372,6 +384,111 @@ class CostTests(unittest.TestCase):
         doc, recorder = build_document(500)
         sources.sheet_records(doc, sheet_ids=[1100])
         self.assertLessEqual(len(recorder.parameter_walks), 3)
+
+    def test_filtering_by_sheet_ids_does_not_enumerate_every_sheet(self):
+        """已經知道要哪幾張就直接取，不要撈全部再篩。
+
+        「放置修訂雲標籤」通常只在意幾十張有雲的圖紙。舊寫法仍然列舉全案子
+        的 ViewSheet 再於迴圈內 continue 掉——500 張的專案走訪 500 次、進度條
+        也數到 500，而真正要處理的只有 2 張。使用者看到的等待時間跟他選的
+        範圍完全脫鉤。
+        """
+        doc, recorder = build_document(500)
+        seen = []
+        rows = sources.sheet_records(
+            doc, sheet_ids=[1100, 1200],
+            progress=lambda done, total: seen.append((done, total)))
+        self.assertEqual(2, len(rows))
+        self.assertEqual([(1, 2), (2, 2)], seen,
+                         u'進度總數要是「要處理的張數」，不是全案子張數')
+        self.assertEqual(
+            1, len(recorder.collectors),
+            u'只該有圖框那一個 collector，不該再列舉全部 ViewSheet')
+
+    def test_an_unknown_sheet_id_is_skipped_not_fatal(self):
+        doc, unused = build_document(5)
+        rows = sources.sheet_records(doc, sheet_ids=[1002, 999999])
+        self.assertEqual([1002], [row['ElementId'] for row in rows])
+
+
+class TwoPhaseTests(unittest.TestCase):
+    """便宜的那半跟昂貴的那半必須分得開。
+
+    圖紙編號與 Outline 是純屬性讀取；DWG NO. 要為每張圖紙連圖框一起查參數，
+    是這一層唯一貴的操作，而且只有在圖紙編號配不到 PDF 頁時才需要。
+    """
+
+    def test_skipping_dwg_reads_no_parameters_at_all(self):
+        doc, recorder = build_document(300)
+        rows = sources.sheet_records(doc, with_dwg=False)
+        self.assertEqual(300, len(rows))
+        self.assertEqual([], recorder.parameter_walks,
+                         u'with_dwg=False 不該碰任何參數表')
+        self.assertEqual([None], recorder.collectors,
+                         u'也不該去撈圖框')
+        self.assertEqual([None] * 300, [row['DwgNumber'] for row in rows])
+
+    def test_filling_dwg_numbers_afterwards_matches_a_full_scan(self):
+        """兩階段的結果必須跟一次掃完完全相同，否則就是換了行為不是換了成本。"""
+        doc, unused = build_document(5)
+        full = sources.sheet_records(doc)
+
+        doc2, unused2 = build_document(5)
+        cheap = sources.sheet_records(doc2, with_dwg=False)
+        sources.fill_dwg_numbers(doc2, cheap)
+
+        self.assertEqual([row['DwgNumber'] for row in full],
+                         [row['DwgNumber'] for row in cheap])
+        self.assertEqual([row['DwgNumberCandidates'] for row in full],
+                         [row['DwgNumberCandidates'] for row in cheap])
+
+    def test_filling_dwg_numbers_keeps_the_cost_bounded(self):
+        doc, recorder = build_document(200)
+        rows = sources.sheet_records(doc, with_dwg=False)
+        del recorder.collectors[:]
+        del recorder.parameter_walks[:]
+        sources.fill_dwg_numbers(doc, rows)
+        self.assertLessEqual(len(recorder.parameter_walks), 3)
+        self.assertLessEqual(len(recorder.collectors), 2)
+
+    def test_filling_dwg_numbers_is_cancellable(self):
+        doc, unused = build_document(200)
+        rows = sources.sheet_records(doc, with_dwg=False)
+        self.assertRaises(sources.ScanCancelled, sources.fill_dwg_numbers,
+                          doc, rows, lambda done, total: done >= 2)
+
+    def test_filling_an_empty_list_is_a_no_op(self):
+        doc, recorder = build_document(3)
+        self.assertEqual([], sources.fill_dwg_numbers(doc, []))
+        self.assertEqual([], recorder.collectors)
+
+
+class ProgressTests(unittest.TestCase):
+    """掃描跑在 Revit 的 UI 執行緒上，一定要能回報進度與被中斷。"""
+
+    def test_progress_is_reported_for_every_sheet(self):
+        doc, unused = build_document(5)
+        seen = []
+        sources.sheet_records(
+            doc, progress=lambda done, total: seen.append((done, total)))
+        self.assertEqual([(1, 5), (2, 5), (3, 5), (4, 5), (5, 5)], seen)
+
+    def test_returning_true_cancels_the_scan(self):
+        """使用者按取消時要停下來，不是眼睜睜等它掃完幾千張。"""
+        doc, unused = build_document(500)
+        calls = []
+
+        def cancel_after_three(done, total):
+            calls.append(done)
+            return done >= 3
+
+        self.assertRaises(sources.ScanCancelled, sources.sheet_records,
+                          doc, None, cancel_after_three)
+        self.assertEqual(3, len(calls), u'取消後不該繼續掃')
+
+    def test_no_progress_callback_still_works(self):
+        doc, unused = build_document(3)
+        self.assertEqual(3, len(sources.sheet_records(doc)))
 
 
 class CloudScopeTests(unittest.TestCase):

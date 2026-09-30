@@ -157,7 +157,7 @@ metadata:
 - 門規格：先以 `preview_door_specifications` 依門的族群／類型／房間關係提出需求值，再由 `apply_door_specifications` 以 `fill_blank` 或 `overwrite` 寫入已確認的 String 參數；`targetScope=type` 時要把影響樘數列入人工核准。
 - 門窗編號：以 `preview_door_window_numbering` 產生可重現的流水號或帶入值，確認全域／樓層／類別範圍與既有衝突後，才用 `apply_door_window_numbering` 寫入；帷幕牆門窗預設排除，不能默默混入一般門窗編號。
 - 牆性能：以 `preview_wall_performance_classification` 依牆型、`WallFunction`、`WallKind`、邊界房間或實際參數產生需求性能值，再由 `apply_wall_performance_classification` 寫入 String 參數；這一層不等同詳細牆型替換。
-- 詳細類型：先取得類型清單，建立「需求性能 → 實際類型」映射，再以 `change_element_type` 作用於核准的元素。
+- 詳細類型：先以 `preview_door_type_candidates` 依房間/門型證據建立「需求性能 → 實際門 FamilySymbol」候選；同一門型若影響多樘門，必須確認影響樘數與所有房間配對一致，再以 `change_element_type` 作用於核准的元素。該 preview 只讀取，不會改寫門型或參數。
 
 任意型別的大量參數寫入若沒有單一 Transaction、型別檢查、dry-run 與完整回報，應提出新增 RevitMCP 批次工具，不以逐筆呼叫取代治理。
 

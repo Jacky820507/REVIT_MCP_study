@@ -869,6 +869,15 @@ def g_dependent_crop(canvas, color):
     outline(canvas, 40, 58, 46, 32, 5, color)
 
 
+def g_group_projection(canvas, color):
+    """Warm upper plane and cool lower plane sharing a vertical centre."""
+    polygon(canvas, [(12, 26), (48, 8), (84, 26), (48, 44)], (220, 80, 45))
+    polygon(canvas, [(12, 66), (48, 48), (84, 66), (48, 84)], (45, 115, 215))
+    line(canvas, 48, 25, 48, 66, 5, color)
+    ring(canvas, 48, 26, 8, 3, WHITE)
+    ring(canvas, 48, 66, 8, 3, WHITE)
+
+
 def g_view_scale(canvas, color):
     """A sheet with a scale bar under it — the ratio printed on every drawing.
 
@@ -1066,6 +1075,7 @@ BUTTONS = [
     ('MCP_Macros.tab/Visual.panel/SwapViewMarkTypes.pushbutton',
      g_swap_mark_types),
     ('MCP_Macros.tab/Visual.panel/ViewScale.pushbutton', g_view_scale),
+    ('MCP_Macros.tab/Visual.panel/GroupProjection.pushbutton', g_group_projection),
 ]
 
 
@@ -1126,6 +1136,8 @@ def main():
     if '--panel' in sys.argv:
         only_panel = sys.argv[sys.argv.index('--panel') + 1]
     for rel_path, glyph in BUTTONS:
+        if '--button' in sys.argv and not rel_path.endswith('/' + sys.argv[sys.argv.index('--button') + 1] + '.pushbutton'):
+            continue
         if only_panel and panel_of(rel_path) != only_panel:
             continue
         folder = os.path.join(EXTENSION, *rel_path.split('/'))

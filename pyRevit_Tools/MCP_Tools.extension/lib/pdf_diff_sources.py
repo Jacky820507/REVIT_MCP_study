@@ -30,6 +30,15 @@ from __future__ import unicode_literals
 from Autodesk.Revit import DB
 
 
+class ScanCancelled(Exception):
+    """使用者在掃描途中按了取消。
+
+    掃描跑在 Revit 的 UI 執行緒上，沒有辦法背景化。能做的是讓它**可以被
+    中斷**——呼叫端傳進來的 ``progress`` 回傳真值就丟這個例外，讓使用者在
+    大案子裡不必眼睜睜等到底或去砍掉 Revit。
+    """
+
+
 # Title block／Sheet 上常見的「DWG NO.」參數名稱。這裡只做欄位名稱判斷，
 # 不把 Revit 內建的 SheetNumber 誤當成 PDF 圖框上的 DWG NO.。
 _DWG_NUMBER_LABELS = frozenset([
@@ -280,7 +289,51 @@ def revision_clouds_by_owner(doc):
     return result
 
 
-def sheet_records(doc, sheet_ids=None):
+def fill_dwg_numbers(doc, rows, progress=None):
+    """替既有的 rows 補上 DWG NO. 欄位（就地修改），回傳同一份 rows。
+
+    這是刻意跟 :func:`sheet_records` 分開的第二階段。讀 DWG NO. 要為每張
+    圖紙查參數、還要連圖框一起查，是這一層唯一昂貴的操作；而它**只有在
+    用 Revit 圖紙編號配不到 PDF 頁時才需要**。先便宜地把圖紙撈出來、配一次，
+    配不到再回頭補圖號，比一開始就全掃便宜得多——尤其在圖號本來就對得上的
+    專案，這一段永遠不會被執行。
+    """
+    if not rows:
+        return rows
+
+    wanted = set()
+    for row in rows:
+        try:
+            wanted.add(int(row.get('ElementId')))
+        except Exception:
+            continue
+
+    blocks_by_sheet = title_blocks_by_sheet(doc, wanted)
+    cache = {}
+    total = len(rows)
+    done = 0
+
+    for row in rows:
+        done += 1
+        if progress is not None and progress(done, total):
+            raise ScanCancelled()
+
+        try:
+            sheet_id = int(row.get('ElementId'))
+            sheet = doc.GetElement(DB.ElementId(sheet_id))
+        except Exception:
+            continue
+        if sheet is None:
+            continue
+
+        candidates = _sheet_dwg_number_values(
+            doc, sheet, blocks_by_sheet.get(sheet_id) or [], cache)
+        row['DwgNumberCandidates'] = candidates
+        row['DwgNumber'] = candidates[0] if candidates else None
+    return rows
+
+
+def sheet_records(doc, sheet_ids=None, progress=None, with_dwg=True):
     """回傳圖紙資料，含紙面座標範圍。
 
     ``Outline`` 是 ``BoundingBoxUV``（單位 feet），``pdf_diff_logic`` 的
@@ -290,6 +343,16 @@ def sheet_records(doc, sheet_ids=None):
     ``sheet_ids`` 給只關心少數圖紙的呼叫端（例如「放置修訂雲標籤」只在意
     真的有雲的那幾張）。DWG NO. 欄位掃描是這支函式最貴的部分，能先縮範圍
     就不要整份專案掃。``None``（預設）維持原本的全案子行為。
+
+    ``progress`` 是 ``callable(done, total)``，每張圖紙呼叫一次；回傳真值
+    代表使用者要取消，會丟出 :class:`ScanCancelled`。這不只是為了好看：
+    這段跑在 Revit 的 UI 執行緒上，呼叫端**必須**利用這個回呼去抽動訊息
+    幫浦，否則進度視窗會變成畫不出來也按不動的幽靈視窗，Revit 會被判定
+    「沒有回應」。節流由呼叫端決定——這裡每張都通知，不自作主張。
+
+    ``with_dwg=False`` 跳過 DWG NO. 欄位掃描（``DwgNumber`` 為 ``None``）。
+    那是這一層唯一昂貴的部分，而且只有在圖紙編號配不到 PDF 頁時才需要，
+    所以呼叫端可以先便宜地撈一輪，需要時再用 :func:`fill_dwg_numbers` 補。
     """
     rows = []
     wanted = None
@@ -303,18 +366,40 @@ def sheet_records(doc, sheet_ids=None):
         if not wanted:
             return rows
 
-    try:
-        sheets = list(DB.FilteredElementCollector(doc)
-                      .OfClass(DB.ViewSheet)
-                      .WhereElementIsNotElementType()
-                      .ToElements())
-    except Exception:
-        return rows
+    if wanted is None:
+        try:
+            sheets = list(DB.FilteredElementCollector(doc)
+                          .OfClass(DB.ViewSheet)
+                          .WhereElementIsNotElementType()
+                          .ToElements())
+        except Exception:
+            return rows
+    else:
+        # 已經知道要哪幾張就直接取，不要撈全部再篩。
+        #
+        # 「放置修訂雲標籤」通常只在意幾十張有雲的圖紙，但舊寫法仍然列舉
+        # 全案子的 ViewSheet 再於迴圈內 continue 掉——538 張的專案就是走訪
+        # 538 次、進度條也數到 538，而真正要處理的只有 20 張。使用者看到的
+        # 等待時間跟他選的範圍完全脫鉤。
+        sheets = []
+        for sheet_id in wanted:
+            try:
+                element = doc.GetElement(DB.ElementId(int(sheet_id)))
+            except Exception:
+                element = None
+            if isinstance(element, DB.ViewSheet):
+                sheets.append(element)
 
-    blocks_by_sheet = title_blocks_by_sheet(doc, wanted)
+    blocks_by_sheet = title_blocks_by_sheet(doc, wanted) if with_dwg else {}
     cache = {}
+    total = len(sheets)
+    done = 0
 
     for sheet in sheets:
+        done += 1
+        if progress is not None and progress(done, total):
+            raise ScanCancelled()
+
         sheet_id = _id_value(sheet.Id)
         if wanted is not None and sheet_id not in wanted:
             continue
@@ -338,7 +423,8 @@ def sheet_records(doc, sheet_ids=None):
             continue
 
         dwg_candidates = _sheet_dwg_number_values(
-            doc, sheet, blocks_by_sheet.get(sheet_id) or [], cache)
+            doc, sheet, blocks_by_sheet.get(sheet_id) or [], cache) \
+            if with_dwg else []
 
         rows.append({
             'SheetNumber': number,

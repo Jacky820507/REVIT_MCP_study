@@ -1,8 +1,6 @@
 ---
 name: dwg-column-import
-description: |
-  從 CAD/DWG 圖層批次建立 Revit 結構柱/建築柱：單位/放樣健檢 → 選模式 → 批次建模。三模式（自動建型別 / 既有族群尺寸對應 / 既有族群柱號對應）依情境選用，分步協作不一口氣。
-  TRIGGER when: dwg 建柱, cad 建柱, 圖層建柱, 批次建柱, dwg 匯入建模, cad 柱, column from dwg, 從圖面建柱, 柱號對應, 柱名稱對應, C1 C2 柱
+description: "從 CAD/DWG 圖層批次建立 Revit 結構柱/建築柱：單位與放樣健檢 → 選擇模式 → 批次建模。三種模式（自動建立型別、既有族群尺寸對應、既有族群柱號對應）依情境選用，分步協作，不一次完成。觸發時機：dwg 建柱、cad 建柱、圖層建柱、批次建柱、dwg 匯入建模、cad 柱、column from dwg、從圖面建柱、柱號對應、柱名稱對應或 C1 C2 柱。"
 user-invocable: true
 ---
 

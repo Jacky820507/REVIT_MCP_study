@@ -222,6 +222,1062 @@ namespace RevitMCP.Core
         }
 
         /// <summary>
+        /// 依外部提供的圖紙紙面座標矩形，在對應圖紙上建立修訂雲形。
+        /// 供「PDF 圖說差異比對」按鈕把 PDF 上的差異區域落回 Revit。
+        /// dryRun=true 時完全不開 Transaction，只回傳計畫。
+        /// </summary>
+        /// <remarks>
+        /// 雲形建在 ViewSheet 上而不是視圖裡：PDF 頁座標到圖紙紙面座標是單純的
+        /// 比例對應，不需要 viewport/crop/scale 換算，位置最不會歪。代價是雲不會
+        /// 跟著模型幾何跑——這是刻意的取捨，見 domain/pdf-drawing-diff-revision-cloud.md。
+        /// </remarks>
+        private object CreateRevisionCloudsOnSheets(JObject parameters)
+        {
+            Document doc = _uiApp.ActiveUIDocument.Document;
+            bool dryRun = parameters["dryRun"]?.Value<bool>() ?? false;
+            IdType? revisionIdParam = parameters["revisionId"]?.Value<IdType>();
+            IdType? revisionTagTypeIdParam = parameters["revisionTagTypeId"]?.Value<IdType>();
+            IdType? referenceCloudIdParam = parameters["referenceCloudId"]?.Value<IdType>();
+            string revisionDescription = parameters["revisionDescription"]?.Value<string>();
+            bool removeOverlapping = parameters["removeOverlapping"]?.Value<bool>() ?? false;
+            bool removeManualOverlaps = parameters["removeManualOverlaps"]?.Value<bool>() ?? false;
+            double overlapToleranceMm = parameters["overlapToleranceMm"]?.Value<double>() ?? 3.0;
+            if (overlapToleranceMm < 0)
+                overlapToleranceMm = 0;
+            double overlapToleranceFt = overlapToleranceMm / 304.8;
+            string autoCommentPrefix = parameters["autoCommentPrefix"]?.Value<string>();
+            if (string.IsNullOrEmpty(autoCommentPrefix))
+                autoCommentPrefix = "[自動]";
+
+            JArray specs = parameters["clouds"] as JArray;
+            if (specs == null || specs.Count == 0)
+                throw new Exception("Parameter 'clouds' is required（至少要有一筆矩形）");
+
+            // 新版 pyRevit 會把範本 ID 放在頂層；保留從單筆 cloud 讀取的
+            // 相容路徑，讓舊的呼叫方式也能使用目前選取的方向範本。
+            if (!referenceCloudIdParam.HasValue)
+            {
+                foreach (JToken spec in specs)
+                {
+                    IdType? perCloudReference = spec["referenceCloudId"]?.Value<IdType>();
+                    if (perCloudReference.HasValue)
+                    {
+                        referenceCloudIdParam = perCloudReference;
+                        break;
+                    }
+                }
+            }
+
+            string cloudOrientation = null;
+            bool referenceClockwise = ResolveCloudOrientation(
+                doc, referenceCloudIdParam, out cloudOrientation);
+
+            // 圖紙以 SheetNumber 索引。重號在 Revit 裡不合法，但 ToDictionary 遇到
+            // 髒資料會整批炸掉，所以用 GroupBy 取第一筆，把問題留給個別筆的 Skipped。
+            // pyRevit 端另外會帶已選 ViewSheet 的 ElementId；只用文字編號會在
+            // PDF DWG NO. 與 Revit 內部 SheetNumber 不同時失去唯一身分。
+            List<ViewSheet> allSheets = new FilteredElementCollector(doc)
+                .OfClass(typeof(ViewSheet))
+                .Cast<ViewSheet>()
+                .ToList();
+            Dictionary<IdType, ViewSheet> sheetsById = allSheets
+                .GroupBy(s => s.Id.GetIdValue())
+                .ToDictionary(g => g.Key, g => g.First());
+            Dictionary<string, ViewSheet> sheetsByNumber = allSheets
+                .GroupBy(s => s.SheetNumber ?? string.Empty, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+
+            // 只有在需要清除重疊時才建立既有雲索引；而且限定在本次實際
+            // 要處理的圖紙，避免每次執行都掃完整個專案的修訂雲。
+            var targetSheetIds = new HashSet<IdType>();
+            foreach (JToken spec in specs)
+            {
+                ViewSheet targetSheet = ResolveCloudSheet(
+                    spec, sheetsById, sheetsByNumber, out string targetSheetError);
+                if (targetSheet != null)
+                    targetSheetIds.Add(targetSheet.Id.GetIdValue());
+            }
+
+            Dictionary<IdType, List<ExistingRevisionCloud>> existingCloudsBySheet =
+                removeOverlapping && targetSheetIds.Count > 0
+                    ? CollectSheetRevisionClouds(
+                        doc, sheetsById, targetSheetIds, autoCommentPrefix)
+                    : new Dictionary<IdType, List<ExistingRevisionCloud>>();
+            var created = new List<object>();
+            var skipped = new List<object>();
+            var removed = new List<object>();
+            var manualOverlaps = new List<object>();
+            var revisionTagsCreated = new List<object>();
+            var revisionTagsSkipped = new List<object>();
+            var deletedCloudIds = new HashSet<IdType>();
+            var reportedManualOverlapIds = new HashSet<IdType>();
+            var plannedBoundsBySheet = new Dictionary<IdType, List<CloudBounds>>();
+
+            // dry-run 不建 Revision（那會改模型）。有指定就查、沒指定就報告會沿用哪一個。
+            Revision revision = ResolveRevision(doc, revisionIdParam, revisionDescription, out bool needsNewRevision);
+            FamilySymbol revisionTagType = ResolveRevisionTagType(doc, revisionTagTypeIdParam);
+            string revisionTagTypeLabel = DescribeRevisionTagType(revisionTagType);
+            if (dryRun)
+            {
+                foreach (JToken spec in specs)
+                {
+                    string number = spec["sheetNumber"]?.Value<string>();
+                    string label = spec["gridLabel"]?.Value<string>();
+                    ViewSheet sheet = ResolveCloudSheet(
+                        spec, sheetsById, sheetsByNumber, out string sheetError);
+                    if (sheet == null)
+                    {
+                        skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = sheetError });
+                        continue;
+                    }
+                    string dryRunRectError;
+                    if (BuildCloudCurves(
+                            spec["rectFt"], referenceClockwise, out dryRunRectError) == null)
+                    {
+                        skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = dryRunRectError });
+                        continue;
+                    }
+                    CloudBounds candidateBounds = CloudBounds.FromRect(spec["rectFt"]);
+                    if (candidateBounds == null)
+                    {
+                        skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = "rectFt 無效" });
+                        continue;
+                    }
+                    ProcessRevisionCloudOverlaps(
+                        doc, sheet, candidateBounds, existingCloudsBySheet,
+                        deletedCloudIds, referenceCloudIdParam,
+                        removeOverlapping, removeManualOverlaps, overlapToleranceFt,
+                        false, removed, manualOverlaps, reportedManualOverlapIds);
+                    if (IsPlannedDuplicate(
+                            sheet, candidateBounds, plannedBoundsBySheet, overlapToleranceFt))
+                    {
+                        skipped.Add(new
+                        {
+                            SheetNumber = number,
+                            GridLabel = label,
+                            Reason = "與本次執行已排入的雲形重疊"
+                        });
+                        continue;
+                    }
+                    AddPlannedBounds(sheet, candidateBounds, plannedBoundsBySheet);
+                    created.Add(new
+                    {
+                        SheetNumber = sheet.SheetNumber,
+                        PdfDwgNumber = spec["dwgNumber"]?.Value<string>(),
+                        GridLabel = label,
+                        Comment = spec["comment"]?.Value<string>()
+                    });
+                }
+
+                return new
+                {
+                    DryRun = true,
+                    RevisionUsed = revision != null
+                        ? $"{revision.SequenceNumber} {revision.Description}"
+                    : (needsNewRevision ? "（將建立新修訂）" : "（無）"),
+                    CloudOrientation = cloudOrientation,
+                    RevisionTagType = revisionTagTypeLabel,
+                    RevisionTagsPlanned = revisionTagType == null ? 0 : created.Count,
+                    Created = created,
+                    Skipped = skipped,
+                    Removed = removed,
+                    ManualOverlaps = manualOverlaps
+                };
+            }
+
+            using (Transaction trans = new Transaction(doc, "建立圖說差異修訂雲"))
+            {
+                trans.Start();
+                // 標籤類型只需啟用一次；不要在每朵雲建立時重複觸發
+                // IsActive／Activate／Regenerate。
+                bool revisionTagTypePrepared = revisionTagType == null ||
+                    revisionTagType.IsActive;
+
+                if (revision == null)
+                {
+                    revision = Revision.Create(doc);
+                    revision.Description = string.IsNullOrEmpty(revisionDescription)
+                        ? $"圖說差異比對 {DateTime.Now:yyyy-MM-dd}"
+                        : revisionDescription;
+                    revision.RevisionDate = DateTime.Now.ToString("yyyy-MM-dd");
+                }
+
+                foreach (JToken spec in specs)
+                {
+                    string number = spec["sheetNumber"]?.Value<string>();
+                    string label = spec["gridLabel"]?.Value<string>();
+                    string comment = spec["comment"]?.Value<string>();
+
+                    try
+                    {
+                        ViewSheet sheet = ResolveCloudSheet(
+                            spec, sheetsById, sheetsByNumber, out string sheetError);
+                        if (sheet == null)
+                        {
+                            skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = sheetError });
+                            continue;
+                        }
+
+                        IList<Curve> curves = BuildCloudCurves(
+                            spec["rectFt"], referenceClockwise, out string rectError);
+                        if (curves == null)
+                        {
+                            skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = rectError });
+                            continue;
+                        }
+
+                        CloudBounds candidateBounds = CloudBounds.FromRect(spec["rectFt"]);
+                        if (candidateBounds == null)
+                        {
+                            skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = "rectFt 無效" });
+                            continue;
+                        }
+                        ProcessRevisionCloudOverlaps(
+                            doc, sheet, candidateBounds, existingCloudsBySheet,
+                            deletedCloudIds, referenceCloudIdParam,
+                            removeOverlapping, removeManualOverlaps, overlapToleranceFt,
+                            true, removed, manualOverlaps, reportedManualOverlapIds);
+                        if (IsPlannedDuplicate(
+                                sheet, candidateBounds, plannedBoundsBySheet, overlapToleranceFt))
+                        {
+                            skipped.Add(new
+                            {
+                                SheetNumber = number,
+                                GridLabel = label,
+                                Reason = "與本次執行已排入的雲形重疊"
+                            });
+                            continue;
+                        }
+                        AddPlannedBounds(sheet, candidateBounds, plannedBoundsBySheet);
+
+                        RevisionCloud cloud = RevisionCloud.Create(doc, sheet, revision.Id, curves);
+
+                        // Comments 是既有 scan_revision_clouds 讀出來放進釋疑 Excel 的欄位，
+                        // 差異描述寫在這裡，整條釋疑管線就自動接得上。
+                        if (!string.IsNullOrEmpty(comment))
+                        {
+                            Parameter commentsParam = cloud.get_Parameter(BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS);
+                            if (commentsParam != null && !commentsParam.IsReadOnly)
+                                commentsParam.Set(comment);
+                        }
+
+                        if (revisionTagType != null)
+                        {
+                            try
+                            {
+                                if (!revisionTagTypePrepared)
+                                {
+                                    revisionTagType.Activate();
+                                    doc.Regenerate();
+                                    revisionTagTypePrepared = true;
+                                }
+
+                                XYZ tagPosition = ComputeRevisionTagPosition(
+                                    sheet, candidateBounds);
+                                IndependentTag tag = CreateRevisionCloudTag(
+                                    doc, sheet, cloud, revisionTagType, tagPosition);
+                                revisionTagsCreated.Add(new
+                                {
+                                    ElementId = tag.Id.GetIdValue(),
+                                    CloudElementId = cloud.Id.GetIdValue(),
+                                    SheetNumber = sheet.SheetNumber,
+                                    GridLabel = label,
+                                    PositionU = tagPosition.X,
+                                    PositionV = tagPosition.Y
+                                });
+                            }
+                            catch (Exception tagEx)
+                            {
+                                // 標籤建立失敗不回滾已成功建立的雲；回傳逐筆原因，
+                                // 讓使用者可以先保留雲再處理未載入／不相容的標籤族群。
+                                revisionTagsSkipped.Add(new
+                                {
+                                    CloudElementId = cloud.Id.GetIdValue(),
+                                    SheetNumber = sheet.SheetNumber,
+                                    GridLabel = label,
+                                    Reason = tagEx.Message
+                                });
+                            }
+                        }
+
+                        created.Add(new
+                        {
+                            ElementId = cloud.Id.GetIdValue(),
+                            SheetId = sheet.Id.GetIdValue(),
+                            SheetNumber = sheet.SheetNumber,
+                            SheetName = sheet.Name,
+                            PdfDwgNumber = spec["dwgNumber"]?.Value<string>(),
+                            GridLabel = label,
+                            Comment = comment
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // 逐筆吞例外：一朵畫不出來（框太小、圖紙被鎖）不該讓整批中斷。
+                        skipped.Add(new { SheetNumber = number, GridLabel = label, Reason = ex.Message });
+                    }
+                }
+
+                trans.Commit();
+            }
+
+            return new
+            {
+                DryRun = false,
+                RevisionUsed = $"{revision.SequenceNumber} {revision.Description}",
+                RevisionId = revision.Id.GetIdValue(),
+                CloudOrientation = cloudOrientation,
+                RevisionTagType = revisionTagTypeLabel,
+                RevisionTagsCreated = revisionTagsCreated.Count,
+                RevisionTagsSkipped = revisionTagsSkipped,
+                Created = created,
+                Skipped = skipped,
+                Removed = removed,
+                ManualOverlaps = manualOverlaps
+            };
+        }
+
+        /// <summary>
+        /// 以 pyRevit 傳來的 ViewSheet ElementId 解析目標；舊呼叫者沒有 ID 時
+        /// 才退回 SheetNumber。ID 存在但找不到時不改配到另一張同名／同號圖紙。
+        /// </summary>
+        private ViewSheet ResolveCloudSheet(
+            JToken spec,
+            Dictionary<IdType, ViewSheet> sheetsById,
+            Dictionary<string, ViewSheet> sheetsByNumber,
+            out string error)
+        {
+            error = null;
+            string number = spec["sheetNumber"]?.Value<string>();
+            IdType? sheetId = spec["sheetId"]?.Value<IdType>();
+
+            if (sheetId.HasValue)
+            {
+                if (sheetsById.TryGetValue(sheetId.Value, out ViewSheet byId))
+                    return byId;
+
+                error = $"找不到指定的 Revit 圖紙 ElementId: {sheetId.Value}";
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(number) &&
+                sheetsByNumber.TryGetValue(number, out ViewSheet byNumber))
+                return byNumber;
+
+            error = "專案中找不到這個圖紙編號";
+            return null;
+        }
+
+        /// <summary>
+        /// 建立目前所有圖紙上的修訂雲索引，供重跑時做空間去重。
+        /// 只索引能讀到幾何範圍的雲；讀不到範圍時寧可保留，不猜測並刪除。
+        /// </summary>
+        private Dictionary<IdType, List<ExistingRevisionCloud>> CollectSheetRevisionClouds(
+            Document doc,
+            Dictionary<IdType, ViewSheet> sheetsById,
+            ISet<IdType> targetSheetIds,
+            string autoCommentPrefix)
+        {
+            var result = new Dictionary<IdType, List<ExistingRevisionCloud>>();
+
+            if (targetSheetIds == null || targetSheetIds.Count == 0)
+                return result;
+
+            // ElementOwnerViewFilter 是 quick filter；搭配 OR 後只展開本次
+            // 目標圖紙的 RevisionCloud，避免先把其他圖紙的雲全部載入記憶體。
+            var ownerFilters = targetSheetIds
+                .Select(id => (ElementFilter)new ElementOwnerViewFilter(
+                    id.ToElementId()))
+                .ToList();
+            ElementFilter ownerFilter = ownerFilters.Count == 1
+                ? ownerFilters[0]
+                : new LogicalOrFilter(ownerFilters);
+            var clouds = new FilteredElementCollector(doc)
+                .OfClass(typeof(RevisionCloud))
+                .WherePasses(ownerFilter)
+                .Cast<RevisionCloud>()
+                .ToList();
+
+            foreach (RevisionCloud cloud in clouds)
+            {
+                try
+                {
+                    ElementId ownerViewId = cloud.OwnerViewId;
+                    if (ownerViewId == null || ownerViewId == ElementId.InvalidElementId)
+                        continue;
+
+                    IdType sheetId = ownerViewId.GetIdValue();
+                    if (!targetSheetIds.Contains(sheetId) ||
+                        !sheetsById.TryGetValue(sheetId, out ViewSheet sheet))
+                        continue;
+
+                    if (!TryGetRevisionCloudBounds(cloud, out CloudBounds bounds))
+                        continue;
+
+                    string comments = GetRevisionCloudComments(cloud);
+                    var info = new ExistingRevisionCloud
+                    {
+                        Cloud = cloud,
+                        Sheet = sheet,
+                        Bounds = bounds,
+                        Comments = comments,
+                        IsProgramGenerated = IsProgramGeneratedComment(
+                            comments, autoCommentPrefix)
+                    };
+
+                    if (!result.TryGetValue(sheetId, out List<ExistingRevisionCloud> list))
+                    {
+                        list = new List<ExistingRevisionCloud>();
+                        result[sheetId] = list;
+                    }
+                    list.Add(info);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Debug($"建立修訂雲去重索引失敗，略過 {cloud.Id.GetIdValue()}: {ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        private string GetRevisionCloudComments(RevisionCloud cloud)
+        {
+            try
+            {
+                return cloud.get_Parameter(
+                    BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS)?.AsString();
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"讀取修訂雲 {cloud.Id.GetIdValue()} Comments 失敗: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// 新版用明確前綴辨識；舊版尚未有前綴時，辨識本按鈕既有的定位格式。
+        /// 空白備註與一般手動備註都不算程式雲，預設不會被刪除。
+        /// </summary>
+        private bool IsProgramGeneratedComment(string comments, string autoCommentPrefix)
+        {
+            if (string.IsNullOrEmpty(comments))
+                return false;
+
+            if (!string.IsNullOrEmpty(autoCommentPrefix) &&
+                comments.StartsWith(autoCommentPrefix, StringComparison.Ordinal))
+                return true;
+
+            // 相容第一次部署前已建立的雲，例如「[F4:F5] 新增文字：D4a」。
+            return comments.StartsWith("[", StringComparison.Ordinal) &&
+                (comments.IndexOf("新增文字：", StringComparison.Ordinal) >= 0 ||
+                 comments.IndexOf("刪除文字：", StringComparison.Ordinal) >= 0 ||
+                 comments.IndexOf("圖面差異：", StringComparison.Ordinal) >= 0 ||
+                 comments.IndexOf(" → ", StringComparison.Ordinal) >= 0);
+        }
+
+        private void ProcessRevisionCloudOverlaps(
+            Document doc,
+            ViewSheet sheet,
+            CloudBounds candidateBounds,
+            Dictionary<IdType, List<ExistingRevisionCloud>> existingCloudsBySheet,
+            HashSet<IdType> deletedCloudIds,
+            IdType? protectedCloudId,
+            bool removeOverlapping,
+            bool removeManualOverlaps,
+            double toleranceFt,
+            bool deleteMatches,
+            List<object> removed,
+            List<object> manualOverlaps,
+            HashSet<IdType> reportedManualOverlapIds)
+        {
+            if (!removeOverlapping)
+                return;
+
+            IdType sheetId = sheet.Id.GetIdValue();
+            if (!existingCloudsBySheet.TryGetValue(
+                    sheetId, out List<ExistingRevisionCloud> existing))
+                return;
+
+            foreach (ExistingRevisionCloud info in existing)
+            {
+                IdType cloudId = info.Cloud.Id.GetIdValue();
+                if (deletedCloudIds.Contains(cloudId))
+                    continue;
+                if (protectedCloudId.HasValue && protectedCloudId.Value == cloudId)
+                    continue;
+                if (!BoundsOverlapOrNear(candidateBounds, info.Bounds, toleranceFt))
+                    continue;
+
+                if (info.IsProgramGenerated || removeManualOverlaps)
+                {
+                    // 只刪除空間上高度相似的舊雲。相鄰設備的框常會局部相交；
+                    // 若把「有交集」直接當成同一朵雲，重跑時會誤刪其他有效差異。
+                    if (!BoundsAreNearDuplicate(
+                            candidateBounds, info.Bounds, toleranceFt, 0.50))
+                        continue;
+
+                    if (deleteMatches)
+                        doc.Delete(info.Cloud.Id);
+
+                    deletedCloudIds.Add(cloudId);
+                    removed.Add(new
+                    {
+                        ElementId = cloudId,
+                        SheetNumber = sheet.SheetNumber,
+                        Comments = info.Comments,
+                        WasProgramGenerated = info.IsProgramGenerated
+                    });
+                }
+                else if (reportedManualOverlapIds.Add(cloudId))
+                {
+                    manualOverlaps.Add(new
+                    {
+                        ElementId = cloudId,
+                        SheetNumber = sheet.SheetNumber,
+                        Comments = info.Comments
+                    });
+                }
+            }
+        }
+
+        private bool IsPlannedDuplicate(
+            ViewSheet sheet,
+            CloudBounds candidateBounds,
+            Dictionary<IdType, List<CloudBounds>> plannedBoundsBySheet,
+            double toleranceFt)
+        {
+            IdType sheetId = sheet.Id.GetIdValue();
+            if (!plannedBoundsBySheet.TryGetValue(
+                    sheetId, out List<CloudBounds> planned))
+                return false;
+
+            // 同一次執行只排除幾乎相同的框。文字框、設備基座與線條範圍
+            // 可能合理地互相交疊，不能因為有任意交集就吞掉後續雲形。
+            return planned.Any(existing => BoundsAreNearDuplicate(
+                candidateBounds, existing, toleranceFt, 0.80));
+        }
+
+        private void AddPlannedBounds(
+            ViewSheet sheet,
+            CloudBounds bounds,
+            Dictionary<IdType, List<CloudBounds>> plannedBoundsBySheet)
+        {
+            IdType sheetId = sheet.Id.GetIdValue();
+            if (!plannedBoundsBySheet.TryGetValue(
+                    sheetId, out List<CloudBounds> planned))
+            {
+                planned = new List<CloudBounds>();
+                plannedBoundsBySheet[sheetId] = planned;
+            }
+            planned.Add(bounds);
+        }
+
+        private static bool BoundsOverlapOrNear(
+            CloudBounds first,
+            CloudBounds second,
+            double toleranceFt)
+        {
+            return first.MinU <= second.MaxU + toleranceFt &&
+                   first.MaxU + toleranceFt >= second.MinU &&
+                   first.MinV <= second.MaxV + toleranceFt &&
+                   first.MaxV + toleranceFt >= second.MinV;
+        }
+
+        /// <summary>
+        /// 判斷兩個範圍是否代表同一朵雲，而不只是局部相交。
+        /// 四邊都落在容差內視為相同；否則要求足夠高的 IoU。
+        /// </summary>
+        private static bool BoundsAreNearDuplicate(
+            CloudBounds first,
+            CloudBounds second,
+            double toleranceFt,
+            double minimumIntersectionOverUnion)
+        {
+            if (first == null || second == null)
+                return false;
+
+            bool matchingEdges =
+                Math.Abs(first.MinU - second.MinU) <= toleranceFt &&
+                Math.Abs(first.MinV - second.MinV) <= toleranceFt &&
+                Math.Abs(first.MaxU - second.MaxU) <= toleranceFt &&
+                Math.Abs(first.MaxV - second.MaxV) <= toleranceFt;
+            if (matchingEdges)
+                return true;
+
+            double intersectionWidth = Math.Max(
+                0, Math.Min(first.MaxU, second.MaxU) -
+                   Math.Max(first.MinU, second.MinU));
+            double intersectionHeight = Math.Max(
+                0, Math.Min(first.MaxV, second.MaxV) -
+                   Math.Max(first.MinV, second.MinV));
+            double intersectionArea = intersectionWidth * intersectionHeight;
+            if (intersectionArea <= 0)
+                return false;
+
+            double firstArea = (first.MaxU - first.MinU) *
+                (first.MaxV - first.MinV);
+            double secondArea = (second.MaxU - second.MinU) *
+                (second.MaxV - second.MinV);
+            double unionArea = firstArea + secondArea - intersectionArea;
+            if (unionArea <= 0)
+                return false;
+
+            return intersectionArea / unionArea >= minimumIntersectionOverUnion;
+        }
+
+        private bool TryGetRevisionCloudBounds(
+            RevisionCloud cloud,
+            out CloudBounds bounds)
+        {
+            bounds = null;
+            IList<Curve> curves;
+            try
+            {
+                curves = cloud.GetSketchCurves();
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (curves == null || curves.Count == 0)
+                return false;
+
+            double minU = double.PositiveInfinity;
+            double minV = double.PositiveInfinity;
+            double maxU = double.NegativeInfinity;
+            double maxV = double.NegativeInfinity;
+            bool foundPoint = false;
+
+            foreach (Curve curve in curves)
+            {
+                if (curve == null)
+                    continue;
+
+                IList<XYZ> points = null;
+                try
+                {
+                    points = curve.Tessellate();
+                }
+                catch
+                {
+                    // 退回端點；即使某一段曲線不能 tessellate，也不讓整個
+                    // 去重流程中止。
+                }
+
+                if (points == null || points.Count == 0)
+                {
+                    try
+                    {
+                        points = new List<XYZ>
+                        {
+                            curve.GetEndPoint(0),
+                            curve.GetEndPoint(1)
+                        };
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                foreach (XYZ point in points)
+                {
+                    if (point == null)
+                        continue;
+                    minU = Math.Min(minU, point.X);
+                    minV = Math.Min(minV, point.Y);
+                    maxU = Math.Max(maxU, point.X);
+                    maxV = Math.Max(maxV, point.Y);
+                    foundPoint = true;
+                }
+            }
+
+            if (!foundPoint || maxU <= minU || maxV <= minV)
+                return false;
+
+            bounds = new CloudBounds(minU, minV, maxU, maxV);
+            return true;
+        }
+
+        /// <summary>
+        /// 決定要掛在哪一個 Revision 底下。回傳 null 代表「需要新建一個」。
+        /// </summary>
+        private Revision ResolveRevision(Document doc, IdType? revisionId, string description, out bool needsNew)
+        {
+            needsNew = false;
+
+            if (revisionId.HasValue && revisionId.Value > 0)
+            {
+                Revision byId = doc.GetElement(revisionId.Value.ToElementId()) as Revision;
+                if (byId == null)
+                    throw new Exception($"找不到修訂 ID: {revisionId.Value}");
+                return byId;
+            }
+
+            List<Revision> revisions = new FilteredElementCollector(doc)
+                .OfClass(typeof(Revision))
+                .Cast<Revision>()
+                .OrderBy(r => r.SequenceNumber)
+                .ToList();
+
+            if (!string.IsNullOrEmpty(description))
+            {
+                Revision byDescription = revisions.LastOrDefault(
+                    r => string.Equals(r.Description, description, StringComparison.Ordinal));
+                if (byDescription != null)
+                    return byDescription;
+                // 指定了說明卻找不到 → 建一個叫這個名字的新修訂，而不是默默沿用別的。
+                needsNew = true;
+                return null;
+            }
+
+            if (revisions.Count > 0)
+                return revisions.Last();
+
+            needsNew = true;
+            return null;
+        }
+
+        /// <summary>
+        /// 解析使用者在 UI 選擇的修訂雲狀標籤類型。
+        /// 修訂雲標籤是 OST_RevisionCloudTags 的 FamilySymbol；沒有選擇時
+        /// 回傳 null，代表只建立雲、不自動放置標籤。
+        /// </summary>
+        private FamilySymbol ResolveRevisionTagType(
+            Document doc,
+            IdType? revisionTagTypeId)
+        {
+            if (!revisionTagTypeId.HasValue || revisionTagTypeId.Value <= 0)
+                return null;
+
+            FamilySymbol tagType = doc.GetElement(
+                revisionTagTypeId.Value.ToElementId()) as FamilySymbol;
+            if (tagType == null)
+                throw new Exception(
+                    $"找不到修訂雲狀標籤類型 ID: {revisionTagTypeId.Value}");
+
+            Category category = tagType.Category;
+            if (category == null ||
+                category.Id.GetIdValue() != (IdType)BuiltInCategory.OST_RevisionCloudTags)
+            {
+                throw new Exception(
+                    $"ElementId {revisionTagTypeId.Value} 不是修訂雲狀標籤類型");
+            }
+
+            return tagType;
+        }
+
+        private string DescribeRevisionTagType(FamilySymbol tagType)
+        {
+            if (tagType == null)
+                return "（不放置修訂雲狀標籤）";
+
+            return $"{tagType.FamilyName} : {tagType.Name} (ID {tagType.Id.GetIdValue()})";
+        }
+
+        /// <summary>
+        /// 以雲的紙面矩形決定標籤頭位置：優先放在右側，其次左、上、下，
+        /// 並保留約 12 mm 的紙邊安全距離。這裡使用 ViewSheet 紙面座標，
+        /// 與 RevisionCloud.Create 使用的座標系一致。
+        /// </summary>
+        private XYZ ComputeRevisionTagPosition(
+            ViewSheet sheet,
+            CloudBounds bounds)
+        {
+            if (sheet == null || bounds == null)
+                throw new ArgumentNullException("sheet/bounds");
+
+            BoundingBoxUV outline = sheet.Outline;
+            if (outline == null || outline.Max.U <= outline.Min.U ||
+                outline.Max.V <= outline.Min.V)
+            {
+                throw new InvalidOperationException("圖紙 Outline 無效，無法定位修訂標籤");
+            }
+
+            const double edgePaddingFt = 12.0 / 304.8;
+            const double cloudGapFt = 6.0 / 304.8;
+            double centerU = (bounds.MinU + bounds.MaxU) / 2.0;
+            double centerV = (bounds.MinV + bounds.MaxV) / 2.0;
+
+            var candidates = new List<XYZ>
+            {
+                new XYZ(bounds.MaxU + cloudGapFt, centerV, 0),
+                new XYZ(bounds.MinU - cloudGapFt, centerV, 0),
+                new XYZ(centerU, bounds.MaxV + cloudGapFt, 0),
+                new XYZ(centerU, bounds.MinV - cloudGapFt, 0)
+            };
+
+            foreach (XYZ candidate in candidates)
+            {
+                if (candidate.X >= outline.Min.U + edgePaddingFt &&
+                    candidate.X <= outline.Max.U - edgePaddingFt &&
+                    candidate.Y >= outline.Min.V + edgePaddingFt &&
+                    candidate.Y <= outline.Max.V - edgePaddingFt)
+                {
+                    return candidate;
+                }
+            }
+
+            // 雲形幾乎佔滿圖紙時四側都沒有完整空間；仍將標籤放在
+            // 圖紙內且靠近雲中心，避免因為追求完美位置而漏放標籤。
+            double minU = outline.Min.U + edgePaddingFt;
+            double maxU = outline.Max.U - edgePaddingFt;
+            double minV = outline.Min.V + edgePaddingFt;
+            double maxV = outline.Max.V - edgePaddingFt;
+            return new XYZ(
+                Math.Max(minU, Math.Min(maxU, centerU)),
+                Math.Max(minV, Math.Min(maxV, centerV)),
+                0);
+        }
+
+        /// <summary>
+        /// 以指定 FamilySymbol 建立一個掛在 RevisionCloud 上的標籤，
+        /// 並把 TagHeadPosition 固定在計算出的雲旁位置；不加引線，避免
+        /// 大批圖紙產生交錯的引線。
+        /// </summary>
+        private IndependentTag CreateRevisionCloudTag(
+            Document doc,
+            ViewSheet sheet,
+            RevisionCloud cloud,
+            FamilySymbol tagType,
+            XYZ tagPosition)
+        {
+            if (doc == null || sheet == null || cloud == null || tagType == null ||
+                tagPosition == null)
+            {
+                throw new ArgumentNullException("tag creation argument");
+            }
+
+            IndependentTag tag = IndependentTag.Create(
+                doc,
+                tagType.Id,
+                sheet.Id,
+                new Reference(cloud),
+                false,
+                TagOrientation.Horizontal,
+                tagPosition);
+            if (tag == null)
+                throw new InvalidOperationException("修訂雲狀標籤建立失敗");
+            return tag;
+        }
+
+        /// <summary>
+        /// 讀取使用者選取的修訂雲，取得其 sketch loop 的方向。
+        /// 沒有範本時沿用 Revit API 所要求的順時針預設值。
+        /// </summary>
+        private bool ResolveCloudOrientation(
+            Document doc,
+            IdType? referenceCloudId,
+            out string description)
+        {
+            if (!referenceCloudId.HasValue || referenceCloudId.Value <= 0)
+            {
+                description = "預設方向：順時針";
+                return true;
+            }
+
+            RevisionCloud referenceCloud = doc.GetElement(
+                referenceCloudId.Value.ToElementId()) as RevisionCloud;
+            if (referenceCloud == null)
+            {
+                throw new Exception($"找不到方向範本修訂雲 ElementId: {referenceCloudId.Value}");
+            }
+
+            if (!TryGetRevisionCloudSignedArea(
+                    referenceCloud, out double signedArea, out string error))
+            {
+                throw new Exception(
+                    $"無法讀取方向範本修訂雲 {referenceCloudId.Value} 的迴圈方向：{error}");
+            }
+
+            bool clockwise = signedArea < 0;
+            description = $"套用選取修訂雲 {referenceCloudId.Value} 的"
+                + $"{(clockwise ? "順時針" : "逆時針")}迴圈方向";
+            return clockwise;
+        }
+
+        /// <summary>
+        /// 從 RevisionCloud.GetSketchCurves() 的端點連接關係計算最大封閉迴圈
+        /// 的 signed area。使用最大迴圈可避開極少數含多個 loop 的雲形。
+        /// </summary>
+        private bool TryGetRevisionCloudSignedArea(
+            RevisionCloud cloud,
+            out double signedArea,
+            out string error)
+        {
+            signedArea = 0;
+            error = null;
+
+            IList<Curve> sketchCurves;
+            try
+            {
+                sketchCurves = cloud.GetSketchCurves();
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+
+            if (sketchCurves == null || sketchCurves.Count < 3)
+            {
+                error = "sketch curves 不足三條";
+                return false;
+            }
+
+            const double pointTolerance = 1e-7;
+            var remaining = sketchCurves
+                .Where(curve => curve != null)
+                .ToList();
+            double largestArea = 0;
+
+            while (remaining.Count > 0)
+            {
+                Curve first = remaining[0];
+                remaining.RemoveAt(0);
+
+                XYZ start;
+                XYZ current;
+                try
+                {
+                    start = first.GetEndPoint(0);
+                    current = first.GetEndPoint(1);
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    return false;
+                }
+
+                var points = new List<XYZ> { start, current };
+                int guard = 0;
+                while (!PointsMatch(current, start, pointTolerance) &&
+                       remaining.Count > 0 && guard++ <= sketchCurves.Count)
+                {
+                    int nextIndex = FindConnectedCurve(
+                        remaining, current, pointTolerance, out XYZ nextPoint);
+                    if (nextIndex < 0)
+                        break;
+
+                    remaining.RemoveAt(nextIndex);
+                    points.Add(nextPoint);
+                    current = nextPoint;
+                }
+
+                if (!PointsMatch(current, start, pointTolerance) || points.Count < 4)
+                    continue;
+
+                double area = 0;
+                for (int i = 0; i < points.Count - 1; i++)
+                {
+                    area += points[i].X * points[i + 1].Y
+                        - points[i + 1].X * points[i].Y;
+                }
+
+                if (Math.Abs(area) > Math.Abs(largestArea))
+                    largestArea = area;
+            }
+
+            if (Math.Abs(largestArea) <= 1e-12)
+            {
+                error = "找不到可判定方向的封閉 sketch loop";
+                return false;
+            }
+
+            signedArea = largestArea;
+            return true;
+        }
+
+        private static int FindConnectedCurve(
+            IList<Curve> curves,
+            XYZ point,
+            double tolerance,
+            out XYZ nextPoint)
+        {
+            nextPoint = null;
+            for (int i = 0; i < curves.Count; i++)
+            {
+                Curve curve = curves[i];
+                XYZ start = curve.GetEndPoint(0);
+                XYZ end = curve.GetEndPoint(1);
+                if (PointsMatch(start, point, tolerance))
+                {
+                    nextPoint = end;
+                    return i;
+                }
+                if (PointsMatch(end, point, tolerance))
+                {
+                    nextPoint = start;
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private static bool PointsMatch(XYZ first, XYZ second, double tolerance)
+        {
+            return first != null && second != null && first.DistanceTo(second) <= tolerance;
+        }
+
+        /// <summary>
+        /// 把圖紙紙面座標的矩形轉成封閉的四條線；無效時回傳 null 並附原因。
+        /// </summary>
+        private IList<Curve> BuildCloudCurves(
+            JToken rect,
+            bool clockwise,
+            out string error)
+        {
+            error = null;
+            if (rect == null)
+            {
+                error = "缺少 rectFt";
+                return null;
+            }
+
+            double minU = rect["minU"]?.Value<double>() ?? 0;
+            double minV = rect["minV"]?.Value<double>() ?? 0;
+            double maxU = rect["maxU"]?.Value<double>() ?? 0;
+            double maxV = rect["maxV"]?.Value<double>() ?? 0;
+
+            // Revit 拒絕比 ShortCurveTolerance 短的線。呼叫端的 build_cloud_rect
+            // 已經套過最小尺寸，這裡是最後一道防線，避免中間環節把它壓扁。
+            double tolerance = _uiApp.Application.ShortCurveTolerance;
+            if (maxU - minU <= tolerance || maxV - minV <= tolerance)
+            {
+                error = $"矩形太小（{maxU - minU:F4} x {maxV - minV:F4} ft），Revit 畫不出雲形";
+                return null;
+            }
+
+            XYZ bottomLeft = new XYZ(minU, minV, 0);
+            XYZ topLeft = new XYZ(minU, maxV, 0);
+            XYZ topRight = new XYZ(maxU, maxV, 0);
+            XYZ bottomRight = new XYZ(maxU, minV, 0);
+
+            // 方向直接跟隨範本雲，不再假設所有專案／視圖的紙面視覺方向
+            // 都與單純的 XY 判斷相同。順時針路徑是 BL→TL→TR→BR。
+            if (clockwise)
+            {
+                return new List<Curve>
+                {
+                    Line.CreateBound(bottomLeft, topLeft),
+                    Line.CreateBound(topLeft, topRight),
+                    Line.CreateBound(topRight, bottomRight),
+                    Line.CreateBound(bottomRight, bottomLeft)
+                };
+            }
+
+            return new List<Curve>
+            {
+                Line.CreateBound(bottomLeft, bottomRight),
+                Line.CreateBound(bottomRight, topRight),
+                Line.CreateBound(topRight, topLeft),
+                Line.CreateBound(topLeft, bottomLeft)
+            };
+        }
+
+        /// <summary>
         /// 匯出釋疑清單 Excel（單一工作表），供其他單位填寫回覆。
         /// </summary>
         private object ExportRevisionExcel(JObject parameters)
@@ -482,6 +1538,46 @@ namespace RevitMCP.Core
             public string ViewType;
             public string SheetNumber;
             public string SheetName;
+        }
+
+        private sealed class ExistingRevisionCloud
+        {
+            public RevisionCloud Cloud;
+            public ViewSheet Sheet;
+            public CloudBounds Bounds;
+            public string Comments;
+            public bool IsProgramGenerated;
+        }
+
+        private sealed class CloudBounds
+        {
+            public CloudBounds(double minU, double minV, double maxU, double maxV)
+            {
+                MinU = minU;
+                MinV = minV;
+                MaxU = maxU;
+                MaxV = maxV;
+            }
+
+            public double MinU { get; private set; }
+            public double MinV { get; private set; }
+            public double MaxU { get; private set; }
+            public double MaxV { get; private set; }
+
+            public static CloudBounds FromRect(JToken rect)
+            {
+                if (rect == null)
+                    return null;
+
+                double minU = rect["minU"]?.Value<double>() ?? 0;
+                double minV = rect["minV"]?.Value<double>() ?? 0;
+                double maxU = rect["maxU"]?.Value<double>() ?? 0;
+                double maxV = rect["maxV"]?.Value<double>() ?? 0;
+                if (maxU <= minU || maxV <= minV)
+                    return null;
+
+                return new CloudBounds(minU, minV, maxU, maxV);
+            }
         }
 
         #endregion

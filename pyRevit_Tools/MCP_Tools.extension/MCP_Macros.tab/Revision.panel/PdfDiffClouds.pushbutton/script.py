@@ -47,6 +47,7 @@ import mcp_bridge as mcp
 import pdf_diff_logic as logic
 import pdf_diff_runner as runner
 import pdf_diff_sources as sources
+import scan_progress as timing
 
 
 TITLE = u'圖說差異 → 修訂雲'
@@ -114,10 +115,22 @@ def _text(value, size=13, brush=_INK, bold=False, wrap=False):
 class PdfDiffWindow(forms.WPFWindow):
     """一個視窗走完：選檔 → 比對 → 對應圖紙 → 勾選區域 → 建立。"""
 
-    def __init__(self, sheets, reference_cloud_id=None, revisions=None):
+    def __init__(self, sheets, reference_cloud_id=None, revisions=None,
+                 sheet_loader=None):
+        """``sheet_loader`` 讓圖紙清單延到真的需要時才讀。
+
+        按下按鈕就掃描全案子的圖紙是錯的時機：那份資料要到使用者選完兩份
+        PDF、按下「比對」之後才用得到，而使用者常常只想比其中幾張圖。
+        538 張圖紙的專案因此每次都先卡好幾十秒才看得到視窗。
+
+        ``sheet_loader`` 是 ``callable(pages) -> rows``，在 ``compare_clicked``
+        取得 PDF 頁面之後才呼叫；此時已經知道要配哪些頁，可以先用便宜的
+        圖紙編號配一輪，配不到才回頭付 DWG NO. 的代價。
+        """
         xaml = os.path.join(os.path.dirname(__file__), 'PdfDiffClouds.xaml')
         forms.WPFWindow.__init__(self, xaml)
-        self.sheets = sheets
+        self.sheets = list(sheets or [])
+        self.sheet_loader = sheet_loader
         self.reference_cloud_id = reference_cloud_id
         self.revisions = revisions or []
         self.result = None
@@ -139,8 +152,8 @@ class PdfDiffWindow(forms.WPFWindow):
         # sheet dict -> 在 self.sheets 裡的索引。用 list.index() 找的話，
         # 每一列都要對 dict 做線性的深層比較。
         self._sheet_index = {}
-        for index, sheet in enumerate(sheets):
-            self._sheet_index[id(sheet)] = index
+        self._sheet_labels = [NO_SHEET]
+        self._rebuild_sheet_index()
 
         for label, unused in MODES:
             self.modeCombo.Items.Add(label)
@@ -149,14 +162,6 @@ class PdfDiffWindow(forms.WPFWindow):
             self.thresholdCombo.Items.Add(label)
         self.thresholdCombo.SelectedIndex = 0
 
-        self._sheet_labels = [NO_SHEET]
-        for sheet in sheets:
-            dwg = sheet.get('DwgNumber')
-            dwg_label = (u'　DWG NO. {}'.format(dwg) if dwg else u'')
-            self._sheet_labels.append(u'{}{}　{}'.format(
-                sheet.get('SheetNumber'), dwg_label,
-                sheet.get('SheetName') or u''))
-
         self.revisionCombo.Items.Add(NO_REVISION)
         for revision in self.revisions:
             self.revisionCombo.Items.Add(sources.revision_label(revision))
@@ -164,6 +169,25 @@ class PdfDiffWindow(forms.WPFWindow):
 
         self._ready = True
         self._update_status()
+
+    def _rebuild_sheet_index(self):
+        """圖紙清單換掉之後重建下拉標籤與索引。
+
+        ``_sheet_labels`` 是所有下拉共用的那一份 ItemsSource（見
+        :meth:`_combo_for`），所以要**就地**改內容，不能換成新的 list——
+        已經綁上去的下拉會繼續指著舊的那一份。目前的流程是在建立任何下拉
+        之前就載入完畢，但這個不變量不該押在呼叫時序上。
+        """
+        del self._sheet_labels[:]
+        self._sheet_labels.append(NO_SHEET)
+        self._sheet_index = {}
+        for index, sheet in enumerate(self.sheets):
+            self._sheet_index[id(sheet)] = index
+            dwg = sheet.get('DwgNumber')
+            dwg_label = (u'　DWG NO. {}'.format(dwg) if dwg else u'')
+            self._sheet_labels.append(u'{}{}　{}'.format(
+                sheet.get('SheetNumber'), dwg_label,
+                sheet.get('SheetName') or u''))
 
     # --- 選檔 ------------------------------------------------------------
 
@@ -217,6 +241,21 @@ class PdfDiffWindow(forms.WPFWindow):
                     self.old_pdf, self.new_pdf, self._overrides())
             except RuntimeError as error:
                 forms.alert(u'{}'.format(error), title=TITLE)
+                return
+
+        # 圖紙清單延到這裡才讀：現在才知道要配哪些頁，也才付得起代價。
+        # 讀過就留著，第二次比對不重掃。
+        if not self.sheets and self.sheet_loader is not None:
+            try:
+                self.sheets = list(self.sheet_loader(
+                    (self.result or {}).get('pages') or []) or [])
+            except sources.ScanCancelled:
+                forms.alert(u'已取消讀取圖紙，這次沒有進行配對。', title=TITLE)
+                return
+            self._rebuild_sheet_index()
+            if not self.sheets:
+                forms.alert(u'這個專案沒有圖紙，雲形沒有地方可畫。',
+                            title=TITLE)
                 return
 
         self._build_rows()
@@ -861,24 +900,59 @@ def _apply(pairings, reference_cloud_id=None, revision_id=None,
         TITLE, _describe) is not None
 
 
+def _unmatched_pages(pages, sheets):
+    """用目前這份圖紙資料配一次，回傳配不到的頁數。便宜，純字典比對。"""
+    if not pages:
+        return 0
+    unused_matched, unmatched, unused_sheets = logic.pair_sheets(pages, sheets)
+    return len(unmatched)
+
+
+def _sheet_loader(doc):
+    """回傳 ``callable(pages) -> rows``，兩階段讀取圖紙。
+
+    **第一階段便宜、第二階段昂貴，而且第二階段常常不必跑。**
+
+    * 圖紙編號與 Outline 是純屬性讀取，538 張也就是一瞬間。
+    * DWG NO. 要為每張圖紙連圖框一起查參數，是這一層唯一貴的操作。
+
+    所以先只讀便宜的部分、用圖紙編號配一次；**只有還有頁配不到時**，才回頭
+    補 DWG NO. 再配一次。圖號本來就對得上的專案永遠不會付第二段的錢；
+    需要 DWG NO. 的專案也只是回到原本的成本，不會更差。
+    """
+    def loader(pages):
+        timer = timing.Timer()
+        with timing.ScanProgress(forms, u'讀取圖紙') as scan:
+            sheets = sources.sheet_records(
+                doc, progress=scan.callback, with_dwg=False)
+            timer.mark('sheets')
+            missing = _unmatched_pages(pages, sheets)
+            timer.mark('pair')
+            if missing:
+                scan.retitle(u'讀取圖框 DWG NO.（{} 頁配不到圖號）'.format(
+                    missing))
+                sources.fill_dwg_numbers(doc, sheets, progress=scan.callback)
+                timer.mark('dwg')
+        timing.write_log(TITLE, timer.phases,
+                         extra='sheets={} pages={} unmatched_before_dwg={}'
+                         .format(len(sheets), len(pages), missing))
+        return sheets
+    return loader
+
+
 def main():
     doc = revit.doc
     if doc is None:
         forms.alert(u'請先開啟 Revit 專案文件。', title=TITLE, exitscript=True)
 
-    # 這一段在幾千張圖紙的專案要好幾秒（每張都要找圖框上的 DWG NO. 欄位）。
-    # 沒有進度視窗使用者只會看到 Revit 卡住不動，然後開始亂點。
-    with forms.ProgressBar(title=u'讀取圖紙與圖號中…', indeterminate=True):
-        sheets = sources.sheet_records(doc)
-        revisions = sources.revision_records(doc)
-        reference_cloud_id = sources.selected_revision_cloud_id(
-            doc, revit.uidoc)
+    # 這裡只做便宜的事：修訂清單很短，而目前選取集必須在**按下按鈕的當下**
+    # 讀（使用者是先選好一朵範本雲才點按鈕的，晚讀會讀到別的東西）。
+    # 圖紙清單交給 _sheet_loader 延後，見它的說明。
+    revisions = sources.revision_records(doc)
+    reference_cloud_id = sources.selected_revision_cloud_id(doc, revit.uidoc)
 
-    if not sheets:
-        forms.alert(u'這個專案沒有圖紙，雲形沒有地方可畫。', title=TITLE)
-        return
-
-    PdfDiffWindow(sheets, reference_cloud_id, revisions).ShowDialog()
+    PdfDiffWindow(None, reference_cloud_id, revisions,
+                  sheet_loader=_sheet_loader(doc)).ShowDialog()
 
 
 try:

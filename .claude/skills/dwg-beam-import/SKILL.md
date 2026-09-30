@@ -1,8 +1,6 @@
 ---
 name: dwg-beam-import
-description: |
-  從 CAD/DWG 圖層批次建立 Revit 結構樑：掃描圖層 → 確認批次與模式 → 放樣健檢 → 批次建樑 → 詢問下一批次。支援全正交與含非正交（斜樑）圖說，分批處理（大樑 → 次樑 → 地樑）。
-  TRIGGER when: 結構樑翻模, dwg 建樑, cad 建樑, 圖層建樑, 批次建樑, beam from dwg, 從圖面建樑, 樑翻模, 大樑, 次樑, 地樑, create_beams_from_dwg
+description: "從 CAD/DWG 圖層批次建立 Revit 結構樑：掃描圖層 → 確認批次與模式 → 放樣健檢 → 批次建樑 → 詢問下一批次。支援全正交與含非正交（斜樑）圖說，分批處理（大樑 → 次樑 → 地樑）。觸發時機：結構樑翻模、dwg 建樑、cad 建樑、圖層建樑、批次建樑、beam from dwg、從圖面建樑、樑翻模、大樑、次樑、地樑或 create_beams_from_dwg。"
 user-invocable: true
 ---
 

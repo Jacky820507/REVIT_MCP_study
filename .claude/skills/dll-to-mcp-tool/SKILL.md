@@ -1,6 +1,6 @@
 ---
 name: dll-to-mcp-tool
-description: Wrap a standalone Revit IExternalCommand (.cs / DLL, WPF dialog allowed) into a revit-mcp MCP tool. Generates the C# command handler + switch case + TypeScript tool definition, builds, dual-path deploys, guides the restart, auto-verifies the tool is live, then commits (never pushes). Use when the user says "把這支 DLL/.cs 變成 MCP 工具", "封裝成 revit-mcp tool", "wrap this command as an MCP tool".
+description: "將獨立的 Revit IExternalCommand（.cs / DLL，可包含 WPF 對話框）封裝成 revit-mcp MCP 工具。產生 C# 命令處理器、switch case 與 TypeScript 工具定義，完成建置、雙路徑部署、重啟指引，並自動驗證工具已上線，最後提交變更（絕不 push）。當使用者說「把這支 DLL/.cs 變成 MCP 工具」、「封裝成 revit-mcp tool」或「wrap this command as an MCP tool」時使用。"
 user-invocable: true
 ---
 

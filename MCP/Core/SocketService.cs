@@ -30,6 +30,7 @@ namespace RevitMCP.Core
         private WebSocket _activeSocket;
         private string _activeRemoteEndpoint;
         private string _activeClientName;   // 來自 ws 連線 query string ?client= (MCP clientInfo.name)
+        private string _activeClientInstanceId; // 同一 MCP Server process 的 instance token
         private DateTime? _connectedAtUtc;
         private DateTime _lastRejectLogUtc = DateTime.MinValue;
 
@@ -53,6 +54,23 @@ namespace RevitMCP.Core
         {
             return _activeSocket != null &&
                 (_activeSocket.State == WebSocketState.Open || _activeSocket.State == WebSocketState.CloseReceived);
+        }
+
+        /// <summary>
+        /// 只有同一個 MCP Server process 的 instance token 才能接替自己的
+        /// CloseReceived 連線。只比對 clientName 會讓不同 MCP process 互相踢掉，
+        /// 形成 409/重連風暴；沒有 instance token 的舊客戶端不允許自動接替。
+        /// </summary>
+        private bool IsSameClientInstance_NoLock(string clientName, string clientInstanceId)
+        {
+            return !string.IsNullOrWhiteSpace(clientName) &&
+                !string.IsNullOrWhiteSpace(_activeClientName) &&
+                !string.Equals(clientName, "unknown", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(_activeClientName, "unknown", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(clientName, _activeClientName, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(clientInstanceId) &&
+                !string.IsNullOrWhiteSpace(_activeClientInstanceId) &&
+                string.Equals(clientInstanceId, _activeClientInstanceId, StringComparison.Ordinal);
         }
 
         public SocketService(ServiceSettings settings)
@@ -149,22 +167,68 @@ namespace RevitMCP.Core
                 try
                 {
                     var context = await _httpListener.GetContextAsync();
+                    var request = context.Request;
 
-                    if (context.Request.IsWebSocketRequest)
+                    if (request.IsWebSocketRequest)
                     {
+                        // Request/Context 會在 Response.Close() 或 WebSocket upgrade 後被處置；
+                        // 所有要寫入 log 或連線狀態的資料必須先快照，不能事後再讀 Request。
+                        string remoteEndpoint = request.RemoteEndPoint?.ToString();
+                        string clientName = request.QueryString["client"];
+                        string clientInstanceId = request.QueryString["instance"];
+
                         bool locked;
+                        WebSocket previousSocket = null;
                         lock (_connectionLock)
                         {
                             locked = _settings.ExclusiveLock && IsLocked_NoLock();
+
+                            // 只有同一個 Server process 且舊 socket 已進入 CloseReceived
+                            // 才允許接替。Open 狀態代表目前連線仍在使用，不能因另一個
+                            // process 使用同一個 clientName 就把它踢掉。
+                            bool sameInstance = IsSameClientInstance_NoLock(
+                                clientName, clientInstanceId);
+                            if (locked && sameInstance &&
+                                _activeSocket.State != WebSocketState.Open)
+                            {
+                                previousSocket = _activeSocket;
+                                _activeSocket = null;
+                                _activeRemoteEndpoint = null;
+                                _activeClientName = null;
+                                _activeClientInstanceId = null;
+                                _connectedAtUtc = null;
+                            }
                         }
 
-                        if (locked)
+                        if (previousSocket != null)
+                        {
+                            try
+                            {
+                                previousSocket.Abort();
+                            }
+                            catch (Exception abortEx)
+                            {
+                                Logger.Debug("[Socket] 接替同一客戶端舊連線時 Abort 例外(可忽略): " + abortEx.Message);
+                            }
+
+                            Logger.Info("[Socket] 同一 MCP 客戶端實例重新連線，已釋放舊連線: " + clientName);
+                        }
+
+                        if (locked && previousSocket == null)
                         {
                             // 已有連線鎖定中：在 AcceptWebSocketAsync 之前直接拒絕 (409)，
                             // 不做 101 upgrade。client 端會視為 handshake 失敗，之後每 5 秒自動重試。
-                            context.Response.StatusCode = 409;
-                            context.Response.Close();
-                            RateLimitedRejectLog(context.Request.RemoteEndPoint);
+                            try
+                            {
+                                context.Response.StatusCode = 409;
+                                context.Response.Close();
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                // HttpListener 可能已經先處置 response；拒絕本身仍然成立。
+                            }
+
+                            RateLimitedRejectLog(remoteEndpoint);
                             continue;
                         }
 
@@ -174,9 +238,10 @@ namespace RevitMCP.Core
                         lock (_connectionLock)
                         {
                             _activeSocket = wsContext.WebSocket;
-                            _activeRemoteEndpoint = context.Request.RemoteEndPoint?.ToString();
+                            _activeRemoteEndpoint = remoteEndpoint;
                             // 客戶端名稱由 node MCP server 以 ?client=<clientInfo.name> 帶入 (匿名時為 unknown)
-                            _activeClientName = context.Request.QueryString["client"];
+                            _activeClientName = clientName;
+                            _activeClientInstanceId = clientInstanceId;
                             _connectedAtUtc = DateTime.UtcNow;
                             logClient = _activeClientName;
                             logRemote = _activeRemoteEndpoint;
@@ -206,7 +271,7 @@ namespace RevitMCP.Core
         /// <summary>
         /// 限流記錄拒絕連線的 log，避免 client 每 5 秒重連造成洗版。
         /// </summary>
-        private void RateLimitedRejectLog(System.Net.IPEndPoint remote)
+        private void RateLimitedRejectLog(string remote)
         {
             var now = DateTime.UtcNow;
             if ((now - _lastRejectLogUtc).TotalSeconds >= 30)
@@ -231,6 +296,7 @@ namespace RevitMCP.Core
                 _activeSocket = null;
                 _activeRemoteEndpoint = null;
                 _activeClientName = null;
+                _activeClientInstanceId = null;
                 _connectedAtUtc = null;
             }
 
@@ -261,7 +327,7 @@ namespace RevitMCP.Core
         {
             lock (_connectionLock)
             {
-                return (_activeSocket != null && _activeSocket.State == WebSocketState.Open, _activeClientName, _activeRemoteEndpoint, _connectedAtUtc);
+                return (IsLocked_NoLock(), _activeClientName, _activeRemoteEndpoint, _connectedAtUtc);
             }
         }
 
@@ -326,6 +392,7 @@ namespace RevitMCP.Core
                         _activeSocket = null;
                         _activeRemoteEndpoint = null;
                         _activeClientName = null;
+                        _activeClientInstanceId = null;
                         _connectedAtUtc = null;
                     }
                 }
@@ -414,6 +481,7 @@ namespace RevitMCP.Core
                     _activeSocket = null;
                     _activeRemoteEndpoint = null;
                     _activeClientName = null;
+                    _activeClientInstanceId = null;
                     _connectedAtUtc = null;
                 }
 

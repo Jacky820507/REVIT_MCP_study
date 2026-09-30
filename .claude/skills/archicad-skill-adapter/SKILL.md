@@ -1,6 +1,6 @@
 ---
 name: archicad-skill-adapter
-description: "Translates Revit-oriented BIM Skill intent and terminology into a guarded Archicad MCP workflow while preserving the original Domain method and Revit route. Use when applying BIM_MCP Skills to Archicad, selecting a BIM backend, querying Archicad elements, numbering Zones, producing Archicad quantity takeoffs, or handling Revit→Archicad 轉譯、名詞對照、GUID、Story、Zone、Layout、Tapir。"
+description: "將以 Revit 為導向的 BIM Skill 意圖與術語轉換為受控的 Archicad MCP 工作流程，同時保留原始 Domain 方法與 Revit 路由。當在 Archicad 上套用 BIM_MCP Skills、選擇 BIM 後端、查詢 Archicad 元素、為 Zones 編號、產生 Archicad 數量估算，或處理 Revit→Archicad 轉譯、名詞對照、GUID、Story、Zone、Layout、Tapir 時使用。"
 ---
 
 # Archicad Skill Adapter

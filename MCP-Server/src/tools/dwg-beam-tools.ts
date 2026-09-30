@@ -13,10 +13,16 @@ export const dwgBeamTools: Tool[] = [
             "掃描目前 Revit 平面視圖中的 CAD 匯入/連結圖層名稱；若目前選取包含 CAD 元件，僅掃描選取的 CAD，" +
             "未選取 CAD 時才掃描視圖中的全部 CAD。" +
             "回傳圖層清單並自動推薦可能包含樑、標註文字的圖層。" +
+            "若 includeCircles=true，可依 layers 擷取完整圓/互補半圓的圓心；僅作 CAD 圖示盤點，不判定落水頭、落水管或實際外徑。" +
             "使用前請確認 Revit 已開啟平面視圖且已匯入 CAD 檔案。",
         inputSchema: {
             type: "object",
-            properties: {},
+            properties: {
+                includeCircles: { type: "boolean", default: false },
+                layers: { type: "array", items: { type: "string" }, minItems: 1 },
+                includeText: { type: "boolean", default: false },
+                textLayers: { type: "array", items: { type: "string" }, minItems: 1 },
+            },
         },
     },
     {

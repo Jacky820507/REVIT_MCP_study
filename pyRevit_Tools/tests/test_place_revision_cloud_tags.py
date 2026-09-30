@@ -201,13 +201,19 @@ class _RecordingSources(object):
     def all_sheet_ids(self, doc):
         return set(self._sheet_ids)
 
-    def sheet_records(self, doc, sheet_ids=None):
+    def sheet_records(self, doc, sheet_ids=None, progress=None):
         wanted = None if sheet_ids is None else set(sheet_ids)
         self.sheet_records_calls.append(wanted)
-        if wanted is None:
-            return list(self._sheets)
-        return [row for row in self._sheets
-                if row['ElementId'] in wanted]
+        rows = (list(self._sheets) if wanted is None else
+                [row for row in self._sheets
+                 if row['ElementId'] in wanted])
+        # 進度回呼是掃描不凍住 Revit 的唯一手段，所以要確認它真的被傳下來。
+        self.progress_calls = []
+        if progress is not None:
+            for index, row in enumerate(rows):
+                self.progress_calls.append((index + 1, len(rows)))
+                progress(index + 1, len(rows))
+        return rows
 
 
 def sheet_row(element_id, number):
@@ -247,6 +253,20 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual([1003, 1007], [r['id'] for r in records])
         self.assertEqual([1, 2], [r['cloud_count'] for r in records])
         self.assertEqual(0, unmapped)
+
+    def test_the_progress_callback_reaches_the_source_layer(self):
+        """掃描跑在 Revit 的 UI 執行緒上，沒有回呼就沒辦法抽動訊息幫浦——
+        進度視窗會變成畫不出來也按不動的幽靈視窗，Revit 判定沒有回應。"""
+        sheets = [sheet_row(1000 + i, u'A2-{:03d}'.format(i))
+                  for i in range(3)]
+        fake = self._use({1000: [RevisionCloud(1, 1000)],
+                          1002: [RevisionCloud(2, 1002)]},
+                         set(row['ElementId'] for row in sheets), sheets)
+        seen = []
+        script._sheet_cloud_records(
+            object(), progress=lambda done, total: seen.append((done, total)))
+        self.assertEqual(fake.progress_calls, seen)
+        self.assertTrue(seen, u'progress 沒有被傳進 sheet_records')
 
     def test_sheets_without_clouds_are_left_out(self):
         """沒有雲的圖紙在這個 UI 上什麼都不能做，列出來只是雜訊。"""
