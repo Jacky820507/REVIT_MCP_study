@@ -32,7 +32,7 @@ export async function executeRevitTool(
     const commandName = toolName === "query_elements_with_filter" ? "query_elements" : toolName;
 
     // 跨文件命令需要較長 timeout（開啟 .rvt 檔案較費時）
-    const CROSS_DOC_COMMANDS = new Set(["read_source_file_sheets", "copy_sheets_from_file", "sync_sheet_parameters_from_source"]);
+    const CROSS_DOC_COMMANDS = new Set(["read_source_file_sheets", "copy_sheets_from_file", "sync_sheet_parameters_from_source", "inject_green_material_into_family"]);
     // 大量幾何配對／批次標註的命令也可能超過預設 30 秒：
     // domain/matchline-automation.md 記錄 13 個從屬視圖的銜接線佈署約 20 秒，
     // 從屬視圖更多時（配對是 O(n²)）很容易越過門檻。

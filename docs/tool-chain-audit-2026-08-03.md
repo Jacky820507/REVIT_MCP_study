@@ -83,7 +83,7 @@
 | 同上 | `scripts/install-ascii.ps1` | 重複，寫死 `d:\David\BIM MCP\...` 個人路徑 |
 | 同上 | `author_install_addon.ps1`（repo 根目錄） | 重複，是 `install-addon.ps1` 的副本 |
 | DXF/DWG 文字讀取 | `bridge/python/skills/ezdxf_worker.py` | **正典** |
-| 同上 | `bridge/python/skills/dxf_parser_skill.py` | 死碼，寫死 `C:\Users\ROY\...` 個人路徑 |
+| 同上 | `bridge/python/skills/dxf_parser_skill.py` | 死碼，寫死 `C:\Users\<CONTRIBUTOR_USERNAME>\...` 個人路徑 |
 | domain frontmatter 回填 | `scripts/backfill-domain-metadata.{py,ps1,sh}` | **不是重複**——`.py` 是本體，`.ps1`/`.sh` 是跨平台包裝 |
 
 另有 4 支 repo 根目錄的即興腳本（`convert.ps1`、`convert_csv.js`、`create_sheets_runner.js`、`test_detect_matchlines.js`）。其中 `create_sheets_runner.js` 直接 spawn MCP-Server 並灌原始 JSON-RPC，**違反 CLAUDE.md 的 Do Not Bypass MCP 規則**。以上 9 個檔案都在版控內。
@@ -145,7 +145,7 @@
 以下 9 個檔案已用 `git rm` 刪除（皆在版控內，需要時可從歷史復原）：
 
 1. `scripts/install-addon-bom.ps1`、`scripts/install-addon.bat`、`scripts/install-ascii.ps1`、`author_install_addon.ps1` — 四份過期／個人環境的安裝器
-2. `bridge/python/skills/dxf_parser_skill.py` — 死碼，寫死 `C:\Users\ROY\` 路徑
+2. `bridge/python/skills/dxf_parser_skill.py` — 死碼，寫死 `C:\Users\<CONTRIBUTOR_USERNAME>\` 路徑
 3. `create_sheets_runner.js`、`test_detect_matchlines.js` — 繞過 MCP 抽象層
 4. `convert.ps1`、`convert_csv.js` — 寫死個人路徑的編碼轉換殘骸
 

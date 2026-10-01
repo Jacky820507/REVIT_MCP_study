@@ -157,7 +157,7 @@ E:\RevitMCP\MCP\Core\CommandExecutor.cs(4236,97): warning CS8604: 'CheckStatus C
 E:\RevitMCP\MCP\Core\CommandExecutor.cs(4440,29): warning CS8600: 甇?撠?Null 撣詨潭??航??Null ?潸??銝??Null ???乓?[E:\RevitMCP\MCP\RevitMCP.csproj]
   RevitMCP -> E:\RevitMCP\MCP\bin\Release.R25\RevitMCP.dll
   RevitMCP -> E:\RevitMCP\MCP\bin\Release.R25\publish\
-  RevitMCP -> C:\Users\09044\AppData\Roaming\Autodesk\Revit\Addins\2025\
+  RevitMCP -> C:\Users\<YOUR_USERNAME>\AppData\Roaming\Autodesk\Revit\Addins\2025\
 
 撱箇蔭????
 

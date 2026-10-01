@@ -875,6 +875,106 @@ namespace RevitMCP.Core
                         result = SyncDetailComponentSheetFields(parameters);
                         break;
 
+                    case "load_shared_parameters":
+                        result = LoadSharedParameters(parameters);
+                        break;
+
+                    case "create_green_material":
+                        result = CreateGreenMaterial(parameters);
+                        break;
+
+                    case "get_all_materials":
+                        result = GetAllMaterials(parameters);
+                        break;
+
+                    case "create_material":
+                        result = CreateCustomMaterial(parameters);
+                        break;
+
+                    case "create_material_by_domain":
+                        result = CreateMaterialByDomain(parameters);
+                        break;
+
+                    case "duplicate_element_type":
+                        result = DuplicateElementType(parameters);
+                        break;
+
+                    case "set_green_material_type_parameters":
+                        result = SetGreenMaterialTypeParameters(parameters);
+                        break;
+
+                    case "create_single_material_type":
+                        result = CreateSingleMaterialType(parameters);
+                        break;
+
+                    case "create_multi_layer_type":
+                        result = CreateMultiLayerType(parameters);
+                        break;
+
+                    case "duplicate_type_only":
+                        result = DuplicateTypeOnly(parameters);
+                        break;
+
+                    case "set_material_surface_pattern":
+                        result = SetMaterialSurfacePattern(parameters);
+                        break;
+
+                    case "inject_green_material_into_family":
+                        result = InjectGreenMaterialIntoFamily(parameters);
+                        break;
+
+                    case "place_family_instances":
+                        result = PlaceFamilyInstances(parameters);
+                        break;
+
+                    case "get_dwg_column_layers":
+                        result = DwgColumnExecutor.GetDwgColumnLayers(_uiApp.ActiveUIDocument.Document);
+                        break;
+
+                    case "preview_dwg_columns":
+                        result = DwgColumnExecutor.PreviewDwgColumns(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "create_columns_from_dwg":
+                        result = DwgColumnExecutor.CreateColumnsFromDwg(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "get_dwg_block_instances":
+                        result = CadBlockPlacementExecutor.GetDwgBlockInstances(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "preview_family_instances_from_dwg_blocks":
+                        result = CadBlockPlacementExecutor.PreviewFamilyInstancesFromDwgBlocks(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "create_family_instances_from_dwg_blocks":
+                        result = CadBlockPlacementExecutor.CreateFamilyInstancesFromDwgBlocks(_uiApp.ActiveUIDocument.Document, parameters);
+                        break;
+
+                    case "scan_opening_candidates":
+                        result = ScanOpeningCandidates(parameters);
+                        break;
+
+                    case "get_space_centroid":
+                        result = GetSpaceCentroid(parameters);
+                        break;
+
+                    case "create_duct_system":
+                        result = CreateDuctSystem(parameters);
+                        break;
+
+                    case "door-window-legend-tools":
+                        result = DoorWindowLegendTools(parameters);
+                        break;
+
+                    case "list_dimension_types":
+                        result = ListDimensionTypes(parameters);
+                        break;
+
+                    case "list_legend_views":
+                        result = ListLegendViews(parameters);
+                        break;
+
                     default:
                         throw new NotImplementedException($"未實作的命令: {request.CommandName}");
                 }
@@ -4416,5 +4516,9 @@ namespace RevitMCP.Core
         }
 
         #endregion
+        private object ScanOpeningCandidates(JObject parameters)
+        {
+            return new OpeningCandidateScanner(_uiApp, _linkedModelHelper).Scan(parameters);
+        }
     }
 }

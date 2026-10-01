@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Autodesk.Revit.DB;
 
 // Revit 2025+ 將 ElementId 從 int 改為 long
@@ -10,12 +12,40 @@ using IdType = System.Int32;
 
 namespace RevitMCP.Core
 {
+#if NETFRAMEWORK
+    /// <summary>
+    /// LINQ APIs that exist in the .NET 8 Revit builds but not in the .NET Framework
+    /// builds used by Revit 2020-2024.
+    /// </summary>
+    internal static class LinqCompatibility
+    {
+        internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> source)
+        {
+            return new HashSet<T>(source);
+        }
+
+        internal static HashSet<T> ToHashSet<T>(this IEnumerable<T> source, IEqualityComparer<T> comparer)
+        {
+            return new HashSet<T>(source, comparer);
+        }
+    }
+#endif
+
     /// <summary>
     /// Revit API 跨版本相容性工具
     /// Nice3point.Revit.Sdk 會自動定義 REVIT2025_OR_GREATER 等預處理器符號
     /// </summary>
     internal static class RevitCompatibility
     {
+        internal static string GetDataTypeNameCompat(this Definition definition)
+        {
+#if REVIT2022_OR_GREATER
+            return definition.GetDataType().TypeId;
+#else
+            return definition.ParameterType.ToString();
+#endif
+        }
+
         /// <summary>
         /// 取得 ElementId 的數值（2022-2024 回傳 int，2025+ 回傳 long）
         /// </summary>

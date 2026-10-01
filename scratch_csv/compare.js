@@ -2,7 +2,7 @@ const xlsx = require('xlsx');
 const fs = require('fs');
 
 // Read Revit sheets
-const revitSheetsPath = 'C:/Users/09044/.gemini/antigravity/brain/811df5b4-39b7-4436-9181-c20c8887a752/.system_generated/steps/27/output.txt'; 
+const revitSheetsPath = 'C:/Users/<YOUR_USERNAME>/.gemini/antigravity/brain/811df5b4-39b7-4436-9181-c20c8887a752/.system_generated/steps/27/output.txt'; 
 let revitData = {};
 try {
   revitData = JSON.parse(fs.readFileSync(revitSheetsPath, 'utf8'));

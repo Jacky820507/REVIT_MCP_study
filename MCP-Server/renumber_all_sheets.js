@@ -7,7 +7,7 @@ async function main() {
         await client.connect();
 
         console.log("=== Step 1: 從最新緩存取得所有圖紙 ===");
-        const cachePath = 'C:\\Users\\09044\\.gemini\\antigravity\\brain\\b6e890c4-d528-43fb-8f43-200fd7025ad7\\.system_generated\\steps\\186\\output.txt';
+        const cachePath = 'C:\\Users\\<YOUR_USERNAME>\\.gemini\\antigravity\\brain\\b6e890c4-d528-43fb-8f43-200fd7025ad7\\.system_generated\\steps\\186\\output.txt';
         const content = fs.readFileSync(cachePath, 'utf8');
         const allSheets = JSON.parse(content);
         

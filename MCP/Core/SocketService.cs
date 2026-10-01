@@ -33,6 +33,7 @@ namespace RevitMCP.Core
         private string _activeClientInstanceId; // 同一 MCP Server process 的 instance token
         private DateTime? _connectedAtUtc;
         private DateTime _lastRejectLogUtc = DateTime.MinValue;
+        private DateTime _lastRejectOriginLogUtc = DateTime.MinValue;
 
         public event EventHandler<RevitCommandRequest> CommandReceived;
         public bool IsRunning => _isRunning;
@@ -174,6 +175,20 @@ namespace RevitMCP.Core
                         // Request/Context 會在 Response.Close() 或 WebSocket upgrade 後被處置；
                         // 所有要寫入 log 或連線狀態的資料必須先快照，不能事後再讀 Request。
                         string remoteEndpoint = request.RemoteEndPoint?.ToString();
+                        // Reject browser handshakes before inspecting or acquiring the connection lock.
+                        string origin = request.Headers["Origin"];
+                        if (!string.IsNullOrEmpty(origin))
+                        {
+                            context.Response.StatusCode = 403;
+                            context.Response.Close();
+                            var now = DateTime.UtcNow;
+                            if ((now - _lastRejectOriginLogUtc).TotalSeconds >= 30)
+                            {
+                                _lastRejectOriginLogUtc = now;
+                                Logger.Info("[Socket] Rejected Origin handshake (403), remote: " + remoteEndpoint + " Origin: " + origin);
+                            }
+                            continue;
+                        }
                         string clientName = request.QueryString["client"];
                         string clientInstanceId = request.QueryString["instance"];
 
@@ -277,7 +292,7 @@ namespace RevitMCP.Core
             if ((now - _lastRejectLogUtc).TotalSeconds >= 30)
             {
                 _lastRejectLogUtc = now;
-                Logger.Info("[Socket] 已拒絕重複連線 (連線已被鎖定) 來源: " + remote + ". 後續拒絕將靜默 30 秒。");
+                Logger.Info("[Socket] 已拒絕重複連線 (連線已被鎖定, 409) 來源: " + remote + ". 後續拒絕將靜默 30 秒。");
             }
         }
 

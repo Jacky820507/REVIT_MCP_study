@@ -1129,7 +1129,7 @@ index c2fbe3d..0b197aa 100644
 --- a/MCP/obj/RevitMCP.csproj.nuget.dgspec.json
 +++ b/MCP/obj/RevitMCP.csproj.nuget.dgspec.json
 @@ -17,14 +17,14 @@
-           "C:\\Users\\09044\\AppData\\Roaming\\NuGet\\NuGet.Config"
+           "C:\\Users\\<YOUR_USERNAME>\\AppData\\Roaming\\NuGet\\NuGet.Config"
          ],
          "originalTargetFrameworks": [
 -          "net48"
@@ -2004,11 +2004,11 @@ index e59e297..3500dfb 100644
        "projectName": "RevitMCP",
 -      "projectPath": "E:\\RevitMCP\\MCP\\RevitMCP.2020.csproj",
 +      "projectPath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
-       "packagesPath": "C:\\Users\\09044\\.nuget\\packages\\",
+       "packagesPath": "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\",
        "outputPath": "E:\\RevitMCP\\MCP\\obj\\",
        "projectStyle": "PackageReference",
 @@ -1540,14 +1535,14 @@
-         "C:\\Users\\09044\\AppData\\Roaming\\NuGet\\NuGet.Config"
+         "C:\\Users\\<YOUR_USERNAME>\\AppData\\Roaming\\NuGet\\NuGet.Config"
        ],
        "originalTargetFrameworks": [
 -        "net48"
@@ -2064,19 +2064,19 @@ index 888cbc6..0db89f3 100644
 -  "projectFilePath": "E:\\RevitMCP\\MCP\\RevitMCP.2020.csproj",
 +  "projectFilePath": "E:\\RevitMCP\\MCP\\RevitMCP.csproj",
    "expectedPackageFiles": [
-     "C:\\Users\\09044\\.nuget\\packages\\closedxml\\0.102.3\\closedxml.0.102.3.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\documentformat.openxml\\2.16.0\\documentformat.openxml.2.16.0.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\excelnumberformat\\1.1.0\\excelnumberformat.1.1.0.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\irony.netcore\\1.0.11\\irony.netcore.1.0.11.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
--    "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512",
-+    "C:\\Users\\09044\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net47\\1.0.3\\microsoft.netframework.referenceassemblies.net47.1.0.3.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
-+    "C:\\Users\\09044\\.nuget\\packages\\nice3point.revit.api.revitapi\\2020.2.60\\nice3point.revit.api.revitapi.2020.2.60.nupkg.sha512",
-+    "C:\\Users\\09044\\.nuget\\packages\\nice3point.revit.api.revitapiui\\2020.2.60\\nice3point.revit.api.revitapiui.2020.2.60.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\sixlabors.fonts\\1.0.0\\sixlabors.fonts.1.0.0.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
-     "C:\\Users\\09044\\.nuget\\packages\\system.io\\4.3.0\\system.io.4.3.0.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\closedxml\\0.102.3\\closedxml.0.102.3.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\documentformat.openxml\\2.16.0\\documentformat.openxml.2.16.0.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\excelnumberformat\\1.1.0\\excelnumberformat.1.1.0.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\irony.netcore\\1.0.11\\irony.netcore.1.0.11.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\microsoft.netframework.referenceassemblies\\1.0.3\\microsoft.netframework.referenceassemblies.1.0.3.nupkg.sha512",
+-    "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net48\\1.0.3\\microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg.sha512",
++    "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\microsoft.netframework.referenceassemblies.net47\\1.0.3\\microsoft.netframework.referenceassemblies.net47.1.0.3.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
++    "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\nice3point.revit.api.revitapi\\2020.2.60\\nice3point.revit.api.revitapi.2020.2.60.nupkg.sha512",
++    "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\nice3point.revit.api.revitapiui\\2020.2.60\\nice3point.revit.api.revitapiui.2020.2.60.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\sixlabors.fonts\\1.0.0\\sixlabors.fonts.1.0.0.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
+     "C:\\Users\\<YOUR_USERNAME>\\.nuget\\packages\\system.io\\4.3.0\\system.io.4.3.0.nupkg.sha512",
 diff --git a/docs/0328-presentation.html b/docs/0328-presentation.html
 index d09b195..e1692e1 100644
 --- a/docs/0328-presentation.html

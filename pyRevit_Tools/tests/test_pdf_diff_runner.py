@@ -52,7 +52,7 @@ class PythonCandidateTests(unittest.TestCase):
         self.assertNotIn(1, [len(c) for c in candidates[:1]])
 
     def test_common_install_paths_are_a_last_resort(self):
-        candidates = runner.python_candidates({'LOCALAPPDATA': r'C:\Users\x'})
+        candidates = runner.python_candidates({'LOCALAPPDATA': r'C:\Users\<YOUR_USERNAME>'})
         joined = [' '.join(c) for c in candidates]
         self.assertLess(joined.index('python'),
                         min(i for i, c in enumerate(joined)

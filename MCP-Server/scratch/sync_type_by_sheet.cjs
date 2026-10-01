@@ -3,7 +3,7 @@ const { spawn } = require('child_process');
 
 async function main() {
     // Read the sheets from the previously generated output
-    const sheetsFilePath = 'C:/Users/09044/.gemini/antigravity/brain/d28a9073-7281-43f9-8629-2c987b6de1d1/.system_generated/steps/8/output.txt';
+    const sheetsFilePath = 'C:/Users/<YOUR_USERNAME>/.gemini/antigravity/brain/d28a9073-7281-43f9-8629-2c987b6de1d1/.system_generated/steps/8/output.txt';
     let sheets;
     try {
         sheets = JSON.parse(fs.readFileSync(sheetsFilePath, 'utf8'));

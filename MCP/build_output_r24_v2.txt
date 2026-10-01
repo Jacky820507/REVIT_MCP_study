@@ -151,7 +151,7 @@ E:\RevitMCP\MCP\Core\CommandExecutor.cs(4236,80): warning CS8604: 'CheckStatus C
 E:\RevitMCP\MCP\Core\CommandExecutor.cs(4236,97): warning CS8604: 'CheckStatus CommandExecutor.DetermineOverallStatus(Article45Result article45Result, Article110Result article110Result)' 銝剔?? 'article110Result' ?航??Null ???詻?[E:\RevitMCP\MCP\RevitMCP.csproj]
   RevitMCP -> E:\RevitMCP\MCP\bin\Release.R24\RevitMCP.dll
   RevitMCP -> E:\RevitMCP\MCP\bin\Release.R24\publish\
-  RevitMCP -> C:\Users\09044\AppData\Roaming\Autodesk\Revit\Addins\2024\
+  RevitMCP -> C:\Users\<YOUR_USERNAME>\AppData\Roaming\Autodesk\Revit\Addins\2024\
 
 撱箇蔭????
 

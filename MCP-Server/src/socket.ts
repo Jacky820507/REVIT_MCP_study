@@ -97,16 +97,24 @@ export class RevitSocketClient {
             const socket = new WebSocket(wsUrl);
             this.ws = socket;
             let settled = false;
+            const connectTimeout = setTimeout(() => {
+                if (!settled && socket.readyState !== WebSocket.OPEN) {
+                    try { socket.terminate(); } catch { /* already closed */ }
+                    settleReject(new Error('Connection Timeout: Please ensure Revit Plugin is running and MCP server is enabled'));
+                }
+            }, 10000);
 
             const settleReject = (error: Error) => {
                 if (settled) {
                     return;
                 }
                 settled = true;
+                clearTimeout(connectTimeout);
                 reject(error);
             };
 
             socket.on('open', () => {
+                clearTimeout(connectTimeout);
                 console.error('[Socket] Connected to Revit Plugin');
                 if (!settled) {
                     settled = true;
@@ -145,6 +153,7 @@ export class RevitSocketClient {
             });
 
             socket.on('close', () => {
+                clearTimeout(connectTimeout);
                 console.error('[Socket] Connection closed');
                 if (this.ws === socket) {
                     this.ws = null;
@@ -157,17 +166,6 @@ export class RevitSocketClient {
                 this.scheduleReconnect();
             });
 
-            // Connection Timeout
-            setTimeout(() => {
-                if (!settled && socket.readyState !== WebSocket.OPEN) {
-                    try {
-                        socket.close();
-                    } catch {
-                        // Ignore a socket that has already been closed by ws.
-                    }
-                    settleReject(new Error('Connection Timeout: Please ensure Revit Plugin is running and MCP server is enabled'));
-                }
-            }, 10000);
         });
     }
 

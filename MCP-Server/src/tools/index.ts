@@ -35,6 +35,7 @@ import { dimensionTypeTools } from "./dimension-type-tools.js";
 import { legendViewTools } from "./legend-view-tools.js";
 import { dwgColumnTools } from "./dwg-column-tools.js";
 import { dwgBeamTools } from "./dwg-beam-tools.js";
+import { cadBlockPlacementTools } from "./cad-block-placement-tools.js";
 import { cadLinkTools } from "./cad-link-tools.js";
 import { structureTools } from "./structure-tools.js";
 import { parallelSectionTools } from "./parallel-section-tools.js";
@@ -61,9 +62,9 @@ import { codeIntegrityTools } from "./code-integrity-tools.js";
  * Profile 對照表：每個 profile 包含哪些模組
  */
 const PROFILE_MODULES: Record<string, Tool[][]> = {
-    full: [baseTools, codeIntegrityTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, mepTools, curtainWallTools, smokeExhaustTools, smokeDetectorTools, parallelSectionTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, dwgColumnTools, dwgBeamTools, cadLinkTools, clashTools, doorWindowLegendTools, listSeedsTools, dimensionTypeTools, legendViewTools, structuralTools, structureTools, scaffoldTools, gradingTools, detailCopyTools, scopeBoxTools, viewCropBoxTools, textNoteTools, titleblockAlignTools, viewCreationTools, viewportPositionTools, crossDocumentTools, legendTools, revisionCloudTools, viewDuplicateTools, fillRegionTools, ifcStructuralSyncTools, floorShapeTools, forkRestoredTools],
+    full: [baseTools, codeIntegrityTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, mepTools, curtainWallTools, smokeExhaustTools, smokeDetectorTools, parallelSectionTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, dwgColumnTools, dwgBeamTools, cadBlockPlacementTools, cadLinkTools, clashTools, doorWindowLegendTools, listSeedsTools, dimensionTypeTools, legendViewTools, structuralTools, structureTools, scaffoldTools, gradingTools, detailCopyTools, scopeBoxTools, viewCropBoxTools, textNoteTools, titleblockAlignTools, viewCreationTools, viewportPositionTools, crossDocumentTools, legendTools, revisionCloudTools, viewDuplicateTools, fillRegionTools, ifcStructuralSyncTools, floorShapeTools, forkRestoredTools],
     architect: [baseTools, codeIntegrityTools, wallTools, roomTools, corridorAnalysisTools, visualizationTools, scheduleTools, curtainWallTools, parallelSectionTools, STAIR_COMPLIANCE_TOOLS, sheetTools, detailComponentTools, dimensionTools, dependentViewTools, dwgColumnTools, dwgBeamTools, cadLinkTools, doorWindowLegendTools, listSeedsTools, dimensionTypeTools, legendViewTools, scaffoldTools, gradingTools, detailCopyTools, scopeBoxTools, viewCropBoxTools, textNoteTools, titleblockAlignTools, viewCreationTools, viewportPositionTools, crossDocumentTools, legendTools, revisionCloudTools, viewDuplicateTools, fillRegionTools, floorShapeTools, forkRestoredTools],
-    mep: [baseTools, codeIntegrityTools, mepTools, scheduleTools, visualizationTools, smokeExhaustTools, smokeDetectorTools, parallelSectionTools, clashTools],
+    mep: [baseTools, codeIntegrityTools, mepTools, scheduleTools, visualizationTools, smokeExhaustTools, smokeDetectorTools, parallelSectionTools, cadBlockPlacementTools, clashTools],
     structural: [baseTools, codeIntegrityTools, wallTools, visualizationTools, dwgColumnTools, dwgBeamTools, clashTools, structuralTools, structureTools, gradingTools, ifcStructuralSyncTools, floorShapeTools],
     "fire-safety": [baseTools, codeIntegrityTools, roomTools, corridorAnalysisTools, visualizationTools, smokeExhaustTools, smokeDetectorTools],
 };
@@ -84,17 +85,11 @@ const UNIMPLEMENTED_ON_THIS_FORK = new Set<string>([
     "analyze_corridor_width",
     "analyze_floor_slopes",
     "arrange_viewports_on_sheet",
-    "create_columns_from_dwg",
     "create_curtain_wall_elevations",
     "create_level",
     "diagnose_curtain_wall_elevation_direction",
     "diagnose_curtain_wall_elevation_directions",
-    "door-window-legend-tools",
-    "get_dwg_column_layers",
-    "list_dimension_types",
-    "list_legend_views",
     "list_schedules",
-    "preview_dwg_columns",
     "read_schedule",
     "rename_view",
     "scale_drafting_view_height",

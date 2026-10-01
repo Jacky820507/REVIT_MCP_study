@@ -21,5 +21,5 @@ data.changed.forEach(item => {
 
 md += `\n\n---`;
 
-fs.writeFileSync('C:/Users/09044/.gemini/antigravity/brain/811df5b4-39b7-4436-9181-c20c8887a752/compare_result.md', md);
+fs.writeFileSync('C:/Users/<YOUR_USERNAME>/.gemini/antigravity/brain/811df5b4-39b7-4436-9181-c20c8887a752/compare_result.md', md);
 console.log("Markdown result generated.");

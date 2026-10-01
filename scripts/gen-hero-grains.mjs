@@ -2,11 +2,13 @@
 // Self-contained animated SVG (embedded CSS @keyframes) — works as <img>, no runtime lib.
 // Re-run whenever counts change so the hero art never goes stale again:
 //   node scripts/gen-hero-grains.mjs
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const OUT = new URL('../docs/BIM_MCP/images/', import.meta.url);
 
 // canonical category palette (matches domain-index colour coding)
+// Canvas height is derived from the grid + legend so the art never clips as
+// counts grow — only `cols` needs picking per dataset to keep width <= 1200.
 const grainsSVG = ({ title, sub, groups, cols }) => {
   const cells = [];
   groups.forEach(g => { for (let i = 0; i < g.count; i++) cells.push(g.color); });
@@ -27,7 +29,8 @@ const grainsSVG = ({ title, sub, groups, cols }) => {
   }).join('\n');
 
   const total = cells.length;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" font-family="'Noto Sans TC','Helvetica Neue',Inter,sans-serif">
+  const H = legendY + 60;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 ${H}" width="1200" height="${H}" font-family="'Noto Sans TC','Helvetica Neue',Inter,sans-serif">
 <style>
   .g{transform-box:fill-box;transform-origin:center;opacity:0;
      animation:pop .6s cubic-bezier(.16,1,.3,1) forwards, glow 4.5s ease-in-out infinite;}
@@ -38,7 +41,7 @@ const grainsSVG = ({ title, sub, groups, cols }) => {
   .s{fill:rgba(255,255,255,.45);font-size:24px;letter-spacing:1px}
   .lg{fill:rgba(255,255,255,.72);font-size:21px}
 </style>
-  <rect width="1200" height="900" rx="0" fill="#0a0a0a"/>
+  <rect width="1200" height="${H}" rx="0" fill="#0a0a0a"/>
   <text x="118" y="150" class="num">${total}</text>
   <text x="120" y="205" class="t">${title}</text>
   <text x="120" y="240" class="s">${sub}</text>
@@ -48,32 +51,21 @@ ${legend}
 `;
 };
 
-const skills = grainsSVG({
-  title: 'Skills · 編排層',
-  sub: 'AI WORKFLOW ORCHESTRATION · 5 CATEGORIES',
-  cols: 8,
-  groups: [
-    { label: 'A 法規', count: 5, color: '#ef4444' },
-    { label: 'B 設計', count: 4, color: '#60a5fa' },
-    { label: 'C 文件', count: 5, color: '#fbbf24' },
-    { label: 'D 模型', count: 4, color: '#4ade80' },
-    { label: 'E 運維', count: 4, color: '#a78bfa' },
-  ],
-});
-
-const domain = grainsSVG({
-  title: 'Domain · 知識層',
-  sub: 'SHARED BIM SOP · 5 CATEGORIES',
-  cols: 9,
-  groups: [
-    { label: '法規', count: 10, color: '#ef4444' },
-    { label: '流程', count: 21, color: '#60a5fa' },
-    { label: '維運', count: 7, color: '#fbbf24' },
-    { label: 'MEP', count: 6, color: '#4ade80' },
-    { label: '外部', count: 1, color: '#a78bfa' },
-  ],
-});
-
-writeFileSync(new URL('skills__hero__22-grains.svg', OUT), skills);
-writeFileSync(new URL('domain__hero__45-grains.svg', OUT), domain);
-console.log('generated: skills__hero__22-grains.svg (22), domain__hero__45-grains.svg (45)');
+// Read category totals from the catalogs, whose cards are checked by QA/QC.
+const readCatalog = name => readFileSync(new URL(`../docs/BIM_MCP/reference/${name}`, import.meta.url), 'utf8');
+const skillCounts = [...readCatalog('skills-index.html').matchAll(/class="cat-header">[^<]*（(\d+) 個）/g)].map(m => Number(m[1]));
+const domainCounts = [...readCatalog('domain-index.html').matchAll(/class="cat-num">(\d+)</g)].map(m => Number(m[1]));
+if (skillCounts.length !== 6 || domainCounts.length !== 5) throw new Error('Catalog category structure changed');
+// Rebucket the six skill groups into the five shared chart semantics.
+// detect-clashes, mep-settings-curation, set-project-units are the MEP subset;
+// hj-pr-proposal and archicad-skill-adapter are external bridges.
+const [a, b, c, d, e, f] = skillCounts;
+const skillGroups = [a, b + c + d - 3, e + f - 2, 3, 2];
+const labels = ['法規', '流程', '維運', 'MEP', '外部'];
+const colors = ['#ef4444', '#60a5fa', '#fbbf24', '#4ade80', '#a78bfa'];
+const groups = counts => counts.map((count, i) => ({ label: labels[i], count, color: colors[i] }));
+const skills = grainsSVG({ title: 'Skills · 編排層', sub: 'AI WORKFLOW ORCHESTRATION · 5 CATEGORIES', cols: 10, groups: groups(skillGroups) });
+const domain = grainsSVG({ title: 'Domain · 知識層', sub: 'SHARED BIM SOP · 5 CATEGORIES', cols: 10, groups: groups(domainCounts) });
+writeFileSync(new URL('skills__hero__grains.svg', OUT), skills);
+writeFileSync(new URL('domain__hero__grains.svg', OUT), domain);
+console.log(`generated: skills ${skillGroups.reduce((a, b) => a + b, 0)}, domain ${domainCounts.reduce((a, b) => a + b, 0)}`);

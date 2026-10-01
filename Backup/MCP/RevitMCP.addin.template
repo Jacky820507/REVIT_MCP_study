@@ -3,7 +3,7 @@
   <AddIn Type="Application">
     <Name>Revit MCP Plugin</Name>
     <!-- 請修改以下路徑為您的實際路徑 -->
-    <Assembly>C:\Users\01102088\Desktop\DEV\MCP\bin\Debug\RevitMCP.dll</Assembly>
+    <Assembly>C:\Users\<YOUR_USERNAME>\Desktop\DEV\MCP\bin\Debug\RevitMCP.dll</Assembly>
     <FullClassName>RevitMCP.Application</FullClassName>
     <ClientId>8F3A4C8C-61DC-426D-87DF-E4BAE0F80EC1</ClientId>
     <VendorId>RevitMCP</VendorId>

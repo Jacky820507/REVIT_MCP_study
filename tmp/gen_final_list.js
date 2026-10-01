@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const dataPath = 'C:\\Users\\09044\\.gemini\\antigravity\\brain\\0eead68f-72f5-4564-a119-cc5c6d0c24c1\\.system_generated\\steps\\103\\output.txt';
+const dataPath = 'C:\\Users\\<YOUR_USERNAME>\\.gemini\\antigravity\\brain\\0eead68f-72f5-4564-a119-cc5c6d0c24c1\\.system_generated\\steps\\103\\output.txt';
 const sheets = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
 // 此時 sheets 已經是由 auto_renumber_sheets 處理過後的順序
