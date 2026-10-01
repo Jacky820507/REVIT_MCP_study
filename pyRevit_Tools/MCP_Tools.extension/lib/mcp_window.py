@@ -34,6 +34,7 @@ from pyrevit import forms
 
 from System.Windows import GridLength, GridUnitType, HorizontalAlignment
 from System.Windows import Thickness, VerticalAlignment, Visibility
+from System.Windows.Input import Keyboard, ModifierKeys
 from System.Windows.Controls import Border, Button, CheckBox, ColumnDefinition
 from System.Windows.Controls import ComboBox, Grid, Orientation, RowDefinition
 from System.Windows.Controls import ScrollViewer, ScrollBarVisibility
@@ -75,6 +76,7 @@ class McpWindow(forms.WPFWindow):
         self.error_blocks = {}
         self.field_panels = {}
         self.filter_counters = {}
+        self.click_anchor = {}
         self._ready = False
 
         self.Title = u'{} — RevitMCP'.format(spec.get('title') or u'RevitMCP')
@@ -269,6 +271,9 @@ class McpWindow(forms.WPFWindow):
             box.IsChecked = value in chosen
             box.Checked += self._changed
             box.Unchecked += self._changed
+            # Click 在狀態切換之後才發生，所以 Shift 連選能直接讀到被點的
+            # 那一格「點完之後」的勾選狀態，整段範圍就跟著它走。
+            box.Click += self._box_clicked
             box.Tag = value
             stack.Children.Add(box)
             boxes.append(box)
@@ -367,6 +372,33 @@ class McpWindow(forms.WPFWindow):
         for key in list(self.filter_counters):
             self._update_counter(key)
         self._refresh_enabled()
+
+    def _box_clicked(self, sender, args):
+        """Shift+點擊：從上一次點的那一格到這一格，看得到的全部設成同狀態。"""
+        key = None
+        for name, boxes in self.controls.items():
+            if isinstance(boxes, list) and sender in boxes:
+                key = name
+                break
+        if key is None:
+            return
+        boxes = self.controls[key]
+        current = boxes.index(sender)
+        anchor = self.click_anchor.get(key)
+        if Keyboard.Modifiers & ModifierKeys.Shift:
+            visible = [b.Visibility == Visibility.Visible for b in boxes]
+            span = logic.range_indices(anchor, current, visible)
+            if span:
+                state = sender.IsChecked
+                # 暫停逐格的 _changed：一次連選幾百格不該重讀幾百次整份答案。
+                self._ready = False
+                try:
+                    for index in span:
+                        boxes[index].IsChecked = state
+                finally:
+                    self._ready = True
+                self._changed(sender, args)
+        self.click_anchor[key] = current
 
     def _bulk_clicked(self, sender, args):
         """全選／全部取消只作用在**目前看得到的**項目。

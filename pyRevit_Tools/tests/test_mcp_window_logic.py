@@ -314,5 +314,20 @@ class MatchesFilterTests(unittest.TestCase):
             logic.multichoice('k', u'x', OPTIONS, filter=False)['filter'])
 
 
+class RangeIndicesTests(unittest.TestCase):
+    def test_forward_and_backward_ranges_match(self):
+        visible = [True] * 6
+        self.assertEqual(logic.range_indices(1, 4, visible), [1, 2, 3, 4])
+        self.assertEqual(logic.range_indices(4, 1, visible), [1, 2, 3, 4])
+
+    def test_filtered_out_items_are_excluded(self):
+        visible = [True, False, True, False, True]
+        self.assertEqual(logic.range_indices(0, 4, visible), [0, 2, 4])
+
+    def test_no_anchor_or_out_of_range_is_empty(self):
+        self.assertEqual(logic.range_indices(None, 2, [True] * 3), [])
+        self.assertEqual(logic.range_indices(0, 9, [True] * 3), [])
+
+
 if __name__ == '__main__':
     unittest.main()

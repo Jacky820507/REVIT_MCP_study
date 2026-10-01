@@ -345,3 +345,17 @@ def truncate_rows(rows, limit=MAX_RESULT_ROWS):
     return items[:limit], (
         u'僅顯示前 {} 列，共 {} 列；完整明細在 pyRevit 輸出視窗。'
         .format(limit, len(items)))
+
+
+def range_indices(anchor, current, visible):
+    """Shift 連選：``anchor`` 到 ``current`` 之間**看得到的**項目索引。
+
+    ``visible`` 是與選項同序的布林清單。被篩掉的項目不在範圍內——與
+    「全選」同一條規則：看不見的東西不該被一次點擊勾起來。任一端點越界
+    （例如清單剛重建）回空清單，呼叫端當成一般單擊處理。
+    """
+    count = len(visible)
+    if anchor is None or not (0 <= anchor < count and 0 <= current < count):
+        return []
+    low, high = min(anchor, current), max(anchor, current)
+    return [index for index in range(low, high + 1) if visible[index]]
