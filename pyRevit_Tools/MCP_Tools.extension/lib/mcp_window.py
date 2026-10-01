@@ -74,6 +74,7 @@ class McpWindow(forms.WPFWindow):
         self.controls = {}
         self.error_blocks = {}
         self.field_panels = {}
+        self.filter_counters = {}
         self._ready = False
 
         self.Title = u'{} — RevitMCP'.format(spec.get('title') or u'RevitMCP')
@@ -234,6 +235,23 @@ class McpWindow(forms.WPFWindow):
         field['options'] = options
         chosen = set(field.get('default') or [])
 
+        # 篩選框：選項多到要捲動時才出現，少量選項多一個框只是雜訊。
+        # 欄位可用 ``filter=True/False`` 明確指定。
+        wants_filter = field.get('filter')
+        if wants_filter is None:
+            wants_filter = len(options) > LIST_SCROLL_AFTER
+        if wants_filter:
+            search = TextBox()
+            search.Margin = _thickness(0, 0, 0, 6)
+            search.ToolTip = u'輸入關鍵字篩選，多個詞用空白分隔（需同時符合）'
+            search.Tag = field['key']
+            search.TextChanged += self._filter_changed
+            panel.Children.Add(search)
+            counter = self._block(u'', 'Help')
+            counter.Margin = _thickness(0, 0, 0, 6)
+            panel.Children.Add(counter)
+            self.filter_counters[field['key']] = counter
+
         if field.get('actions') and len(options) > 2:
             actions = StackPanel()
             actions.Orientation = Orientation.Horizontal
@@ -255,6 +273,7 @@ class McpWindow(forms.WPFWindow):
             stack.Children.Add(box)
             boxes.append(box)
         self.controls[field['key']] = boxes
+        self._update_counter(field['key'])
 
         frame = Border()
         self._styled(frame, 'ListFrame')
@@ -345,13 +364,39 @@ class McpWindow(forms.WPFWindow):
         if not self._ready:
             return
         self._read()
+        for key in list(self.filter_counters):
+            self._update_counter(key)
         self._refresh_enabled()
 
     def _bulk_clicked(self, sender, args):
+        """全選／全部取消只作用在**目前看得到的**項目。
+
+        篩選後按「全選」的意思是「這些都要」；若連被篩掉的也一起勾，使用者
+        看不見卻會被執行，是最糟的那種意外。
+        """
         key, state = sender.Tag
         for box in self.controls.get(key) or []:
-            box.IsChecked = state
+            if box.Visibility == Visibility.Visible:
+                box.IsChecked = state
         self._changed(sender, args)
+
+    def _filter_changed(self, sender, args):
+        key = sender.Tag
+        query = sender.Text
+        for box in self.controls.get(key) or []:
+            visible = logic.matches_filter(box.Content, query)
+            box.Visibility = Visibility.Visible if visible                 else Visibility.Collapsed
+        self._update_counter(key)
+
+    def _update_counter(self, key):
+        counter = self.filter_counters.get(key)
+        boxes = self.controls.get(key) or []
+        if counter is None:
+            return
+        shown = len([b for b in boxes if b.Visibility == Visibility.Visible])
+        chosen = len([b for b in boxes if b.IsChecked])
+        counter.Text = u'顯示 {} / {} 項，已勾選 {} 項（被篩掉的勾選仍會保留）'.format(
+            shown, len(boxes), chosen)
 
     def _refresh_enabled(self):
         """依目前答案啟用／停用連動欄位。

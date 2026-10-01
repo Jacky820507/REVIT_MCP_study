@@ -292,5 +292,27 @@ class SpecTests(unittest.TestCase):
         self.assertEqual(u'執行', logic.spec(u'標題', [])['run_label'])
 
 
+
+class MatchesFilterTests(unittest.TestCase):
+    def test_empty_query_matches_everything(self):
+        self.assertTrue(logic.matches_filter(u'廢水坑B平面圖', u''))
+        self.assertTrue(logic.matches_filter(u'廢水坑B平面圖', u'   '))
+        self.assertTrue(logic.matches_filter(u'廢水坑B平面圖', None))
+
+    def test_all_terms_must_match_in_any_order(self):
+        label = u'物流中心 一層排水平面圖(分圖)　[B-FN]　#8943376'
+        self.assertTrue(logic.matches_filter(label, u'排水 一層'))
+        self.assertTrue(logic.matches_filter(label, u'一層　排水'))
+        self.assertFalse(logic.matches_filter(label, u'排水 二層'))
+
+    def test_case_insensitive(self):
+        self.assertTrue(logic.matches_filter(u'EL+178.9 B-FN', u'el+178 b-fn'))
+
+    def test_multichoice_filter_flag_defaults_to_auto(self):
+        self.assertIsNone(logic.multichoice('k', u'x', OPTIONS)['filter'])
+        self.assertFalse(
+            logic.multichoice('k', u'x', OPTIONS, filter=False)['filter'])
+
+
 if __name__ == '__main__':
     unittest.main()
