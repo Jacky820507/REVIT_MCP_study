@@ -82,7 +82,7 @@ def choice(key, label, options, default=None, help=u'', required=True,
 
 
 def multichoice(key, label, options, default=None, help=u'', required=False,
-                enabled_when=None, actions=True):
+                enabled_when=None, actions=True, filter=None):
     """複選。回傳被勾選的 value 清單。
 
     ``required=False`` 是預設值，因為**一個都不勾是一個真的答案**（例如
@@ -91,7 +91,8 @@ def multichoice(key, label, options, default=None, help=u'', required=False,
     """
     return _field(MULTICHOICE, key, label, options=list(options or []),
                   default=list(default or []), help=help, required=required,
-                  enabled_when=enabled_when, actions=actions)
+                  enabled_when=enabled_when, actions=actions,
+                  filter=filter)
 
 
 def text(key, label, default=u'', help=u'', required=False, placeholder=u'',
@@ -288,6 +289,19 @@ def label_for_value(options, value):
         if option_value == value:
             return _text(option_label)
     return u''
+
+
+def matches_filter(label, query):
+    """篩選框的比對：空白分隔的每個詞都要出現在文字裡，不分大小寫。
+
+    詞之間是「且」——輸入「一層 排水」要同時含兩者，這比整串當作一個子字串
+    實用：視圖名稱的詞序不固定。全形空白也算分隔。
+    """
+    terms = _text(query).replace(u'　', u' ').lower().split()
+    if not terms:
+        return True
+    haystack = _text(label).lower()
+    return all(term in haystack for term in terms)
 
 
 def unique_labels(options):
