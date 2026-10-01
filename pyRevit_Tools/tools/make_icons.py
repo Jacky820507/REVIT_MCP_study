@@ -612,6 +612,19 @@ def g_room_purge(canvas, color):
     line(canvas, 22, 68, 76, 24, 9, color)
 
 
+def g_replace_titleblock(canvas, color):
+    """Two framed sheets: left carries the old title strip, right the new one.
+
+    Same sheet outline on both sides — only the titleblock strip differs, which
+    is exactly what the button changes.
+    """
+    outline(canvas, 4, 16, 34, 46, 4, LIGHT)
+    rect(canvas, 4, 52, 34, 10, LIGHT)
+    outline(canvas, 58, 16, 34, 46, 5, color)
+    rect(canvas, 58, 46, 34, 16, color)
+    arrow(canvas, 40, 39, 55, 39, 5, color, head=9)
+
+
 def g_placeholder_sheet(canvas, color):
     """A dashed empty sheet becoming a solid framed one.
 
@@ -1012,6 +1025,8 @@ BUTTONS = [
     ('MCP_Macros.tab/Numbering.panel/ParkingNumbering.pushbutton', g_parking),
     ('MCP_Macros.tab/Numbering.panel/PlaceholderSheets.pushbutton',
      g_placeholder_sheet),
+    ('MCP_Macros.tab/Numbering.panel/ReplaceTitleblocks.pushbutton',
+     g_replace_titleblock),
     ('MCP_Macros.tab/Numbering.panel/TemplateTransfer.pushbutton',
      g_template_transfer),
     ('MCP_Macros.tab/Numbering.panel/ProjectParameterTransfer.pushbutton',
