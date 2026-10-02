@@ -1,0 +1,83 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="明細表欄位編輯 — RevitMCP"
+        Width="1180" Height="720" MinWidth="900" MinHeight="460"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F6F8"
+        FontFamily="Segoe UI, Microsoft JhengHei"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="MinWidth" Value="84" />
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Head">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#255783" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="12" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <DockPanel Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top" Style="{StaticResource Head}" Text="明細表（● 已修改）" />
+            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                <Button x:Name="copyButton" Content="把這張的欄位設定複製到其他明細表…" />
+                <Button x:Name="revertButton" Content="還原這張的修改" />
+            </StackPanel>
+            <ListBox x:Name="scheduleList" Background="White" />
+        </DockPanel>
+
+        <DockPanel Grid.Column="2">
+            <TextBlock DockPanel.Dock="Top" Style="{StaticResource Head}" Text="可用欄位（雙擊加入；同名者標示實例/類型）" />
+            <TextBox DockPanel.Dock="Top" x:Name="filterBox" Margin="0,0,0,4"
+                     ToolTip="關鍵字篩選，空白分隔多個關鍵字" />
+            <ListBox x:Name="poolList" SelectionMode="Extended" Background="White" />
+        </DockPanel>
+
+        <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="10,0">
+            <Button x:Name="addButton" Content="加入 →" />
+            <Button x:Name="removeButton" Content="← 移除" Margin="0,0,0,24" />
+            <Button x:Name="topButton" Content="移到最上" />
+            <Button x:Name="upButton" Content="上移" />
+            <Button x:Name="downButton" Content="下移" />
+            <Button x:Name="bottomButton" Content="移到最下" />
+        </StackPanel>
+
+        <DockPanel Grid.Column="4">
+            <TextBlock DockPanel.Dock="Top" Style="{StaticResource Head}" Text="明細表欄位（依順序；標題可直接改，勾選＝隱藏）" />
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                <Button x:Name="hideButton" Content="隱藏選取" Margin="0,0,8,0" />
+                <Button x:Name="showButton" Content="取消隱藏選取" Margin="0,0,8,0" />
+                <TextBlock VerticalAlignment="Center" Foreground="#4A5A68"
+                           Text="Shift/Ctrl 多選列 · 雙擊或 F2 編輯標題" />
+            </StackPanel>
+            <DataGrid x:Name="usedGrid" AutoGenerateColumns="False"
+                      CanUserAddRows="False" CanUserDeleteRows="False"
+                      CanUserReorderColumns="False" CanUserSortColumns="False"
+                      SelectionMode="Extended" SelectionUnit="FullRow"
+                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#E4E9ED" Background="White" RowHeight="24" />
+        </DockPanel>
+
+        <DockPanel Grid.Row="1" Grid.ColumnSpan="5" Margin="0,10,0,0" LastChildFill="False">
+            <TextBlock x:Name="statusText" DockPanel.Dock="Left" VerticalAlignment="Center"
+                       Foreground="#255783" FontWeight="SemiBold" />
+            <Button x:Name="cancelButton" DockPanel.Dock="Right" Content="關閉" Margin="0" />
+            <Button x:Name="applyButton" DockPanel.Dock="Right" Content="預覽並寫入模型" Margin="0,0,8,0" />
+        </DockPanel>
+    </Grid>
+</Window>

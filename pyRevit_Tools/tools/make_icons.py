@@ -625,6 +625,38 @@ def g_replace_titleblock(canvas, color):
     arrow(canvas, 40, 39, 55, 39, 5, color, head=9)
 
 
+def g_room_param_table(canvas, color):
+    """An editable parameter table: header strip, grid, one grey locked column.
+
+    The grey left column is the read-only part (area, perimeter) — shown but
+    not editable — and the accent cell is the one being edited.
+    """
+    outline(canvas, 8, 14, 80, 68, 4, color)
+    rect(canvas, 8, 14, 80, 15, color)
+    rect(canvas, 11, 30, 22, 49, LIGHT)
+    for y in (45, 61):
+        line(canvas, 10, y, 86, y, 3, color)
+    for x in (34, 60):
+        line(canvas, x, 28, x, 80, 3, color)
+    rect(canvas, 61, 46, 25, 14, color, alpha=0.45)
+
+
+def g_schedule_field_editor(canvas, color):
+    """Two field lists with a swap arrow between them.
+
+    Left list = available fields, right list = schedule fields (header strip
+    on top); the arrows are the add/remove shuttle of the field editor.
+    """
+    outline(canvas, 6, 16, 32, 64, 4, color)
+    outline(canvas, 58, 16, 32, 64, 4, color)
+    rect(canvas, 58, 16, 32, 12, color)
+    for y in (38, 50, 62):
+        line(canvas, 12, y, 32, y, 3, color)
+        line(canvas, 64, y, 84, y, 3, color)
+    arrow(canvas, 40, 40, 56, 40, 4, color, head=8)
+    arrow(canvas, 56, 58, 40, 58, 4, color, head=8)
+
+
 def g_placeholder_sheet(canvas, color):
     """A dashed empty sheet becoming a solid framed one.
 
@@ -1027,6 +1059,10 @@ BUTTONS = [
      g_placeholder_sheet),
     ('MCP_Macros.tab/Numbering.panel/ReplaceTitleblocks.pushbutton',
      g_replace_titleblock),
+    ('MCP_Macros.tab/Numbering.panel/RoomParameterTable.pushbutton',
+     g_room_param_table),
+    ('MCP_Macros.tab/Numbering.panel/ScheduleFieldEditor.pushbutton',
+     g_schedule_field_editor),
     ('MCP_Macros.tab/Numbering.panel/TemplateTransfer.pushbutton',
      g_template_transfer),
     ('MCP_Macros.tab/Numbering.panel/ProjectParameterTransfer.pushbutton',

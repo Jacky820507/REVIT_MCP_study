@@ -1,0 +1,3 @@
+title: "房間\n參數表"
+tooltip: "複選房間（可關鍵字篩選、Shift 連選）與參數，開一張可編輯表格：唯讀參數（面積、周長等）灰底只顯示不能改。表格內 Shift/Ctrl 選多格、Ctrl+A 全選、Ctrl+C 複製、Ctrl+V 貼上（可直接從 Excel 貼一整片；剪貼簿只有一個值時貼滿整個選取範圍）、Ctrl+D 以每欄最上一格向下填滿、Delete 清空；唯讀格自動略過。可匯出 Excel（含 ElementId 與「說明」工作表），在 Excel 改完再匯入，以 ElementId 對回房間、以標題名稱對回參數。關閉表格後先列出 dry-run 預覽（原值→新值），確認才在單一 Transaction 寫入；任何一格寫不進去就整批回復，並帶著你的修改重開表格讓你修正。數值參數以專案單位的顯示字串讀寫（SetValueString）；是/否參數接受 是、否、1、0。"
+author: "RevitMCP"
