@@ -146,14 +146,27 @@ def place_cad(doc, path, view, options, mode):
 
 def grid_layer_lines(doc, instance, view, layer):
     """匯入後、平移前，CAD 軸線圖層上的直線（Revit 座標，mm）。"""
+    return grid_layer_lines_with_summary(doc, instance, view, layer)[0]
+
+
+def grid_layer_lines_with_summary(doc, instance, view, layer):
+    """``(lines, {layer: (line_count, other_count)})``。
+
+    摘要是給「讀到 0 條」時用的：圖層名稱打錯、軸線是弧、還是整張圖根本
+    讀不到幾何，三種情況的處理方式完全不同，只回報「0 條」使用者無從下手。
+    """
     lines = []
+    summary = {}
     for row in area_sources.cad_layer_curves(doc, instance, view):
-        if row.get('kind') != 'Line':
-            continue
-        if not logic.layer_matches(row.get('layer'), layer):
+        name = row.get('layer') or u'(無圖層)'
+        count = summary.get(name, (0, 0))
+        is_line = row.get('kind') == 'Line'
+        summary[name] = (count[0] + (1 if is_line else 0),
+                         count[1] + (0 if is_line else 1))
+        if not is_line or not logic.layer_matches(name, layer):
             continue
         lines.append(logic.make_line(row['start'], row['end']))
-    return lines
+    return lines, summary
 
 
 def move_and_pin(doc, instance, translation_mm, pin):

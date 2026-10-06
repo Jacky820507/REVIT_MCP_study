@@ -591,6 +591,33 @@ def plan_alignment(cad_lines, revit_grids, labels=None,
     return plan
 
 
+def layer_summary_text(summary, wanted, limit=12):
+    """讀不到軸線時的診斷文字：這張 CAD 實際有哪些圖層。
+
+    ``summary``：``{layer: (line_count, other_count)}``。名稱接近 ``wanted``
+    的排前面（多半就是使用者要找的那層），其餘依線數由多到少。
+    """
+    if not summary:
+        return u'CAD 幾何一條曲線都讀不到（可能是 Revit 無法讀取這張圖的內容）'
+    key = _text(wanted).upper()
+
+    def rank(item):
+        name, (lines, others) = item
+        near = 0 if key and key.split(u'-')[-1] in _text(name).upper() else 1
+        return (near, -(lines + others), _text(name))
+
+    items = sorted(summary.items(), key=rank)
+    parts = []
+    for name, (lines, others) in items[:limit]:
+        text = u'{} 直線{}'.format(name, lines)
+        if others:
+            text += u'/其他{}'.format(others)
+        parts.append(text)
+    more = len(items) - limit
+    tail = u'…等 {} 層'.format(len(items)) if more > 0 else u''
+    return u'CAD 圖層：' + u'、'.join(parts) + tail
+
+
 def describe(plan):
     """給預覽表用的一行說明。"""
     if plan.get('status') == STATUS_FAILED:

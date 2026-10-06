@@ -248,6 +248,23 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(rows[1][5:8], [u'1.00', u'2.00', u'5'])
 
 
+class LayerSummaryTests(unittest.TestCase):
+    def test_empty_geometry_said_plainly(self):
+        self.assertIn(u'讀不到', logic.layer_summary_text({}, 'S-GRID'))
+
+    def test_similar_layer_listed_first(self):
+        text = logic.layer_summary_text(
+            {'A-WALL': (500, 0), 'GRID-LINE': (12, 3), 'TEXT': (0, 40)},
+            'S-GRID')
+        self.assertTrue(text.index('GRID-LINE') < text.index('A-WALL'), text)
+        self.assertIn(u'直線12/其他3', text)
+
+    def test_truncates_long_lists(self):
+        summary = dict(('L%02d' % i, (i, 0)) for i in range(30))
+        self.assertIn(u'等 30 層', logic.layer_summary_text(summary, 'X',
+                                                            limit=5))
+
+
 class WorkerTests(unittest.TestCase):
     def test_find_oda_picks_latest(self):
         import tempfile

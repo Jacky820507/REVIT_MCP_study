@@ -33,6 +33,28 @@ import mcp_window_logic as uilogic
 
 TITLE = u'CAD 對齊網格匯入'
 
+
+def _alert(message, yes_no=False):
+    """直接用 Revit 的 TaskDialog，不經過 ``forms.alert``。
+
+    pyRevit 的 ``forms.alert`` 在部分 Revit 2020 環境會把回傳值誤判成
+    CommandLink 而在 ``options[residx]`` 丟 IndexError——連報錯用的 alert
+    都跟著崩，使用者只看得到一段看不懂的 traceback。
+    """
+    from Autodesk.Revit import UI
+    dialog = UI.TaskDialog(TITLE)
+    dialog.MainInstruction = TITLE
+    dialog.MainContent = message
+    if yes_no:
+        dialog.CommonButtons = (UI.TaskDialogCommonButtons.Yes |
+                                UI.TaskDialogCommonButtons.No)
+        dialog.DefaultButton = UI.TaskDialogResult.No
+    else:
+        dialog.CommonButtons = UI.TaskDialogCommonButtons.Ok
+    result = dialog.Show()
+    return result == UI.TaskDialogResult.Yes or (
+        not yes_no and result == UI.TaskDialogResult.Ok)
+
 MODES = (
     (u'匯入（Import，檔案內嵌進專案）', sources.MODE_IMPORT),
     (u'連結（Link，保留與 DWG 的關聯）', sources.MODE_LINK),
@@ -163,13 +185,17 @@ def _process(doc, job, settings, labels_by_path):
         instance = sources.place_cad(doc, path, view, settings['options'],
                                      settings['mode'])
         doc.Regenerate()
-        cad_lines = sources.grid_layer_lines(doc, instance, view,
-                                             settings['grid_layer'])
+        cad_lines, layer_counts = sources.grid_layer_lines_with_summary(
+            doc, instance, view, settings['grid_layer'])
         labels = _scaled_labels(
             labels_by_path.get(os.path.normcase(path)), cad_lines)
         plan = logic.plan_alignment(cad_lines, revit_grids, labels,
                                     tolerance=settings['tolerance'])
         entry['plan'] = plan
+        if len(cad_lines) < 2:
+            entry['note'] = u'{}「{}」只讀到 {} 條直線。{}'.format(
+                u'軸線圖層', settings['grid_layer'], len(cad_lines),
+                logic.layer_summary_text(layer_counts, settings['grid_layer']))
         if plan['status'] != logic.STATUS_READY:
             transaction.RollBack()
             entry['status'] = plan['status']
@@ -224,18 +250,19 @@ def _write_csv(folder, entries):
 def main():
     doc = revit.doc
     if doc is None:
-        forms.alert(u'請先開啟 Revit 專案。', title=TITLE, exitscript=True)
+        _alert(u'請先開啟 Revit 專案。')
+        return
 
     folder = forms.pick_folder(title=u'選擇 CAD 檔所在資料夾')
     if not folder:
         return
     files = sources.cad_files(folder)
     if not files:
-        forms.alert(u'這個資料夾裡沒有 .dwg／.dxf。', title=TITLE)
+        _alert(u'這個資料夾裡沒有 .dwg／.dxf。')
         return
     views = sources.plan_views(doc)
     if not views:
-        forms.alert(u'專案裡沒有平面視圖。', title=TITLE)
+        _alert(u'專案裡沒有平面視圖。')
         return
 
     values = ui.ask(_settings_spec(views, files, folder))
@@ -263,7 +290,7 @@ def main():
             jobs.append({'view': view, 'path': path,
                          'code': auto[index]['code']})
     if not jobs:
-        forms.alert(u'沒有任何視圖配到 CAD，未執行。', title=TITLE)
+        _alert(u'沒有任何視圖配到 CAD，未執行。')
         return
 
     labels_by_path, label_note = {}, u''
@@ -301,16 +328,15 @@ def main():
     if done == 0:
         group.RollBack()
         csv_path = _write_csv(folder, entries)
-        forms.alert(u'沒有任何一筆對齊成功，模型未變更。\n\n'
-                    u'明細在 pyRevit 輸出視窗，報告：\n{}'.format(csv_path),
-                    title=TITLE)
+        _alert(u'沒有任何一筆對齊成功，模型未變更。\n\n'
+                    u'明細在 pyRevit 輸出視窗，報告：\n{}'.format(csv_path))
         return
 
-    keep = forms.alert(
+    keep = _alert(
         u'試跑完成：{} 筆已對齊，{} 筆未放置（見輸出視窗）。\n\n'
         u'請在視圖中確認 CAD 與網格是否重合。\n'
         u'要保留結果嗎？選「否」會整批復原。'.format(done, len(entries) - done),
-        title=TITLE, yes=True, no=True)
+        yes_no=True)
     if keep:
         group.Assimilate()
     else:
@@ -319,12 +345,11 @@ def main():
             if entry['status'] == u'已對齊':
                 entry['status'] = u'已復原'
     csv_path = _write_csv(folder, entries)
-    forms.alert(u'{}。\n\n報告：{}'.format(
-        u'已保留 {} 筆'.format(done) if keep else u'已整批復原', csv_path),
-        title=TITLE)
+    _alert(u'{}。\n\n報告：{}'.format(
+        u'已保留 {} 筆'.format(done) if keep else u'已整批復原', csv_path))
 
 
 try:
     main()
 except Exception as error:
-    forms.alert(u'執行失敗：\n\n{}'.format(error), title=TITLE)
+    _alert(u'執行失敗：\n\n{}'.format(error))
