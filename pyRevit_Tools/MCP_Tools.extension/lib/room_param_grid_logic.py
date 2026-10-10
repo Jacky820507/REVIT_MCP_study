@@ -292,6 +292,35 @@ def import_summary(plan, applied):
 
 # ── 清單標籤 ────────────────────────────────────────────────────────
 
+def natural_sort_key(value):
+    """字串排序也能得到「1、2、10」與「6 m²、25 m²、91 m²」的順序。
+
+    把每一段連續數字補零到固定寬度（小數點後那段照原樣，位數本來就左對齊），
+    其餘文字轉小寫。空白排最後。
+    """
+    word = text(value).strip().lower()
+    if not word:
+        return u'￿'
+    parts = []
+    digits = u''
+    after_point = False
+    for char in word:
+        if char.isdigit():
+            digits += char
+            continue
+        if digits:
+            parts.append(digits if after_point else digits.zfill(_NUMBER_WIDTH))
+            digits = u''
+        after_point = char == u'.'
+        parts.append(char)
+    if digits:
+        parts.append(digits if after_point else digits.zfill(_NUMBER_WIDTH))
+    return u''.join(parts)
+
+
+_NUMBER_WIDTH = 15
+
+
 def room_label(record):
     """``101 會議室〔1F〕``，未放置的房間加註。"""
     head = u' '.join(part for part in (record.get('number'),

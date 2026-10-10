@@ -246,3 +246,51 @@ def summary_lines(change):
     if change['reordered']:
         lines.append(u'重新排序')
     return lines
+
+
+# ── 明細表參數表 ────────────────────────────────────────────────────
+
+def unique_headers(names):
+    """同名標題加「 (2)」「 (3)」…——Excel 匯入是以標題對欄，不能重複。"""
+    seen = {}
+    result = []
+    for name in names:
+        name = text(name)
+        count = seen.get(name, 0) + 1
+        seen[name] = count
+        result.append(name if count == 1 else u'{} ({})'.format(name, count))
+    return result
+
+
+def group_writes(items):
+    """把要寫的格依寫入目標歸併。
+
+    ``items`` 是 ``[(target_id, param_key, new_value, change)]``；類型參數
+    的 ``target_id`` 是類型元素，所以同一類型的多列會落在同一個目標。
+    回傳 ``(writes, conflicts)``：``writes`` 是 ``[(target_id, param_key,
+    value, [change...])]``，每個目標只寫一次；``conflicts`` 是同一個目標被
+    要求寫成不同值的 ``[(target_id, param_key, [value...], [change...])]``，
+    呼叫端應該擋下來，不能挑一個值默默寫。比對忽略前後空白。
+    """
+    order = []
+    grouped = {}
+    for target_id, param_key, value, change in items:
+        slot = (target_id, param_key)
+        if slot not in grouped:
+            grouped[slot] = []
+            order.append(slot)
+        grouped[slot].append((text(value), change))
+    writes = []
+    conflicts = []
+    for slot in order:
+        pairs = grouped[slot]
+        values = []
+        for value, change in pairs:
+            if value.strip() not in [v.strip() for v in values]:
+                values.append(value)
+        changes = [change for value, change in pairs]
+        if len(values) > 1:
+            conflicts.append((slot[0], slot[1], values, changes))
+        else:
+            writes.append((slot[0], slot[1], values[0], changes))
+    return writes, conflicts

@@ -1,0 +1,72 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="明細表參數表 — RevitMCP"
+        Width="1180" Height="720" MinWidth="760" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="#F3F6F8"
+        FontFamily="Segoe UI, Microsoft JhengHei"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="MinWidth" Value="90" />
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#255783" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Height" Value="31" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="BorderBrush" Value="#497498" />
+            <Setter Property="BorderThickness" Value="0,0,1,0" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="exportButton" Content="匯出 Excel" />
+            <Button x:Name="importButton" Content="匯入 Excel" />
+            <Button x:Name="revertButton" Content="還原全部修改" />
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" x:Name="hintText" Foreground="#4A5A68"
+                   TextWrapping="Wrap" Margin="0,0,0,6"
+                   Text="Shift/Ctrl 點選多格 · Ctrl+A 全選 · Ctrl+C 複製 · Ctrl+V 貼上（單一值貼滿選取範圍） · Ctrl+D 以最上一格向下填滿 · Delete 清空 · 灰底（唯讀）欄只顯示" />
+
+        <DataGrid Grid.Row="2" x:Name="grid"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False" CanUserDeleteRows="False"
+                  CanUserReorderColumns="False" CanUserSortColumns="True"
+                  SelectionMode="Extended" SelectionUnit="CellOrRowHeader"
+                  ClipboardCopyMode="ExcludeHeader"
+                  HeadersVisibility="All" RowHeaderWidth="14"
+                  GridLinesVisibility="All"
+                  HorizontalGridLinesBrush="#E4E9ED" VerticalGridLinesBrush="#E4E9ED"
+                  Background="White" RowHeight="25"
+                  EnableRowVirtualization="True" EnableColumnVirtualization="True">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="複製 (Ctrl+C)" />
+                    <MenuItem Header="貼上 (Ctrl+V)" />
+                    <MenuItem Header="向下填滿 (Ctrl+D)" />
+                    <MenuItem Header="清空 (Delete)" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+
+        <DockPanel Grid.Row="3" Margin="0,10,0,0" LastChildFill="False">
+            <TextBlock x:Name="statusText" DockPanel.Dock="Left"
+                       VerticalAlignment="Center" Foreground="#255783" FontWeight="SemiBold" />
+            <Button x:Name="cancelButton" DockPanel.Dock="Right" Content="關閉" Margin="0" />
+            <Button x:Name="applyButton" DockPanel.Dock="Right" Content="預覽並寫入模型" />
+        </DockPanel>
+    </Grid>
+</Window>

@@ -112,6 +112,25 @@ class CopyTests(unittest.TestCase):
         self.assertEqual(state['pool'][0]['field_id'], 9)
 
 
+class ParameterTableTests(unittest.TestCase):
+    def test_unique_headers(self):
+        self.assertEqual(logic.unique_headers([u'名稱', u'備註', u'名稱']),
+                         [u'名稱', u'備註', u'名稱 (2)'])
+
+    def test_same_type_same_value_written_once(self):
+        writes, conflicts = logic.group_writes([
+            (7, 'p', u'A', 'c1'), (7, 'p', u'A ', 'c2'), (8, 'p', u'B', 'c3')])
+        self.assertEqual(conflicts, [])
+        self.assertEqual([(w[0], w[2], w[3]) for w in writes],
+                         [(7, u'A', ['c1', 'c2']), (8, u'B', ['c3'])])
+
+    def test_same_type_different_values_conflict(self):
+        writes, conflicts = logic.group_writes([
+            (7, 'p', u'A', 'c1'), (7, 'p', u'B', 'c2')])
+        self.assertEqual(writes, [])
+        self.assertEqual(conflicts[0][2], [u'A', u'B'])
+
+
 class LabelTests(unittest.TestCase):
     def test_label_marks(self):
         item = logic.entry('k', u'名稱', heading=u'N', hidden=True)

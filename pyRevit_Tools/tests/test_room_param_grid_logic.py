@@ -132,6 +132,28 @@ class ExcelTests(unittest.TestCase):
         self.assertEqual(plan['writes'], [])
 
 
+class NaturalSortTests(unittest.TestCase):
+    def ordered(self, values):
+        return sorted(values, key=logic.natural_sort_key)
+
+    def test_numbers_sort_by_value(self):
+        self.assertEqual(self.ordered([u'10', u'2', u'1', u'52']),
+                         [u'1', u'2', u'10', u'52'])
+
+    def test_values_with_units(self):
+        self.assertEqual(
+            self.ordered([u'91 m²', u'6 m²', u'4171 m²', u'25 m²']),
+            [u'6 m²', u'25 m²', u'91 m²', u'4171 m²'])
+
+    def test_decimals(self):
+        self.assertEqual(self.ordered([u'2.5', u'2.25', u'10.1']),
+                         [u'2.25', u'2.5', u'10.1'])
+
+    def test_mixed_codes_and_blank_last(self):
+        self.assertEqual(self.ordered([u'', u'B1-10', u'B1-2', u'1F-3']),
+                         [u'1F-3', u'B1-2', u'B1-10', u''])
+
+
 class LabelTests(unittest.TestCase):
     def test_yesno(self):
         self.assertEqual(logic.parse_yesno(u'是'), 1)
