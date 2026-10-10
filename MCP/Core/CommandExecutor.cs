@@ -391,6 +391,22 @@ namespace RevitMCP.Core
                         result = QueryScheduleData(parameters);
                         break;
 
+                    case "list_schedules":
+                        result = ListSchedules(parameters);
+                        break;
+
+                    case "batch_create_view_schedules":
+                        result = BatchCreateViewSchedules(parameters);
+                        break;
+
+                    case "add_schedule_fields":
+                        result = AddScheduleFields(parameters);
+                        break;
+
+                    case "set_schedule_grand_total_title":
+                        result = SetScheduleGrandTotalTitle(parameters);
+                        break;
+
                     case "get_selected_elements":
                         result = GetSelectedElements();
                         break;

@@ -16,7 +16,7 @@ Revit MCP lets AI clients call Autodesk Revit tools through the Model Context Pr
 
 ## What is this?
 
-Talk to Revit in plain language. Ask your AI client to *"dimension every wall on this view"* or *"check the curtain-wall elevations"*, and Revit does it — through **221 MCP tools** backed by **95 professional BIM SOPs** (building code, quantity take-off, compliance checks).
+Talk to Revit in plain language. Ask your AI client to *"dimension every wall on this view"* or *"check the curtain-wall elevations"*, and Revit does it — through **224 MCP tools** backed by **95 professional BIM SOPs** (building code, quantity take-off, compliance checks).
 
 **Who it's for:** BIM engineers and architects who use Revit and want AI-assisted, standards-based workflows. You'll need Revit on Windows and to be comfortable installing an add-in. This fork is maintained with **Revit 2020 as the primary target**, while retaining the repository's cross-version compatibility paths (2022-2026).
 
@@ -35,13 +35,13 @@ Questions or want to show what you built? → **[Discussions](https://github.com
 
 | Item | Count | Source |
 |---|---:|---|
-| Runtime MCP tools | 221 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
+| Runtime MCP tools | 224 | `registerRevitTools()` in `MCP-Server/src/tools/index.ts` |
 | Domain SOP files | 95 | `domain/*.md` except `README.md`, plus `domain/references/*.md` |
 | Claude skills | 73 | `.claude/skills/*/SKILL.md` |
 
 When these numbers change, update `CLAUDE.md`, `README.zh-TW.md`, this file, `docs/DOCUMENT_AUDIENCE_INVENTORY.md`, and run:
 
-**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 95 Domain + 73 Skill + 221 Tool 視覺化索引
+**📚 知識站：<https://shuotao.github.io/REVIT_MCP_study/>** — 三層架構 / 22 命題 / 決策框架 / 全 95 Domain + 73 Skill + 224 Tool 視覺化索引
 
 ---
 

@@ -89,7 +89,6 @@ const UNIMPLEMENTED_ON_THIS_FORK = new Set<string>([
     "create_level",
     "diagnose_curtain_wall_elevation_direction",
     "diagnose_curtain_wall_elevation_directions",
-    "list_schedules",
     "read_schedule",
     "rename_view",
     "scale_drafting_view_height",

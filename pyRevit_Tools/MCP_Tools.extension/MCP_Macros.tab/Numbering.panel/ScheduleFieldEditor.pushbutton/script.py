@@ -498,7 +498,7 @@ def _commit(doc, plans, states, schedulable):
 def _ask(views):
     active = None
     try:
-        active = revit.active__id_value(view.Id)
+        active = _id_value(revit.active_view.Id)
     except Exception:
         pass
     options = [(v.Name, _id_value(v.Id)) for v in views]

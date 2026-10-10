@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tools 索引（221 個）· BIM_MCP</title>
-<meta property="og:title" content="RevitMCP Tools 索引：221 個執行層工具">
-<meta property="og:description" content="221 個 MCP 工具 × 唯讀/寫入標註 × 來源模組。Tool 是執行層，方法在 Domain、編排在 Skill。">
+<title>Tools 索引（224 個）· BIM_MCP</title>
+<meta property="og:title" content="RevitMCP Tools 索引：224 個執行層工具">
+<meta property="og:description" content="224 個 MCP 工具 × 唯讀/寫入標註 × 來源模組。Tool 是執行層，方法在 Domain、編排在 Skill。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;600;700;800&display=swap">
@@ -89,17 +89,17 @@
 </nav>
 
 <header class="bim-hero">
-  <div class="bim-hero-eyebrow">TOOLS INDEX <span class="accent">221 個</span></div>
+  <div class="bim-hero-eyebrow">TOOLS INDEX <span class="accent">224 個</span></div>
   <h1 class="bim-hero-title">Tools · <span class="accent">執行層</span><br>模型上真正被動到的那一下</h1>
-  <p class="bim-hero-sub">Tool 是<strong>執行</strong>。它不決定方法，也不決定順序——方法在 <a href="domain-index.html">Domain</a>，順序在 <a href="skills-index.html">Skill</a>。這一頁把 221 個工具攤開，讓你看得到「有什麼」以及「哪些會動到模型」。</p>
+  <p class="bim-hero-sub">Tool 是<strong>執行</strong>。它不決定方法，也不決定順序——方法在 <a href="domain-index.html">Domain</a>，順序在 <a href="skills-index.html">Skill</a>。這一頁把 224 個工具攤開，讓你看得到「有什麼」以及「哪些會動到模型」。</p>
 </header>
 
 <section class="bim-section">
   <h2 class="bim-section-title">先看懂三個標記</h2>
   <p>每張卡右上角的標記來自工具自己宣告的 <code>annotations</code>，不是這一頁另外標的——閘門 <code>9-1</code> 會驗證它們與程式碼一致。</p>
   <ul>
-    <li><strong>唯讀</strong>（100 個）——只讀不寫。跑錯了不會留下痕跡，可以放心探索。</li>
-    <li><strong>會寫入</strong>（118 個）——會在 Transaction 裡改模型，但不刪除既有內容。可以 Undo，但會進 Revit 的復原堆疊。</li>
+    <li><strong>唯讀</strong>（101 個）——只讀不寫。跑錯了不會留下痕跡，可以放心探索。</li>
+    <li><strong>會寫入</strong>（120 個）——會在 Transaction 裡改模型，但不刪除既有內容。可以 Undo，但會進 Revit 的復原堆疊。</li>
     <li><strong>破壞性</strong>（3 個）——刪除或不可逆地取代既有內容：<code>curate_mep_sizes · dedup_detail_elements_in_view · delete_element</code>。這份名單是白名單，程式碼裡多一個就會被閘門擋下。</li>
   </ul>
   <p style="color:var(--text-muted);font-size:13px;">「唯讀」是工具作者的宣告，不是執行時的沙箱。它告訴你這支工具<em>設計上</em>不寫入，不是保證它<em>不可能</em>寫入。</p>
@@ -118,15 +118,15 @@
         <tr><td><strong>D</strong></td><td>MEP 與碰撞</td><td class="num">19</td><td>風管系統、空間代表點、套管開孔、CSA 干涉。</td></tr>
         <tr><td><strong>E</strong></td><td>法規檢核</td><td class="num">14</td><td>排煙、偵煙、樓梯——有法源、有判準的檢查。</td></tr>
         <tr><td><strong>F</strong></td><td>視圖與圖紙</td><td class="num">25</td><td>建視圖、裁剪、圖紙配置、視埠定位、跨專案複製。</td></tr>
-        <tr><td><strong>G</strong></td><td>標註與詳圖</td><td class="num">33</td><td>尺寸、詳圖元件、填充區域、圖例、明細表、文字。</td></tr>
+        <tr><td><strong>G</strong></td><td>標註與詳圖</td><td class="num">36</td><td>尺寸、詳圖元件、填充區域、圖例、明細表、文字。</td></tr>
         <tr><td><strong>H</strong></td><td>視覺化</td><td class="num">20</td><td>上色、覆寫、隱藏顯示，也含材質與 Type 建構。</td></tr>
     </tbody>
   </table>
-  <p style="color:var(--text-muted);font-size:13px;">分類是 42 個來源模組的一個分割——每個模組恰好屬於一類，八類加總等於 221。這一頁由 <code>registerRevitTools()</code> 產生，不是手寫的。</p>
+  <p style="color:var(--text-muted);font-size:13px;">分類是 42 個來源模組的一個分割——每個模組恰好屬於一類，八類加總等於 224。這一頁由 <code>registerRevitTools()</code> 產生，不是手寫的。</p>
 </section>
 
 <section class="bim-section">
-  <h2 class="bim-section-title">221 個工具 · 依用途分組</h2>
+  <h2 class="bim-section-title">224 個工具 · 依用途分組</h2>
 
     <div class="cat-header">A · 基礎與查詢（22 個）</div>
     <p class="cat-blurb">讀模型、找元素、問參數，多數工作的第一步；也包含少數寫入型前置工具（如載入共用參數檔 load_shared_parameters）。</p>
@@ -812,11 +812,15 @@
       <div><div class="tool-name">sync_sheet_parameters_from_source</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">cross-document-tools</div></div>
       <div><div class="tool-desc">補丁工具：為 target 中已存在的 sheets 從 source 同號 sheet 補齊 custom parameters（例如修補先前 copy_sheets_from_file 沒帶到的 sheet folder/圖集 / Discipline / 繪圖人 等）。**不會重建 sheet、不會動 viewport**，只比對同 SheetNumber 並複製 custom parameters。同名 + 同 StorageType 的 writable parameter 才會被複製，ElementId 類型跳過。觸發條件：使用者提到 sheet folder 缺失、補圖集、修圖紙分組、sheet 沒歸入 folder、補 sheet metadata、sync sheet parameter、batch update sheet parameter。</div></div>
     </div>
-    <div class="cat-header">G · 標註與詳圖（33 個）</div>
+    <div class="cat-header">G · 標註與詳圖（36 個）</div>
     <p class="cat-blurb">尺寸、詳圖元件、填充區域、圖例、明細表、文字。</p>
     <div class="tool-card" id="add_cloud_views_to_sheets" data-tool="add_cloud_views_to_sheets">
       <div><div class="tool-name">add_cloud_views_to_sheets</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">revision-cloud-tools</div></div>
       <div><div class="tool-desc">Create new sheets for every view that has a revision cloud but is not yet placed on any sheet, and add that view as a viewport on the new sheet. Views already on a sheet, or that fail Viewport.CanAddViewToSheet, are skipped with a reason. Set dryRun=true to preview the planned sheets/viewports without modifying the model.</div></div>
+    </div>
+    <div class="tool-card" id="add_schedule_fields" data-tool="add_schedule_fields">
+      <div><div class="tool-name">add_schedule_fields</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">schedule-tools</div></div>
+      <div><div class="tool-desc">批量把參數欄位加到既有明細表（附加在最後；已有的欄位不重複加）。目標用 scheduleIds、scheduleNames 或 keyword/category 篩選指定；欄位依名稱比對，該品類沒有的列在 MissingFields。支援 dryRun 預覽。</div></div>
     </div>
     <div class="tool-card" id="auto_convert_rotated_viewport_patterns" data-tool="auto_convert_rotated_viewport_patterns">
       <div><div class="tool-name">auto_convert_rotated_viewport_patterns</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">fill-region-tools</div></div>
@@ -829,6 +833,10 @@
     <div class="tool-card" id="batch_create_rc_filled_region" data-tool="batch_create_rc_filled_region">
       <div><div class="tool-name">batch_create_rc_filled_region</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">fill-region-tools</div></div>
       <div><div class="tool-desc">Batch-create RC filled-region stickers across multiple views, or across every placed viewport on the given sheets.</div></div>
+    </div>
+    <div class="tool-card" id="batch_create_view_schedules" data-tool="batch_create_view_schedules">
+      <div><div class="tool-name">batch_create_view_schedules</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">schedule-tools</div></div>
+      <div><div class="tool-desc">批量建立明細表：指定多個品類與共用欄位清單、名稱樣板，或逐張指定名稱／品類／欄位。撞名可略過或自動加編號，欄位對不到會列出。支援 dryRun 預覽。</div></div>
     </div>
     <div class="tool-card" id="convert_drafting_to_model_pattern" data-tool="convert_drafting_to_model_pattern">
       <div><div class="tool-name">convert_drafting_to_model_pattern</div><div class="tool-flags"><span class="tool-badge write">會寫入</span></div><div class="tool-module">fill-region-tools</div></div>
@@ -901,6 +909,10 @@
     <div class="tool-card" id="list_family_symbols" data-tool="list_family_symbols">
       <div><div class="tool-name">list_family_symbols</div><div class="tool-flags"><span class="tool-badge readonly">唯讀</span></div><div class="tool-module">detail-component-tools</div></div>
       <div><div class="tool-desc">列出專案中的 FamilySymbol（族群類型）。可依名稱篩選，回傳 ID、類型名稱、族群名稱、類別。用於查詢可用的詳圖項目族群。</div></div>
+    </div>
+    <div class="tool-card" id="list_schedules" data-tool="list_schedules">
+      <div><div class="tool-name">list_schedules</div><div class="tool-flags"><span class="tool-badge readonly">唯讀</span></div><div class="tool-module">schedule-tools</div></div>
+      <div><div class="tool-desc">列出專案中的明細表（排除樣板與圖框修訂表）：ElementId、名稱、品類、欄位數。可用 keyword（空白分隔、每詞都要出現）與 category 篩選。</div></div>
     </div>
     <div class="tool-card" id="list_seeds" data-tool="list_seeds">
       <div><div class="tool-name">list_seeds</div><div class="tool-flags"><span class="tool-badge readonly">唯讀</span></div><div class="tool-module">list-seeds-tools</div></div>
@@ -1038,7 +1050,7 @@
     <a href="../index.html" class="bim-footer-btn">回 BIM_MCP 首頁</a>
   </div>
   <p>BIM_MCP · reference / tools-index</p>
-  <p style="font-size:11px;color:var(--text-faint);margin-top:6px;">221 個 MCP 工具完整索引，由 registerRevitTools() 產生；唯讀/寫入標註取自工具自身 annotations。</p>
+  <p style="font-size:11px;color:var(--text-faint);margin-top:6px;">224 個 MCP 工具完整索引，由 registerRevitTools() 產生；唯讀/寫入標註取自工具自身 annotations。</p>
 </footer>
 
 <script src="../shared.js"></script>

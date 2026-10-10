@@ -198,7 +198,7 @@ export const forkRestoredTools: Tool[] = [
         // handler: CommandExecutor.Schedule.cs QueryScheduleData
         name: "query_schedule_data",
         description:
-            "Read the body rows of a view schedule as structured data, keyed by column name. Requires scheduleId or scheduleName — pass the exact schedule name as shown in the Revit project browser. (Do not suggest list_schedules for discovery: it has no Revit-side implementation on this fork and is not registered.)",
+            "Read the body rows of a view schedule as structured data, keyed by column name. Requires scheduleId or scheduleName — pass the exact schedule name as shown in the Revit project browser. (Use list_schedules to discover schedule names and ids.)",
         inputSchema: {
             type: "object",
             properties: {

@@ -657,6 +657,56 @@ def g_schedule_field_editor(canvas, color):
     arrow(canvas, 56, 58, 40, 58, 4, color, head=8)
 
 
+def g_schedule_param_table(canvas, color):
+    """A schedule (title strip + header row) whose one cell is being edited.
+
+    Distinct from the room table: a separate title bar above the column
+    header, the way a Revit schedule view looks, and no locked grey column.
+    """
+    rect(canvas, 8, 10, 80, 10, color)
+    outline(canvas, 8, 22, 80, 64, 4, color)
+    rect(canvas, 8, 22, 80, 12, color, alpha=0.55)
+    for y in (48, 62, 76):
+        line(canvas, 10, y, 86, y, 3, color)
+    for x in (36, 62):
+        line(canvas, x, 34, x, 86, 3, color)
+    rect(canvas, 37, 49, 24, 12, color, alpha=0.45)
+
+
+def g_schedule_batch_create(canvas, color):
+    """A stack of schedule sheets with a plus — many schedules made at once.
+
+    Two pale schedules sit behind the front one (a title strip + rows); the
+    plus on the right is the "create" half of the button.
+    """
+    outline(canvas, 24, 8, 60, 44, 3, LIGHT)
+    outline(canvas, 15, 18, 60, 44, 3, LIGHT)
+    outline(canvas, 6, 30, 58, 56, 4, color)
+    rect(canvas, 6, 30, 58, 12, color)
+    for y in (54, 66, 78):
+        line(canvas, 10, y, 60, y, 3, color)
+    line(canvas, 35, 42, 35, 86, 3, color)
+    line(canvas, 80, 56, 80, 82, 5, color)
+    line(canvas, 67, 69, 93, 69, 5, color)
+
+
+def g_schedule_add_fields(canvas, color):
+    """A schedule with a pale extra column on its right edge and a plus.
+
+    The solid table is what already exists; the outlined column beside it is
+    the field being appended to every selected schedule.
+    """
+    outline(canvas, 6, 16, 56, 64, 4, color)
+    rect(canvas, 6, 16, 56, 12, color)
+    for y in (42, 56, 70):
+        line(canvas, 10, y, 58, y, 3, color)
+    for x in (24, 43):
+        line(canvas, x, 28, x, 80, 3, color)
+    outline(canvas, 68, 16, 22, 64, 4, LIGHT)
+    line(canvas, 79, 40, 79, 62, 4, color)
+    line(canvas, 68, 51, 90, 51, 4, color)
+
+
 def g_placeholder_sheet(canvas, color):
     """A dashed empty sheet becoming a solid framed one.
 
@@ -1061,8 +1111,14 @@ BUTTONS = [
      g_replace_titleblock),
     ('MCP_Macros.tab/Numbering.panel/RoomParameterTable.pushbutton',
      g_room_param_table),
+    ('MCP_Macros.tab/Numbering.panel/BatchCreateSchedules.pushbutton',
+     g_schedule_batch_create),
+    ('MCP_Macros.tab/Numbering.panel/BatchAddScheduleFields.pushbutton',
+     g_schedule_add_fields),
     ('MCP_Macros.tab/Numbering.panel/ScheduleFieldEditor.pushbutton',
      g_schedule_field_editor),
+    ('MCP_Macros.tab/Numbering.panel/ScheduleParameterTable.pushbutton',
+     g_schedule_param_table),
     ('MCP_Macros.tab/Numbering.panel/TemplateTransfer.pushbutton',
      g_template_transfer),
     ('MCP_Macros.tab/Numbering.panel/ProjectParameterTransfer.pushbutton',
