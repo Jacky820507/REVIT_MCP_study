@@ -179,3 +179,4 @@ __pycache__/
 # docs/_playbook-sync/ 是本機產生的手冊修訂提案，其稽核報告自行判定 deident_pass: false，
 # 代表去識別化未過關，在通過去識別化稽核前不得進版控。
 docs/_playbook-sync/
+scratch_csv/node_modules/
