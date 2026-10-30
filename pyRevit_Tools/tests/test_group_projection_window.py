@@ -25,7 +25,7 @@ class WindowTests(unittest.TestCase):
         methods = {n.name for n in cls.body if isinstance(n, ast.FunctionDef)}
         names = []
         for node in tree.iter():
-            for event in ('Click', 'TextChanged'):
+            for event in ('Click', 'TextChanged', 'SelectionChanged'):
                 if event in node.attrib:
                     self.assertIn(node.attrib[event], methods)
             name = node.attrib.get('{http://schemas.microsoft.com/winfx/2006/xaml}Name')
@@ -122,6 +122,22 @@ class WindowTests(unittest.TestCase):
         self.assertEqual(window.handler.action, 'close')
         self.assertEqual(calls, ['stop', False])
 
+
+    def test_project_level_checks_only_that_level_then_applies(self):
+        check = lambda: types.SimpleNamespace(IsChecked=True)
+        checks = [(check(), {'level': '2F'}), (check(), {'level': '3F'}), (check(), {'level': '3F'})]
+        applied = []
+        window = types.SimpleNamespace(checks=checks, status=types.SimpleNamespace(Text=''),
+            selected_level=lambda: '3F', apply_clicked=lambda s, a: applied.append(True))
+        method('ProjectionWindow', 'project_level_clicked', {'ALL_LEVELS': None})(window, None, None)
+        self.assertEqual([c.IsChecked for c, r in checks], [False, True, True])
+        self.assertEqual(applied, [True])
+
+        window.selected_level = lambda: None
+        applied[:] = []
+        method('ProjectionWindow', 'project_level_clicked', {'ALL_LEVELS': None})(window, None, None)
+        self.assertEqual(applied, [])
+        self.assertIn('來源樓層', window.status.Text)
 
 if __name__ == '__main__':
     unittest.main()

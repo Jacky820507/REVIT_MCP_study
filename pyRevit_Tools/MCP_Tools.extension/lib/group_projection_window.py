@@ -6,12 +6,12 @@ from Autodesk.Revit import DB, UI
 from pyrevit import forms
 from System import TimeSpan
 from System.Windows import Thickness, Visibility, TextWrapping
-from System.Windows.Controls import CheckBox, StackPanel, TextBlock, Border, Orientation
+from System.Windows.Controls import CheckBox, ComboBoxItem, StackPanel, TextBlock, Border, Orientation
 from System.Windows.Media import BrushConverter
 from System.Windows.Threading import DispatcherTimer
 
 import group_projection_source as source
-from group_projection_logic import assign_colors, interleave_coincident
+from group_projection_logic import ALL_LEVELS, assign_colors, interleave_coincident, level_options
 from group_projection_server import ProjectionServer
 
 _window = None
@@ -107,6 +107,8 @@ class ProjectionWindow(forms.WPFWindow):
         self.clearButton.IsEnabled = enabled
         self.refreshButton.IsEnabled = enabled
         self.picker.IsEnabled = enabled
+        self.levelBox.IsEnabled = enabled
+        self.levelButton.IsEnabled = enabled
 
     def queue(self, action):
         if self.busy:
@@ -154,11 +156,32 @@ class ProjectionWindow(forms.WPFWindow):
             check.Unchecked += self.selection_changed
             self.checks.append((check, record))
             self.choices.Children.Add(check)
+        self.fill_levels()
         self.search_changed(None, None)
         self.selection_changed(None, None)
         self.status.Text = '找到 {} 個其他視圖的詳圖群組。'.format(len(records))
         self.report.Text = ('依來源視圖／樓層實際高程區分上下；平面圖保留 XY，'
                             '其他視圖投影到目前視圖平面。請先選取群組。')
+
+    def fill_levels(self):
+        previous = self.selected_level()
+        self.levelBox.Items.Clear()
+        chosen = 0
+        for index, (key, label) in enumerate(level_options(self.records)):
+            item = ComboBoxItem()
+            item.Content = label
+            item.Tag = key
+            self.levelBox.Items.Add(item)
+            if key is not ALL_LEVELS and key == previous:
+                chosen = index
+        self.levelBox.SelectedIndex = chosen
+
+    def selected_level(self):
+        item = self.levelBox.SelectedItem
+        return ALL_LEVELS if item is None else item.Tag
+
+    def level_changed(self, sender, args):
+        self.search_changed(None, None)
 
     def selection_changed(self, sender, args):
         count = sum(1 for check, record in self.checks if check.IsChecked)
@@ -168,9 +191,20 @@ class ProjectionWindow(forms.WPFWindow):
         if not hasattr(self, 'checks'):
             return
         text = self.search.Text.lower().strip()
+        level = self.selected_level()
         for check, record in self.checks:
             label = '{} {} {} {}'.format(record['name'], record['view_name'], record['level'], record['id']).lower()
-            check.Visibility = Visibility.Visible if text in label else Visibility.Collapsed
+            shown = text in label and (level is ALL_LEVELS or record['level'] == level)
+            check.Visibility = Visibility.Visible if shown else Visibility.Collapsed
+
+    def project_level_clicked(self, sender, args):
+        level = self.selected_level()
+        if level is ALL_LEVELS:
+            self.status.Text = '請先在「來源樓層」選一個樓層。'
+            return
+        for check, record in self.checks:
+            check.IsChecked = record['level'] == level
+        self.apply_clicked(sender, args)
 
     def select_filtered(self, sender, args):
         for check, record in self.checks:

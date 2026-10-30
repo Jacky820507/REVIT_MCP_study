@@ -128,5 +128,18 @@ class CoincidentTests(unittest.TestCase):
         self.assertEqual(logic.interleave_coincident(unique), unique)
 
 
+class LevelOptionTests(unittest.TestCase):
+    def test_levels_sorted_by_elevation_with_counts(self):
+        records = [dict(level='3F', elevation=30.0), dict(level='1F', elevation=0.0),
+                   dict(level='3F', elevation=30.0), dict(level='未指定樓層', elevation=None),
+                   dict(level='B1F', elevation=-12.0)]
+        options = logic.level_options(records)
+        self.assertEqual(options[0], (logic.ALL_LEVELS, '全部樓層 (5)'))
+        self.assertEqual([key for key, label in options[1:]], ['B1F', '1F', '3F', '未指定樓層'])
+        self.assertEqual(dict(options)['3F'], '3F (2)')
+
+    def test_empty_records_only_all(self):
+        self.assertEqual(logic.level_options([]), [(logic.ALL_LEVELS, '全部樓層 (0)')])
+
 if __name__ == '__main__':
     unittest.main()

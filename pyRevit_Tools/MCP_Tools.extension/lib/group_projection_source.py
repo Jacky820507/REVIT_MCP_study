@@ -73,7 +73,7 @@ def level_of(view):
     except Exception:
         pass
     if level:
-        return (level.Name, level.Elevation)
+        return (level.Name, level.ProjectElevation)
     origin = _view_origin(view)
     if origin is not None:
         return ('視圖平面', origin.Z)
@@ -146,7 +146,9 @@ def _plan_plane_z(view, plane):
         level = view.GenLevel
     if level is None:
         raise ValueError('目前視圖沒有可用的樓層／剖切平面。')
-    return level.Elevation + view_range.GetOffset(plane)
+    # Elevation follows the level type's Elevation Base (often the survey
+    # point); view-range clip planes are in internal coordinates.
+    return level.ProjectElevation + view_range.GetOffset(plane)
 
 
 def project_point(point, view, fallback_z=None):

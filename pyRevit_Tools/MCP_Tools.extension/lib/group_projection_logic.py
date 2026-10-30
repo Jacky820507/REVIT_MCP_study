@@ -60,7 +60,11 @@ def _colors(direction):
         saturation = (0.55 + saturation_step * 0.025
                       if direction in ('above', 'below')
                       else 0.02 + saturation_step * 0.006)
-        value = 0.95 - value_step * 0.006
+        # Neutral greys stay mid-dark so same-level lines remain visible on
+        # Revit's white canvas.
+        value = (0.95 - value_step * 0.006
+                 if direction in ('above', 'below')
+                 else 0.62 - value_step * 0.006)
         yield tuple(int(channel * 255 + 0.5) for channel in
                     colorsys.hsv_to_rgb(hue, saturation, value))
 
@@ -99,6 +103,32 @@ def assign_colors(records, target_elevation_ft):
                 'label': _LABELS[direction],
             }
     return result
+
+
+ALL_LEVELS = None
+
+
+def level_options(records):
+    """Return [(key, label)] for the source-level picker, low to high.
+
+    The first entry is (ALL_LEVELS, u'全部樓層 (n)'). Keys are level names as
+    stored in records; levels without an elevation sort last, by name.
+    """
+    counts = {}
+    elevations = {}
+    for record in records:
+        name = record['level']
+        counts[name] = counts.get(name, 0) + 1
+        elevation = _finite(record.get('elevation'))
+        if elevation is not None:
+            known = elevations.get(name)
+            elevations[name] = elevation if known is None else min(known, elevation)
+    names = sorted(counts, key=lambda n: (n not in elevations,
+                                          elevations.get(n, 0), n))
+    options = [(ALL_LEVELS, u'全部樓層 ({0})'.format(len(records)))]
+    for name in names:
+        options.append((name, u'{0} ({1})'.format(name, counts[name])))
+    return options
 
 
 def interleave_coincident(segments):

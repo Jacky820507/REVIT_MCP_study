@@ -89,7 +89,9 @@ class SourceTests(unittest.TestCase):
         cut = object()
         self.db.PlanViewPlane = types.SimpleNamespace(
             TopClipPlane=top, BottomClipPlane=bottom, CutPlane=cut)
-        level = types.SimpleNamespace(Elevation=100.0)
+        # Elevation is relative to the level type's Elevation Base (survey
+        # point here); clip planes use internal coordinates.
+        level = types.SimpleNamespace(ProjectElevation=100.0, Elevation=100.0 + 199275 / 304.8)
         view_range = types.SimpleNamespace(
             GetLevelId=lambda requested: 7,
             GetOffset=lambda requested: {top: 8.0, bottom: 0.0, cut: 4.0}[requested])
@@ -109,7 +111,7 @@ class SourceTests(unittest.TestCase):
         cut = object()
         self.db.PlanViewPlane = types.SimpleNamespace(
             TopClipPlane=top, BottomClipPlane=bottom, CutPlane=cut)
-        level = types.SimpleNamespace(Elevation=0.0)
+        level = types.SimpleNamespace(ProjectElevation=0.0)
         view = self.db.ViewPlan()
         view.ViewType = self.db.ViewType.StructuralPlan
         view.GetViewRange = lambda: types.SimpleNamespace(
@@ -195,7 +197,7 @@ class SourceTests(unittest.TestCase):
         view = self.db.ViewPlan()
         view.RightDirection = XYZ(1, 0, 0)
         view.UpDirection = XYZ(0, 1, 0)
-        level = types.SimpleNamespace(Elevation=100)
+        level = types.SimpleNamespace(ProjectElevation=100)
         view.GetViewRange = lambda: types.SimpleNamespace(
             GetLevelId=lambda plane: 7,
             GetOffset=lambda plane: {top: 8, cut: 4, bottom: 0}[plane])
